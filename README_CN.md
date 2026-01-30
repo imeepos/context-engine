@@ -1,4 +1,4 @@
-# claude-templates
+# context-engine
 
 ### 基于 React 的 AI Agent 动态上下文管理框架
 
