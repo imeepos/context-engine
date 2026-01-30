@@ -1,0 +1,34 @@
+{
+  "name": "@sker/prompt-renderer",
+  "version": "0.1.0",
+  "description": "React-based prompt renderer for AI agents",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts,.tsx",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-reconciler": "^0.29.2"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.7",
+    "@types/react-reconciler": "^0.28.8",
+    "@vitest/coverage-v8": "^2.1.8",
+    "jsdom": "^27.4.0",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.9.2",
+    "vitest": "^2.1.8"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  }
+}
