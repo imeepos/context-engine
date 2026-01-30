@@ -1,0 +1,130 @@
+import 'reflect-metadata'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { MessageBrokerService } from './message-broker.service'
+import { AgentRegistryService } from './agent-registry.service'
+import { JsonFileStorage } from '../storage/json-file-storage'
+import * as path from 'path'
+import * as os from 'os'
+import * as fs from 'fs/promises'
+
+describe('MessageBrokerService', () => {
+  let broker: MessageBrokerService
+  let agentRegistry: AgentRegistryService
+  let storage: JsonFileStorage
+  let testDir: string
+
+  beforeEach(async () => {
+    testDir = path.join(os.tmpdir(), `sker-test-${Date.now()}`)
+    storage = new JsonFileStorage(testDir)
+    await storage.init()
+    agentRegistry = new AgentRegistryService(storage)
+    broker = new MessageBrokerService(storage, agentRegistry)
+  })
+
+  afterEach(async () => {
+    await agentRegistry.unregister()
+    await fs.rm(testDir, { recursive: true, force: true })
+  })
+
+  describe('sendMessage', () => {
+    it('sends message to online agent', async () => {
+      await agentRegistry.register('agent-0')
+
+      const agentRegistry2 = new AgentRegistryService(storage)
+      await agentRegistry2.register('agent-1')
+
+      await broker.sendMessage('agent-1', 'Hello agent-1')
+
+      const queue = await storage.read<any>('messages/agent-1')
+      expect(queue.messages).toHaveLength(1)
+      expect(queue.messages[0].from).toBe('agent-0')
+      expect(queue.messages[0].to).toBe('agent-1')
+      expect(queue.messages[0].content).toBe('Hello agent-1')
+      expect(queue.messages[0].read).toBe(false)
+    })
+
+    it('throws error if current agent not registered', async () => {
+      await expect(broker.sendMessage('agent-1', 'Hello')).rejects.toThrow('当前agent未注册')
+    })
+
+    it('throws error if target agent not online', async () => {
+      await agentRegistry.register('test-agent-unique')
+
+      await expect(broker.sendMessage('agent-999', 'Hello')).rejects.toThrow('Agent agent-999 不在线')
+    })
+  })
+
+  describe('init and message receiving', () => {
+    it('receives messages sent to current agent', async () => {
+      await agentRegistry.register('agent-0')
+      await broker.init()
+
+      const agentRegistry2 = new AgentRegistryService(storage)
+      await agentRegistry2.register('agent-1')
+      const broker2 = new MessageBrokerService(storage, agentRegistry2)
+
+      return new Promise<void>((resolve) => {
+        broker.onMessageReceived((message) => {
+          expect(message.from).toBe('agent-1')
+          expect(message.to).toBe('agent-0')
+          expect(message.content).toBe('Hello agent-0')
+          resolve()
+        })
+
+        setTimeout(async () => {
+          await broker2.sendMessage('agent-0', 'Hello agent-0')
+        }, 100)
+      })
+    })
+
+    it('marks messages as read after receiving', async () => {
+      await agentRegistry.register('agent-0')
+      await broker.init()
+
+      const agentRegistry2 = new AgentRegistryService(storage)
+      await agentRegistry2.register('agent-1')
+      const broker2 = new MessageBrokerService(storage, agentRegistry2)
+
+      return new Promise<void>(async (resolve) => {
+        broker.onMessageReceived(async () => {
+          // Wait a bit for the file to be updated
+          await new Promise(r => setTimeout(r, 100))
+          const queue = await storage.read<any>('messages/agent-0')
+          expect(queue.messages[0].read).toBe(true)
+          resolve()
+        })
+
+        await broker2.sendMessage('agent-0', 'Test message')
+      })
+    })
+  })
+
+  describe('getMessageHistory', () => {
+    it('returns empty array when no messages', async () => {
+      await agentRegistry.register('agent-0')
+      const history = await broker.getMessageHistory('agent-1')
+      expect(history).toEqual([])
+    })
+
+    it('returns messages with specific agent', async () => {
+      await agentRegistry.register('agent-0')
+      await broker.init()
+
+      const agentRegistry2 = new AgentRegistryService(storage)
+      await agentRegistry2.register('agent-1')
+      const broker2 = new MessageBrokerService(storage, agentRegistry2)
+      await broker2.init()
+
+      await broker2.sendMessage('agent-0', 'Message 1')
+      await new Promise(resolve => setTimeout(resolve, 200))
+      await broker2.sendMessage('agent-0', 'Message 2')
+
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const history = await broker.getMessageHistory('agent-1')
+      expect(history).toHaveLength(2)
+      expect(history[0].content).toBe('Message 1')
+      expect(history[1].content).toBe('Message 2')
+    })
+  })
+})
