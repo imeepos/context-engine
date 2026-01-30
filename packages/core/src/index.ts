@@ -7,6 +7,7 @@ export {
 } from './host-attribute-token';
 export {
   Injector,
+  isType,
   type InjectionTokenType,
   type Type,
   type AbstractType,

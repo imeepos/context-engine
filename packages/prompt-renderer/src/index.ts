@@ -1,7 +1,6 @@
 // Browser and Page API
 export { createBrowser } from './browser/browser';
-export type { Browser, BrowserOptions } from './browser/browser';
-export type { Page } from './browser/page';
+export * from './browser/index';
 
 // Router
 export { parseUrl, buildUrl, extractParams } from './router/url';

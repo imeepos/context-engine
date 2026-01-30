@@ -1,80 +1,60 @@
-import { Page, createPage } from './page';
+import { createInjector, Inject, Injectable, InjectionToken, Injector, Provider } from '@sker/core'
+import React from 'react';
+import { renderToMarkdown } from '../reconciler/renderer';
+import { extractTools } from '../reconciler/extractor';
+import { createElement, createTextNode } from '../reconciler/dom';
 
-export interface BrowserOptions {
-  routes: Route[];
-  context?: BrowserContext;
-}
-
-export interface Route {
+export interface Route<T = any> {
   path: string;
-  component: any;
-  tools?: RouteTool[];
+  component: React.FunctionComponent<T & { injector: Injector }>;
+  params: T;
 }
 
+export interface RouteMatch {
+  route: Route;
+  params: Record<string, string>;
+}
+
+export const ROUTES = new InjectionToken<Route[]>('ROUTES');
+export const CURRENT_URL = new InjectionToken<URL>(`CURRENT_URL`);
+export const CURRENT_ROUTE = new InjectionToken<RouteMatch>(`CURRENT_ROUTE`);
+export const CURRENT_PAGE = new InjectionToken<Page>(`CURRENT_PAGE`);
+export const COMPONENT = new InjectionToken<React.FunctionComponent>(`COMPONENT`);
+export const TOOLS = new InjectionToken<RouteTool[]>(`TOOLS`);
 export interface RouteTool {
   name: string;
   handler: (params?: any) => Promise<any>;
   description?: string;
   parameters?: any;
 }
-
-export interface BrowserContext {
-  cookies?: Record<string, string>;
-  localStorage?: Record<string, string>;
-}
-
-export interface Browser {
-  open(url: string): Page;
-  setContext(context: BrowserContext): void;
-}
-
-export function createBrowser(options: BrowserOptions): Browser {
-  if (!Array.isArray(options.routes)) {
-    throw new Error('Routes must be an array');
-  }
-
-  let browserContext = options.context || {};
-
-  return {
-    open(url: string): Page {
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL format');
-      }
-
-      if (!url.startsWith('prompt://')) {
-        throw new Error('Invalid URL format');
-      }
-
-      const parsedUrl = parsePromptURL(url);
-      const matchedRoute = matchRoute(parsedUrl.pathname, options.routes);
-
-      if (!matchedRoute) {
-        throw new Error('Route not found');
-      }
-
-      if (!matchedRoute.route.component) {
-        throw new Error('Route component is required');
-      }
-
-      return createPage({
-        url: parsedUrl,
-        route: matchedRoute.route,
-        params: matchedRoute.params,
-        context: browserContext
-      });
-    },
-
-    setContext(context: BrowserContext): void {
-      browserContext = { ...browserContext, ...context };
+@Injectable()
+export class Browser {
+  constructor(@Inject(Injector) private parent: Injector) { }
+  open(url: string, providers: Provider[] = []): Page {
+    if (!url || typeof url !== 'string') {
+      throw new Error('Invalid URL format');
     }
-  };
+    if (!url.startsWith('prompt://')) {
+      throw new Error('Invalid URL format');
+    }
+
+    const pageInjector = createInjector([
+      { provide: CURRENT_URL, useFactory: () => parsePromptURL(url) },
+      { provide: CURRENT_ROUTE, useFactory: (parsedUrl: URL, pageInjector: Injector) => matchRoute(parsedUrl.pathname, pageInjector), deps: [CURRENT_URL, Injector] },
+      { provide: CURRENT_PAGE, useClass: Page },
+      ...providers
+    ], this.parent)
+
+    return pageInjector.get(CURRENT_PAGE);
+  }
 }
 
-interface PromptURL {
-  href: string;
-  pathname: string;
-  searchParams: URLSearchParams;
-  hash: string;
+export function createBrowser(providers: Provider[], parent?: Injector): Browser {
+  const browserInjector = createInjector([
+    { provide: Browser, useClass: Browser },
+    ...providers
+  ], parent);
+  return browserInjector.get(Browser)
 }
 
 function parsePromptURL(url: string): PromptURL {
@@ -87,7 +67,8 @@ function parsePromptURL(url: string): PromptURL {
   };
 }
 
-function matchRoute(pathname: string, routes: Route[]): { route: Route; params: Record<string, string> } | null {
+function matchRoute(pathname: string, injector: Injector): RouteMatch | null {
+  const routes = injector.get(ROUTES, [])
   for (const route of routes) {
     const params = matchPath(pathname, route.path);
     if (params !== null) {
@@ -119,4 +100,107 @@ function matchPath(pathname: string, pattern: string): Record<string, string> | 
   }
 
   return params;
+}
+
+
+export interface PageOptions {
+  url: PromptURL;
+  route: Route;
+  params: Record<string, string>;
+  context: Injector;
+}
+
+export interface PromptURL {
+  href: string;
+  pathname: string;
+  searchParams: URLSearchParams;
+  hash: string;
+}
+
+export interface RenderResult {
+  prompt: string;
+  tools: Tool[];
+}
+
+export interface Tool {
+  name: string;
+  description?: string;
+  parameters?: any;
+}
+
+export interface ToolCall {
+  name: string;
+  params?: any;
+}
+
+@Injectable({ providedIn: 'auto' })
+export class Page {
+  constructor(@Inject(Injector) private parent: Injector) { }
+  render(providers: Provider[] = []): RenderResult {
+    const currentRoute = this.parent.get(CURRENT_ROUTE);
+    const component = currentRoute.route.component;
+    const injector = createInjector([
+      { provide: COMPONENT, useValue: component },
+      ...providers,
+    ], this.parent);
+
+    const element = React.createElement(component, { injector });
+    const vnode = this.renderReactToVNode(element);
+    const prompt = renderToMarkdown(vnode);
+    const tools = extractTools(vnode);
+
+    return { prompt, tools };
+  }
+
+  private renderReactToVNode(element: any): any {
+    if (typeof element === 'string' || typeof element === 'number') {
+      return createTextNode(String(element));
+    }
+
+    if (!element || typeof element !== 'object') {
+      return createTextNode('');
+    }
+
+    const { type, props } = element;
+
+    if (typeof type === 'string') {
+      const children = React.Children.toArray(props.children || [])
+        .map(child => this.renderReactToVNode(child));
+      return createElement(type, props, children);
+    }
+
+    if (typeof type === 'function') {
+      const result = type(props);
+      return this.renderReactToVNode(result);
+    }
+
+    return createTextNode('');
+  }
+  async execute(toolName: string, params?: any): Promise<any> {
+    if (!toolName) {
+      throw new Error('Tool name is required');
+    }
+    const tools = this.parent.get(TOOLS, []);
+    const tool = tools?.find(t => t.name === toolName);
+    if (!tool) {
+      throw new Error(`Tool not found: ${toolName}`);
+    }
+
+    return await tool.handler(params);
+  }
+  async executes(calls: ToolCall[]): Promise<any[]> {
+    const results: any[] = [];
+    for (const call of calls) {
+      const result = await this.execute(call.name, call.params);
+      results.push(result);
+    }
+    return results;
+  }
+  navigate(url: string): Page {
+    const browser = this.parent.get(Browser);
+    return browser.open(url)
+  }
+  get url(): PromptURL {
+    return this.parent.get(CURRENT_URL);
+  }
 }

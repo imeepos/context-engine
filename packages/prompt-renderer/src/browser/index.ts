@@ -1,2 +1,1 @@
-export { createBrowser, type Browser, type BrowserOptions, type Route, type RouteTool, type BrowserContext } from './browser';
-export { createPage, type Page, type PageOptions, type PromptURL, type RenderResult, type Tool, type ToolCall } from './page';
+export { createBrowser, Browser, Page, CURRENT_PAGE, CURRENT_ROUTE, CURRENT_URL, COMPONENT, TOOLS, ROUTES } from './browser'

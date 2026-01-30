@@ -1,173 +1,89 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createBrowser, Browser, BrowserContext, PromptURL, Tool, ToolCall } from './index';
+import { describe, it, expect } from 'vitest';
+import { createBrowser, ROUTES } from './browser';
+import React from 'react';
 
-describe('Browser', () => {
-  describe('createBrowser', () => {
-    it('creates browser with empty routes', () => {
-      const browser = createBrowser({
-        routes: []
-      });
+describe('Page.render() with reconciler integration', () => {
+  it('should render React component to markdown using reconciler', () => {
+    const TestComponent = () => {
+      return React.createElement('div', {}, [
+        React.createElement('h1', {}, 'Test Title'),
+        React.createElement('p', {}, 'Test content')
+      ]);
+    };
 
-      expect(browser).toBeDefined();
-      expect(browser.open).toBeInstanceOf(Function);
-    });
-
-    it('creates browser with route configuration', () => {
-      const routes = [
-        {
-          path: '/home',
-          component: () => null
-        },
-        {
-          path: '/about',
-          component: () => null
-        }
-      ];
-
-      const browser = createBrowser({ routes });
-
-      expect(browser).toBeDefined();
-      expect(browser.open).toBeInstanceOf(Function);
-    });
-
-    it('creates browser with nested route configuration', () => {
-      const routes = [
-        {
-          path: '/users/:id',
-          component: () => null
-        },
-        {
-          path: '/posts/:postId/comments/:commentId',
-          component: () => null
-        }
-      ];
-
-      const browser = createBrowser({ routes });
-
-      expect(browser).toBeDefined();
-    });
-
-    it('throws error when routes is not an array', () => {
-      expect(() => {
-        createBrowser({ routes: null as any });
-      }).toThrow();
-    });
-  });
-
-  describe('browser.open', () => {
-    let browser: Browser;
-
-    beforeEach(() => {
-      browser = createBrowser({
-        routes: [
-          {
-            path: '/home',
-            component: () => null
-          },
-          {
-            path: '/users/:id',
-            component: () => null
-          }
+    const browser = createBrowser([
+      {
+        provide: ROUTES,
+        useValue: [
+          { path: '/test', component: TestComponent, params: {} }
         ]
-      });
+      }
+    ]);
+
+    const page = browser.open('prompt:///test');
+    const result = page.render();
+
+    expect(result.prompt).toContain('# Test Title');
+    expect(result.prompt).toContain('Test content');
+    expect(result.prompt).not.toBe('[object Object]');
+  });
+
+  it('should extract tools from React component', () => {
+    const TestComponent = () => {
+      return React.createElement('div', {}, [
+        React.createElement('button', { 'data-action': 'submit' }, 'Submit'),
+        React.createElement('input', { name: 'email', placeholder: 'Email' }, [])
+      ]);
+    };
+
+    const browser = createBrowser([
+      {
+        provide: ROUTES,
+        useValue: [
+          { path: '/form', component: TestComponent, params: {} }
+        ]
+      }
+    ]);
+
+    const page = browser.open('prompt:///form');
+    const result = page.render();
+
+    expect(result.tools).toHaveLength(2);
+    expect(result.tools[0]).toMatchObject({
+      name: 'submit',
+      type: 'button',
+      label: 'Submit'
     });
-
-    it('returns Page instance for valid URL', () => {
-      const page = browser.open('prompt://app/home');
-
-      expect(page).toBeDefined();
-      expect(page.render).toBeInstanceOf(Function);
-      expect(page.execute).toBeInstanceOf(Function);
-      expect(page.executes).toBeInstanceOf(Function);
-      expect(page.subscribe).toBeInstanceOf(Function);
-    });
-
-    it('returns Page instance for URL with params', () => {
-      const page = browser.open('prompt://app/users/123');
-
-      expect(page).toBeDefined();
-      expect(page.url).toBeDefined();
-    });
-
-    it('throws error for invalid URL format', () => {
-      expect(() => {
-        browser.open('not-a-valid-url');
-      }).toThrow('Invalid URL format');
-    });
-
-    it('throws error for unknown route', () => {
-      expect(() => {
-        browser.open('prompt://app/unknown-route');
-      }).toThrow('Route not found');
-    });
-
-    it('throws error for empty URL', () => {
-      expect(() => {
-        browser.open('');
-      }).toThrow();
-    });
-
-    it('handles URL with query parameters', () => {
-      const page = browser.open('prompt://app/home?foo=bar&baz=qux');
-
-      expect(page).toBeDefined();
-      expect(page.url.searchParams.get('foo')).toBe('bar');
-      expect(page.url.searchParams.get('baz')).toBe('qux');
-    });
-
-    it('handles URL with hash fragment', () => {
-      const page = browser.open('prompt://app/home#section');
-
-      expect(page).toBeDefined();
-      expect(page.url.hash).toBe('#section');
+    expect(result.tools[1]).toMatchObject({
+      name: 'email',
+      type: 'input',
+      placeholder: 'Email'
     });
   });
 
-  describe('browser context', () => {
-    it('passes context to opened pages', () => {
-      const browser = createBrowser({
-        routes: [{ path: '/home', component: () => null }],
-        context: {
-          cookies: { sessionId: 'abc123' },
-          localStorage: { theme: 'dark' }
-        }
-      });
+  it('should handle nested React components', () => {
+    const TestComponent = () => {
+      return React.createElement('div', {}, [
+        React.createElement('ul', {}, [
+          React.createElement('li', {}, 'Item 1'),
+          React.createElement('li', {}, 'Item 2')
+        ])
+      ]);
+    };
 
-      const page = browser.open('prompt://app/home');
+    const browser = createBrowser([
+      {
+        provide: ROUTES,
+        useValue: [
+          { path: '/list', component: TestComponent, params: {} }
+        ]
+      }
+    ]);
 
-      expect(page).toBeDefined();
-    });
+    const page = browser.open('prompt:///list');
+    const result = page.render();
 
-    it('allows updating browser context', () => {
-      const browser = createBrowser({
-        routes: [{ path: '/home', component: () => null }]
-      });
-
-      browser.setContext({
-        cookies: { token: 'xyz789' }
-      });
-
-      const page = browser.open('prompt://app/home');
-
-      expect(page).toBeDefined();
-    });
+    expect(result.prompt).toContain('- Item 1');
+    expect(result.prompt).toContain('- Item 2');
   });
 });
-
-// Type definitions for tests
-interface Page {
-  render(ctx?: RenderContext): RenderResult;
-  execute(toolName: string, params?: any): Promise<any>;
-  executes(calls: ToolCall[]): Promise<any[]>;
-  subscribe(callback: (url: PromptURL) => void): () => void;
-  url: PromptURL;
-}
-
-interface RenderContext {
-  [key: string]: any;
-}
-
-interface RenderResult {
-  prompt: string;
-  tools: Tool[];
-}

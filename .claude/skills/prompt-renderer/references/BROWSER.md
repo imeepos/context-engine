@@ -1,66 +1,96 @@
-# Browser & Page Usage
+# Browser & Page API Reference
 
 ## Overview
 
-The browser and page system provides application-level management for prompt-based interfaces with routing, rendering, and tool execution.
+The Browser and Page system provides a prompt-based application framework with routing, React component rendering, and tool execution. It uses dependency injection (@sker/core) for configuration and integrates with the reconciler system to convert React components to markdown.
+
+## Core Concepts
+
+### Data Flow
+
+```
+React Component → React Element → VNode → Markdown
+                                        ↓
+                                      Tools
+```
+
+The rendering pipeline:
+1. React components are instantiated with props
+2. React elements are converted to VNodes using the reconciler
+3. VNodes are rendered to markdown using `renderToMarkdown()`
+4. Tools are extracted from VNodes using `extractTools()`
+
+### Type Definitions
+
+```typescript
+interface Route<T = any> {
+  path: string;
+  component: React.FunctionComponent<T & { injector: Injector }>;
+  params: T;
+}
+
+interface RouteMatch {
+  route: Route;
+  params: Record<string, string>;
+}
+
+interface RenderResult {
+  prompt: string;
+  tools: Tool[];
+}
+
+interface Tool {
+  name: string;
+  description?: string;
+  parameters?: any;
+}
+```
 
 ## Creating a Browser
 
 ### Basic Setup
 
 ```typescript
-import { createBrowser } from '@sker/prompt-renderer';
+import { createBrowser, ROUTES } from '@sker/prompt-renderer';
 
-const browser = createBrowser({
-  routes: [
-    {
-      path: '/dashboard',
-      component: DashboardComponent
-    }
-  ]
-});
-```
-
-### With Tools
-
-```typescript
-const browser = createBrowser({
-  routes: [
-    {
-      path: '/users/:id',
-      component: UserProfile,
-      tools: [
-        {
-          name: 'updateUser',
-          handler: async (params) => {
-            // Update user logic
-            return { success: true };
-          },
-          description: 'Update user information',
-          parameters: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-              email: { type: 'string' }
-            }
-          }
-        }
-      ]
-    }
-  ]
-});
-```
-
-### With Context
-
-```typescript
-const browser = createBrowser({
-  routes: [...],
-  context: {
-    cookies: { sessionId: 'abc123' },
-    localStorage: { theme: 'dark' }
+const browser = createBrowser([
+  {
+    provide: ROUTES,
+    useValue: [
+      { path: '/dashboard', component: DashboardComponent, params: {} }
+    ]
   }
-});
+]);
+```
+
+### With Multiple Routes
+
+```typescript
+const browser = createBrowser([
+  {
+    provide: ROUTES,
+    useValue: [
+      { path: '/dashboard', component: DashboardComponent, params: {} },
+      { path: '/users/:id', component: UserProfileComponent, params: {} },
+      { path: '/settings', component: SettingsComponent, params: {} }
+    ]
+  }
+]);
+```
+
+### With Parent Injector
+
+```typescript
+import { createInjector } from '@sker/core';
+
+const parentInjector = createInjector([
+  { provide: 'API_KEY', useValue: 'abc123' },
+  { provide: 'BASE_URL', useValue: 'https://api.example.com' }
+]);
+
+const browser = createBrowser([
+  { provide: ROUTES, useValue: [...] }
+], parentInjector);
 ```
 
 ## Opening Pages
@@ -68,29 +98,50 @@ const browser = createBrowser({
 ### Basic Navigation
 
 ```typescript
-const page = browser.open('prompt://app/dashboard');
+const page = browser.open('prompt:///dashboard');
 ```
 
-### With Parameters
+**Important**: URLs must use the `prompt://` protocol with three slashes for absolute paths:
+- `prompt:///dashboard` → pathname: `/dashboard`
+- `prompt:///users/123` → pathname: `/users/123`
+
+### With Route Parameters
 
 ```typescript
-const page = browser.open('prompt://app/users/123');
 // Route: /users/:id
-// Params: { id: '123' }
+const page = browser.open('prompt:///users/123');
+
+// In component:
+function UserProfileComponent({ injector }) {
+  const currentRoute = injector.get(CURRENT_ROUTE);
+  const userId = currentRoute.params.id; // "123"
+
+  return <div>User ID: {userId}</div>;
+}
 ```
 
 ### With Query Parameters
 
 ```typescript
-const page = browser.open('prompt://app/search?q=test&sort=date');
-// Query: { q: 'test', sort: 'date' }
+const page = browser.open('prompt:///search?q=test&sort=date');
+
+// In component:
+function SearchComponent({ injector }) {
+  const currentUrl = injector.get(CURRENT_URL);
+  const query = currentUrl.searchParams.get('q'); // "test"
+  const sort = currentUrl.searchParams.get('sort'); // "date"
+
+  return <div>Search: {query}</div>;
+}
 ```
 
-### With Hash
+### With Additional Providers
 
 ```typescript
-const page = browser.open('prompt://app/docs#section-2');
-// Hash: 'section-2'
+const page = browser.open('prompt:///dashboard', [
+  { provide: 'USER_ID', useValue: '123' },
+  { provide: 'SESSION', useValue: { token: 'xyz' } }
+]);
 ```
 
 ## Page Rendering
@@ -98,38 +149,109 @@ const page = browser.open('prompt://app/docs#section-2');
 ### Basic Rendering
 
 ```typescript
-const page = browser.open('prompt://app/dashboard');
+const page = browser.open('prompt:///dashboard');
 const result = page.render();
 
-console.log(result);
-// {
-//   prompt: "# Dashboard\n\nWelcome to your dashboard",
-//   tools: [
-//     { name: 'refresh', description: 'Refresh data', parameters: {...} }
-//   ]
-// }
+console.log(result.prompt);
+// # Dashboard
+// Welcome to your dashboard
+
+console.log(result.tools);
+// [{ name: 'refresh', type: 'button', label: 'Refresh' }]
 ```
 
-### Rendering with Context
+### How Rendering Works
 
+The `Page.render()` method:
+
+1. Gets the current route match from the injector
+2. Creates a React element from the route component
+3. Converts the React element to VNode using `renderReactToVNode()`
+4. Renders VNode to markdown using `renderToMarkdown()`
+5. Extracts tools from VNode using `extractTools()`
+
+**Implementation** (browser.ts:133-147):
 ```typescript
-const result = page.render({
-  user: { name: 'John', role: 'admin' },
-  timestamp: Date.now()
-});
+render(providers: Provider[] = []): RenderResult {
+  const currentRoute = this.parent.get(CURRENT_ROUTE);
+  const component = currentRoute.route.component;
+  const injector = createInjector([...], this.parent);
+
+  const element = React.createElement(component, { injector });
+  const vnode = this.renderReactToVNode(element);
+  const prompt = renderToMarkdown(vnode);
+  const tools = extractTools(vnode);
+
+  return { prompt, tools };
+}
 ```
 
-Component receives context in props:
+### Rendering with Additional Providers
 
 ```typescript
-function DashboardComponent({ params, searchParams, user, timestamp }) {
+const result = page.render([
+  { provide: 'USER', useValue: { name: 'Alice', role: 'admin' } },
+  { provide: 'TIMESTAMP', useValue: Date.now() }
+]);
+```
+
+Component receives injector in props:
+
+```typescript
+function DashboardComponent({ injector }) {
+  const user = injector.get('USER');
+  const timestamp = injector.get('TIMESTAMP');
+
   return (
     <div>
       <h1>Dashboard</h1>
       <p>Welcome, {user.name}</p>
+      <p>Last updated: {new Date(timestamp).toLocaleString()}</p>
     </div>
   );
 }
+```
+
+## Tool Extraction
+
+Tools are automatically extracted from React components based on element attributes.
+
+### Button Tools
+
+```typescript
+function MyComponent({ injector }) {
+  return (
+    <div>
+      <button data-action="submit">Submit Form</button>
+      <button data-action="cancel" data-params={{ reason: 'user' }}>Cancel</button>
+    </div>
+  );
+}
+
+// Extracted tools:
+// [
+//   { name: 'submit', type: 'button', label: 'Submit Form' },
+//   { name: 'cancel', type: 'button', label: 'Cancel', params: { reason: 'user' } }
+// ]
+```
+
+### Input Tools
+
+```typescript
+function MyComponent({ injector }) {
+  return (
+    <div>
+      <input name="username" placeholder="Enter username" />
+      <input name="email" type="email" placeholder="Email address" />
+    </div>
+  );
+}
+
+// Extracted tools:
+// [
+//   { name: 'username', type: 'input', inputType: 'text', placeholder: 'Enter username' },
+//   { name: 'email', type: 'input', inputType: 'email', placeholder: 'Email address' }
+// ]
 ```
 
 ## Tool Execution
@@ -137,14 +259,22 @@ function DashboardComponent({ params, searchParams, user, timestamp }) {
 ### Single Tool Execution
 
 ```typescript
-const page = browser.open('prompt://app/users/123');
+const page = browser.open('prompt:///form', [
+  {
+    provide: TOOLS,
+    useValue: [
+      {
+        name: 'submit',
+        handler: async (params) => {
+          console.log('Form submitted:', params);
+          return { success: true };
+        }
+      }
+    ]
+  }
+]);
 
-// Execute a tool
-const result = await page.execute('updateUser', {
-  name: 'John Doe',
-  email: 'john@example.com'
-});
-
+const result = await page.execute('submit', { name: 'John', email: 'john@example.com' });
 console.log(result);
 // { success: true }
 ```
@@ -153,27 +283,27 @@ console.log(result);
 
 ```typescript
 const results = await page.executes([
-  { name: 'updateUser', params: { name: 'John' } },
-  { name: 'refreshData', params: {} },
-  { name: 'sendNotification', params: { message: 'Updated' } }
+  { name: 'validate', params: { field: 'email' } },
+  { name: 'submit', params: { name: 'John' } },
+  { name: 'notify', params: { message: 'Submitted' } }
 ]);
 
 console.log(results);
-// [{ success: true }, { data: [...] }, { sent: true }]
+// [{ valid: true }, { success: true }, { sent: true }]
 ```
 
 ### Error Handling
 
 ```typescript
 try {
-  await page.execute('nonexistentTool');
+  await page.execute('nonexistent');
 } catch (error) {
   console.error(error.message);
-  // "Tool not found: nonexistentTool"
+  // "Tool not found: nonexistent"
 }
 
 try {
-  await page.execute(''); // Empty tool name
+  await page.execute('');
 } catch (error) {
   console.error(error.message);
   // "Tool name is required"
@@ -182,102 +312,81 @@ try {
 
 ## Page Navigation
 
-### Navigating Within Page
+### Navigating to New URL
 
 ```typescript
-const page = browser.open('prompt://app/users/123');
+const page = browser.open('prompt:///users/123');
 
-// Navigate to different URL
-page.navigate('prompt://app/users/456');
+// Navigate to different URL (returns new Page instance)
+const newPage = page.navigate('prompt:///users/456');
 
-console.log(page.url.pathname);
+console.log(newPage.url.pathname);
 // "/users/456"
 ```
 
-### Subscribing to Navigation
+### Accessing Current URL
 
 ```typescript
-const unsubscribe = page.subscribe((url) => {
-  console.log('Navigated to:', url.pathname);
-  console.log('Query params:', url.searchParams);
-  console.log('Hash:', url.hash);
-});
+const page = browser.open('prompt:///search?q=test#results');
 
-page.navigate('prompt://app/dashboard');
-// Navigated to: /dashboard
-
-// Later: unsubscribe
-unsubscribe();
+console.log(page.url.href);       // "prompt:///search?q=test#results"
+console.log(page.url.pathname);   // "/search"
+console.log(page.url.searchParams.get('q')); // "test"
+console.log(page.url.hash);       // "#results"
 ```
 
-## Context Management
+## Component Patterns
 
-### Browser-Level Context
-
-```typescript
-// Set context for all pages
-browser.setContext({
-  cookies: { sessionId: 'xyz789' },
-  localStorage: { theme: 'light' }
-});
-
-const page = browser.open('prompt://app/dashboard');
-console.log(page.context);
-// { cookies: { sessionId: 'xyz789' }, localStorage: { theme: 'light' } }
-```
-
-### Page-Level Context
+### Accessing Route Parameters
 
 ```typescript
-const page = browser.open('prompt://app/dashboard');
+import { CURRENT_ROUTE } from '@sker/prompt-renderer';
 
-// Update context for this page only
-page.setContext({
-  cookies: { userId: '123' }
-});
-
-console.log(page.context);
-// {
-//   cookies: { sessionId: 'xyz789', userId: '123' },
-//   localStorage: { theme: 'light' }
-// }
-```
-
-## Route Components
-
-### Component Structure
-
-```typescript
-interface ComponentProps {
-  params: Record<string, string>;      // Route parameters
-  searchParams: URLSearchParams;       // Query parameters
-  [key: string]: any;                  // Custom context from render()
-}
-
-function MyComponent(props: ComponentProps) {
-  const { params, searchParams } = props;
+function UserProfileComponent({ injector }) {
+  const currentRoute = injector.get(CURRENT_ROUTE);
+  const userId = currentRoute.params.id;
 
   return (
     <div>
-      <h1>User {params.id}</h1>
-      <p>Sort: {searchParams.get('sort')}</p>
+      <h1>User Profile</h1>
+      <p>User ID: {userId}</p>
     </div>
   );
 }
 ```
 
-### Accessing Context
+### Accessing URL Information
 
 ```typescript
-function DashboardComponent({ params, searchParams, ...context }) {
-  // Access browser context
-  const { cookies, localStorage } = context;
+import { CURRENT_URL } from '@sker/prompt-renderer';
+
+function SearchComponent({ injector }) {
+  const currentUrl = injector.get(CURRENT_URL);
+  const query = currentUrl.searchParams.get('q');
+  const page = currentUrl.searchParams.get('page') || '1';
+
+  return (
+    <div>
+      <h1>Search Results</h1>
+      <p>Query: {query}</p>
+      <p>Page: {page}</p>
+    </div>
+  );
+}
+```
+
+### Using Custom Providers
+
+```typescript
+function DashboardComponent({ injector }) {
+  const apiKey = injector.get('API_KEY');
+  const user = injector.get('USER');
 
   return (
     <div>
       <h1>Dashboard</h1>
-      <p>Session: {cookies?.sessionId}</p>
-      <p>Theme: {localStorage?.theme}</p>
+      <p>Welcome, {user.name}</p>
+      <p>API Key: {apiKey.substring(0, 8)}...</p>
     </div>
   );
 }
@@ -286,91 +395,105 @@ function DashboardComponent({ params, searchParams, ...context }) {
 ## Complete Example
 
 ```typescript
-import { createBrowser } from '@sker/prompt-renderer';
+import { createBrowser, ROUTES, TOOLS } from '@sker/prompt-renderer';
+import React from 'react';
 
 // Define components
-function DashboardComponent({ params, user }) {
+function DashboardComponent({ injector }) {
+  const user = injector.get('USER');
+
   return (
     <div>
       <h1>Dashboard</h1>
       <p>Welcome, {user.name}</p>
-      <button data-action="refresh">Refresh</button>
+      <button data-action="refresh">Refresh Data</button>
     </div>
   );
 }
 
-function UserProfile({ params }) {
+function UserProfileComponent({ injector }) {
+  const currentRoute = injector.get(CURRENT_ROUTE);
+  const userId = currentRoute.params.id;
+
   return (
     <div>
       <h1>User Profile</h1>
-      <p>User ID: {params.id}</p>
+      <p>User ID: {userId}</p>
       <input name="username" placeholder="Enter username" />
+      <button data-action="save">Save Changes</button>
     </div>
   );
 }
 
-// Create browser
-const browser = createBrowser({
-  routes: [
-    {
-      path: '/dashboard',
-      component: DashboardComponent,
-      tools: [
-        {
-          name: 'refresh',
-          handler: async () => {
-            console.log('Refreshing data...');
-            return { timestamp: Date.now() };
-          },
-          description: 'Refresh dashboard data'
-        }
-      ]
-    },
-    {
-      path: '/users/:id',
-      component: UserProfile,
-      tools: [
-        {
-          name: 'username',
-          handler: async (params) => {
-            console.log('Username submitted:', params);
-            return { saved: true };
-          },
-          description: 'Submit username'
-        }
-      ]
-    }
-  ],
-  context: {
-    cookies: { sessionId: 'abc123' }
+// Create browser with routes
+const browser = createBrowser([
+  {
+    provide: ROUTES,
+    useValue: [
+      { path: '/dashboard', component: DashboardComponent, params: {} },
+      { path: '/users/:id', component: UserProfileComponent, params: {} }
+    ]
   }
-});
+]);
 
 // Open dashboard page
-const dashboardPage = browser.open('prompt://app/dashboard');
+const dashboardPage = browser.open('prompt:///dashboard', [
+  { provide: 'USER', useValue: { name: 'Alice', role: 'admin' } },
+  {
+    provide: TOOLS,
+    useValue: [
+      {
+        name: 'refresh',
+        handler: async () => {
+          console.log('Refreshing data...');
+          return { timestamp: Date.now() };
+        }
+      }
+    ]
+  }
+]);
 
-// Render with user context
-const result = dashboardPage.render({
-  user: { name: 'Alice', role: 'admin' }
-});
+// Render page
+const dashboardResult = dashboardPage.render();
 
-console.log(result.prompt);
+console.log(dashboardResult.prompt);
 // # Dashboard
 //
 // Welcome, Alice
 //
-// [Refresh]
+// [Refresh Data]
 
-console.log(result.tools);
-// [{ name: 'refresh', description: 'Refresh dashboard data' }]
+console.log(dashboardResult.tools);
+// [{ name: 'refresh', type: 'button', label: 'Refresh Data' }]
 
 // Execute tool
 const refreshResult = await dashboardPage.execute('refresh');
 console.log(refreshResult);
-// { timestamp: 1234567890 }
+// { timestamp: 1706659200000 }
 
 // Navigate to user profile
-const userPage = browser.open('prompt://app/users/123');
+const userPage = browser.open('prompt:///users/123', [
+  {
+    provide: TOOLS,
+    useValue: [
+      {
+        name: 'username',
+        handler: async (params) => {
+          console.log('Username input:', params);
+          return { saved: true };
+        }
+      },
+      {
+        name: 'save',
+        handler: async () => {
+          console.log('Saving changes...');
+          return { success: true };
+        }
+      }
+    ]
+  }
+]);
+
 const userResult = userPage.render();
 
 console.log(userResult.prompt);
@@ -379,25 +502,38 @@ console.log(userResult.prompt);
 // User ID: 123
 //
 // [Input: Enter username]
+//
+// [Save Changes]
 
-// Subscribe to navigation
-const unsubscribe = userPage.subscribe((url) => {
-  console.log('URL changed:', url.pathname);
-});
+console.log(userResult.tools);
+// [
+//   { name: 'username', type: 'input', placeholder: 'Enter username' },
+//   { name: 'save', type: 'button', label: 'Save Changes' }
+// ]
 
-userPage.navigate('prompt://app/users/456');
-// URL changed: /users/456
+// Execute input tool
+await userPage.execute('username', 'john_doe');
+// Username input: john_doe
 
-unsubscribe();
+// Execute button tool
+await userPage.execute('save');
+// Saving changes...
 ```
 
 ## Error Handling
 
-### Invalid URLs
+### Invalid URL Format
 
 ```typescript
 try {
   browser.open('http://example.com'); // Wrong protocol
+} catch (error) {
+  console.error(error.message);
+  // "Invalid URL format"
+}
+
+try {
+  browser.open(''); // Empty URL
 } catch (error) {
   console.error(error.message);
   // "Invalid URL format"
@@ -407,27 +543,80 @@ try {
 ### Route Not Found
 
 ```typescript
-try {
-  browser.open('prompt://app/nonexistent');
-} catch (error) {
-  console.error(error.message);
-  // "Route not found"
-}
+const page = browser.open('prompt:///nonexistent');
+const result = page.render();
+
+// currentRoute will be null if no route matches
+// Handle this in your component or check before rendering
 ```
 
-### Missing Component
+### Tool Not Found
 
 ```typescript
-const browser = createBrowser({
-  routes: [
-    { path: '/broken', component: null } // Invalid
-  ]
-});
-
 try {
-  browser.open('prompt://app/broken');
+  await page.execute('nonexistent');
 } catch (error) {
   console.error(error.message);
-  // "Route component is required"
+  // "Tool not found: nonexistent"
 }
 ```
+
+### Missing Tool Name
+
+```typescript
+try {
+  await page.execute('');
+} catch (error) {
+  console.error(error.message);
+  // "Tool name is required"
+}
+```
+
+## Injection Tokens
+
+Available injection tokens:
+
+```typescript
+import {
+  ROUTES,           // InjectionToken<Route[]>
+  CURRENT_URL,      // InjectionToken<PromptURL>
+  CURRENT_ROUTE,    // InjectionToken<RouteMatch>
+  CURRENT_PAGE,     // InjectionToken<Page>
+  COMPONENT,        // InjectionToken<React.FunctionComponent>
+  TOOLS             // InjectionToken<RouteTool[]>
+} from '@sker/prompt-renderer';
+```
+
+## Key Implementation Details
+
+### Route Matching (browser.ts:70-79)
+
+Routes are matched using path patterns with parameter extraction:
+- `/users/:id` matches `/users/123` with `params: { id: '123' }`
+- Patterns are split by `/` and compared part by part
+- Parts starting with `:` are treated as parameters
+
+### React to VNode Conversion (browser.ts:149-172)
+
+The `renderReactToVNode()` method recursively converts React elements:
+1. Strings/numbers → TextNode
+2. String types (e.g., 'div') → ElementNode with children
+3. Function types → Call function and recurse on result
+4. Uses `React.Children.toArray()` to handle children
+
+### Tool Extraction
+
+Tools are extracted from VNodes based on:
+- `<button data-action="name">` → Button tool
+- `<input name="name">` → Input tool
+- Recursively searches through all children
+
+## Best Practices
+
+1. **Always provide injector to components**: Components receive `{ injector }` as props
+2. **Use injection tokens for configuration**: Define tokens for routes, tools, and custom data
+3. **Handle null routes**: Check if `CURRENT_ROUTE` is null when route doesn't match
+4. **Use proper URL format**: Always use `prompt:///path` with three slashes
+5. **Extract tools automatically**: Use `data-action` and `name` attributes for tool extraction
+6. **Provide tools via DI**: Use `TOOLS` injection token to register tool handlers
+7. **Keep components pure**: Components should only render based on injected dependencies
