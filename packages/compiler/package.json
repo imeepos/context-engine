@@ -1,0 +1,53 @@
+{
+  "name": "@sker/compiler",
+  "version": "1.0.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "http://43.240.223.138:4873"
+  },
+  "description": "Compiler and AST utilities for Sker applications.",
+  "keywords": [
+    "compiler",
+    "ast",
+    "sker"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "openai": "pnpx tsx scripts/openai.ts",
+    "anthropic": "pnpx tsx scripts/anthropic.ts",
+    "fetch": "pnpx tsx scripts/fetch.ts"
+  },
+  "devDependencies": {
+    "@sker/eslint-config": "workspace:*",
+    "@sker/typescript-config": "workspace:*",
+    "@types/node": "^25.0.9",
+    "eslint": "^9.39.2",
+    "tsup": "^8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "^4.0.17"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@sker/core": "workspace:*",
+    "openai": "^6.16.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "zod": "^4.2.1"
+  }
+}
