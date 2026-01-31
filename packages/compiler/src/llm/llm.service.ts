@@ -15,7 +15,7 @@ export class LLMService {
 
   constructor(
     @Inject(LLM_PROVIDER_ADAPTER) private adapters: LLMProviderAdapter[] = [],
-    private toolLoop: ToolCallLoop
+    @Inject(ToolCallLoop) private toolLoop: ToolCallLoop
   ) {
     this.adapterMap = new Map(adapters.map(a => [a.provider, a]));
   }

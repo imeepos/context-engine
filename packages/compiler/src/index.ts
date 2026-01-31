@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 export * from './ast'
 export * from './parser'
 export * from './tool-builder'

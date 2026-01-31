@@ -75,12 +75,23 @@ export class MessageBrokerService {
     const currentAgent = this.agentRegistry.getCurrentAgent()
     if (!currentAgent) return []
 
-    const queueKey = `messages/${currentAgent.id}`
-    const queue = await this.storage.read<MessageQueue>(queueKey)
-    if (!queue) return []
+    // Get messages from current agent's queue
+    const currentQueueKey = `messages/${currentAgent.id}`
+    const currentQueue = await this.storage.read<MessageQueue>(currentQueueKey)
+    const currentMessages = currentQueue?.messages || []
 
-    return queue.messages.filter(m =>
-      m.from === withAgent || m.to === withAgent
-    )
+    // Get messages from the other agent's queue
+    const otherQueueKey = `messages/${withAgent}`
+    const otherQueue = await this.storage.read<MessageQueue>(otherQueueKey)
+    const otherMessages = otherQueue?.messages || []
+
+    // Combine and filter messages between the two agents
+    const allMessages = [...currentMessages, ...otherMessages]
+    return allMessages
+      .filter(m =>
+        (m.from === currentAgent.id && m.to === withAgent) ||
+        (m.from === withAgent && m.to === currentAgent.id)
+      )
+      .sort((a, b) => a.timestamp - b.timestamp)
   }
 }

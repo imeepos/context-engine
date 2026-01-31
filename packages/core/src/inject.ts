@@ -111,12 +111,19 @@ export function getInjectMetadata(target: any): any[] | undefined {
   }
 
   // 确定结果数组的长度
-  const maxLength = Math.max(
-    unifiedMetadata?.length || 0,
-    legacyTokens?.length || 0,
-    paramTypes?.length || 0,
-  );
+  // 优先使用 paramTypes 的长度（反映实际构造函数参数个数）
+  // 因为 TypeScript 的 emitDecoratorMetadata 会为所有参数发射类型信息
+  let maxLength = paramTypes?.length || 0;
 
+  // 如果 paramTypes 不可用，回退到其他来源
+  if (maxLength === 0) {
+    maxLength = Math.max(
+      unifiedMetadata?.length || 0,
+      legacyTokens?.length || 0,
+    );
+  }
+
+  // 如果还是没有长度信息，返回 undefined
   if (maxLength === 0) {
     return undefined;
   }

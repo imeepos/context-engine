@@ -1,4 +1,4 @@
-import { Injectable, Injector, ToolMetadataKey, ToolArgMetadataKey, ToolMetadata, ToolArgMetadata, root } from '@sker/core';
+import { Injectable, Injector, ToolMetadataKey, ToolArgMetadataKey, ToolMetadata, ToolArgMetadata, root, Inject } from '@sker/core';
 import { UnifiedToolUseContent } from '../ast';
 import { buildToolArgsMap } from '../utils/tool-args-map';
 
@@ -11,7 +11,7 @@ export interface UnifiedToolResult {
 
 @Injectable()
 export class UnifiedToolExecutor {
-  constructor(private injector: Injector) {}
+  constructor(@Inject(Injector) private injector: Injector) {}
 
   async execute(toolUse: UnifiedToolUseContent): Promise<UnifiedToolResult> {
     try {

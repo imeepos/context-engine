@@ -9,13 +9,14 @@ import { Command } from 'commander'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.join(__dirname, '..', '.env') })
-import { root, createInjector } from '@sker/core'
+import { root, createInjector, ToolMetadataKey } from '@sker/core'
 import {
   LLMService,
   LLM_ANTHROPIC_CONFIG,
   AnthropicAdapter,
   LLM_PROVIDER_ADAPTER,
-  ToolCallLoop
+  ToolCallLoop,
+  UnifiedToolExecutor
 } from '@sker/compiler'
 import { JsonFileStorage } from './storage/json-file-storage'
 import { AgentRegistryService } from './services/agent-registry.service'
@@ -24,6 +25,7 @@ import { SendMessageTool } from './tools/SendMessageTool'
 import { ListAgentsTool } from './tools/ListAgentsTool'
 import { GetMessageHistoryTool } from './tools/GetMessageHistoryTool'
 import { UnifiedRequestBuilder } from '@sker/compiler'
+import { createRouter } from './router'
 
 async function main() {
   const program = new Command()
@@ -68,29 +70,40 @@ async function main() {
       const llmInjector = createInjector([
         { provide: LLM_ANTHROPIC_CONFIG, useValue: { apiKey, baseUrl } },
         { provide: LLM_PROVIDER_ADAPTER, useClass: AnthropicAdapter, multi: true },
+        { provide: UnifiedToolExecutor, useClass: UnifiedToolExecutor },
         { provide: ToolCallLoop, useClass: ToolCallLoop },
         { provide: LLMService, useClass: LLMService },
         { provide: MessageBrokerService, useValue: messageBroker },
-        { provide: AgentRegistryService, useValue: agentRegistry }
+        { provide: AgentRegistryService, useValue: agentRegistry },
+        { provide: SendMessageTool, useClass: SendMessageTool },
+        { provide: ListAgentsTool, useClass: ListAgentsTool },
+        { provide: GetMessageHistoryTool, useClass: GetMessageHistoryTool }
       ])
 
       const llmService = llmInjector.get(LLMService)
 
-      console.log('多Agent通信系统 - 由 LLM 驱动')
-      console.log('=====================================')
-      console.log(`当前 Agent: ${agentRegistry.getCurrentAgent()?.id}`)
-      console.log('可用命令:')
-      console.log('  - 直接输入消息与 LLM 对话')
-      console.log('  - LLM 可以调用工具: send_message, list_agents, get_message_history')
-      console.log('  - 按 Ctrl+C 退出\n')
-
       const onlineAgents = await agentRegistry.getOnlineAgents()
-      console.log('在线 Agent 列表:')
-      onlineAgents.forEach(agent => {
-        const isCurrent = agent.id === agentRegistry.getCurrentAgent()?.id
-        console.log(`  - ${agent.id}${isCurrent ? ' (你)' : ''}`)
-      })
-      console.log()
+      const currentAgent = agentRegistry.getCurrentAgent()
+
+      // 状态管理：跟踪动态变化的数据
+      const state = {
+        agents: onlineAgents,
+        currentAgentId: currentAgent?.id || '',
+        messages: [] as any[]
+      }
+
+      // 辅助函数：获取当前状态的 providers
+      const getStateProviders = () => [
+        { provide: 'AGENTS', useValue: state.agents },
+        { provide: 'CURRENT_AGENT_ID', useValue: state.currentAgentId },
+        { provide: 'MESSAGES', useValue: state.messages }
+      ]
+
+      const browser = createRouter(llmInjector)
+      const page = browser.open('prompt:///')
+      const renderResult = page.render(getStateProviders())
+
+      console.log(renderResult.prompt)
 
       messageBroker.onMessageReceived((message) => {
         console.log(`\n[收到来自 ${message.from} 的消息]`)
@@ -117,15 +130,23 @@ async function main() {
         try {
           const request = new UnifiedRequestBuilder()
             .model('claude-sonnet-4-5-20250929')
+            .system(page.render(getStateProviders()).prompt)
             .user(trimmed)
             .build()
-
-          console.log('\n[LLM 正在思考...]\n')
 
           const response = await llmService.chatWithTools(
             request,
             [SendMessageTool, ListAgentsTool, GetMessageHistoryTool],
-            { maxIterations: 5 }
+            {
+              maxIterations: 5,
+              onAfterToolExecution: async () => {
+                // 更新状态
+                state.agents = await agentRegistry.getOnlineAgents()
+                // 重新渲染并返回新的系统提示词
+                const newRenderResult = page.render(getStateProviders())
+                return newRenderResult.prompt
+              }
+            }
           )
 
           if (response.content && response.content.length > 0) {
