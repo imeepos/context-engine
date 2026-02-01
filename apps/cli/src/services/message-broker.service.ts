@@ -33,10 +33,7 @@ export class MessageBrokerService {
 
       for (const message of unreadMessages) {
         this.messageReceivedCallbacks.forEach(callback => callback(message))
-        message.read = true
       }
-
-      await this.storage.write(queueKey, queue)
     })
   }
 
@@ -61,14 +58,27 @@ export class MessageBrokerService {
       read: false
     }
 
-    const queueKey = `messages/${to}`
-    const queue = await this.storage.read<MessageQueue>(queueKey) || { messages: [] }
-    queue.messages.push(message)
-    await this.storage.write(queueKey, queue)
+    // Write to recipient's queue
+    const recipientQueueKey = `messages/${to}`
+    const recipientQueue = await this.storage.read<MessageQueue>(recipientQueueKey) || { messages: [] }
+    recipientQueue.messages.push(message)
+    await this.storage.write(recipientQueueKey, recipientQueue)
+
+    // Write to sender's queue (so sender can see their own sent messages)
+    const senderQueueKey = `messages/${currentAgent.id}`
+    const senderQueue = await this.storage.read<MessageQueue>(senderQueueKey) || { messages: [] }
+    senderQueue.messages.push({ ...message, read: true }) // Mark as read for sender
+    await this.storage.write(senderQueueKey, senderQueue)
   }
 
-  onMessageReceived(callback: (message: InterAgentMessage) => void): void {
+  onMessageReceived(callback: (message: InterAgentMessage) => void): () => void {
     this.messageReceivedCallbacks.push(callback)
+    return () => {
+      const index = this.messageReceivedCallbacks.indexOf(callback)
+      if (index > -1) {
+        this.messageReceivedCallbacks.splice(index, 1)
+      }
+    }
   }
 
   async getMessageHistory(withAgent: string): Promise<InterAgentMessage[]> {

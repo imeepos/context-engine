@@ -1,4 +1,5 @@
 import { createInjector, Inject, Injectable, InjectionToken, Injector, Provider } from '@sker/core'
+import { UnifiedTool } from '@sker/compiler'
 import React from 'react';
 import { renderToMarkdown } from '../reconciler/renderer';
 import { extractTools } from '../reconciler/extractor';
@@ -120,13 +121,8 @@ export interface PromptURL {
 
 export interface RenderResult {
   prompt: string;
-  tools: Tool[];
-}
-
-export interface Tool {
-  name: string;
-  description?: string;
-  parameters?: any;
+  tools: UnifiedTool[];
+  executors: Map<string, () => void | Promise<void>>;
 }
 
 export interface ToolCall {
@@ -158,9 +154,9 @@ export class Page {
 
     const vnode = container.children[0] || container;
     const prompt = renderToMarkdown(vnode);
-    const tools = extractTools(vnode);
+    const { tools, executors } = extractTools(vnode);
 
-    return { prompt, tools };
+    return { prompt, tools, executors };
   }
   async execute(toolName: string, params?: any): Promise<any> {
     if (!toolName) {

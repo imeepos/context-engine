@@ -15,7 +15,12 @@ export interface Tool {
   name: string;
   type: 'button' | 'input';
   label?: string;
-  params?: any;
+  description?: string;
+  params?: {
+    properties?: Record<string, any>;
+    required?: string[];
+    bound?: Record<string, any>;
+  };
   inputType?: string;
   placeholder?: string;
 }

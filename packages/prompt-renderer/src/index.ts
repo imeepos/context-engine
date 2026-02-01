@@ -14,4 +14,8 @@ export type { NavigationHistory, NavigationAction as HistoryAction } from './rou
 export { createTextNode, createElement } from './reconciler/dom';
 export { renderToMarkdown } from './reconciler/renderer';
 export { extractTools } from './reconciler/extractor';
-export type { VNode, TextNode, ElementNode, Tool } from './reconciler/types';
+export type { VNode, TextNode, ElementNode, Tool as ToolDefinition } from './reconciler/types';
+
+// Components
+export { Tool } from './components/Tool';
+export type { ToolProps } from './components/Tool';

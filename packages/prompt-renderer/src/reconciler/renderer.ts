@@ -60,9 +60,10 @@ export function renderToMarkdown(node: VNode): string {
     return `[${label}]`;
   }
 
-  if (element.type === 'input') {
-    const placeholder = element.props.placeholder;
-    return placeholder ? `[Input: ${placeholder}]` : '[Input]';
+  if (element.type === 'tool') {
+    const label = getTextContent(element);
+    const toolName = element.props.name || 'unknown';
+    return `[@tool:${toolName} ${label}]`;
   }
 
   if (element.type === 'p') {
