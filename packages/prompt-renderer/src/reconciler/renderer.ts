@@ -57,13 +57,12 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'button') {
     const label = getTextContent(element);
-    return `[${label}]`;
+    return `[button:${label}]`;
   }
 
   if (element.type === 'tool') {
     const label = getTextContent(element);
-    const toolName = element.props.name || 'unknown';
-    return `[@tool:${toolName} ${label}]`;
+    return `[@tool:${label}]`;
   }
 
   if (element.type === 'p') {

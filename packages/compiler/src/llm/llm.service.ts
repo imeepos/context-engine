@@ -1,9 +1,8 @@
-import { Injectable, Inject, Optional, Type } from '@sker/core';
+import { Injectable, Inject } from '@sker/core';
 import { Observable } from 'rxjs';
 import { LLMProviderAdapter, LLM_PROVIDER_ADAPTER } from './adapter';
 import { ToolCallLoop, ToolLoopOptions } from './tool-loop';
 import { UnifiedRequestAst, UnifiedResponseAst, UnifiedStreamEventAst, UnifiedProvider, UnifiedTool } from '../ast';
-import { buildUnifiedTools } from '../unified/tool-builder';
 
 export interface ChatWithToolsOptions extends ToolLoopOptions {
   provider?: UnifiedProvider;

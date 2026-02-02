@@ -27,12 +27,7 @@ export class UnifiedToolExecutor {
         };
       }
 
-      let instance;
-      try {
-        instance = this.injector.get(toolMeta.target);
-      } catch {
-        instance = root.get(toolMeta.target);
-      }
+      const instance = this.injector.get(toolMeta.target);
 
       const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? [];
       const toolArgsMap = buildToolArgsMap(toolArgMetadatas);

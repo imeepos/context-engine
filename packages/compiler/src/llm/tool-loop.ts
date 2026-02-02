@@ -13,14 +13,14 @@ export interface ToolLoopOptions {
 
 @Injectable()
 export class ToolCallLoop {
-  constructor(@Inject(UnifiedToolExecutor) private toolExecutor: UnifiedToolExecutor) {}
+  constructor(@Inject(UnifiedToolExecutor) private toolExecutor: UnifiedToolExecutor) { }
 
   async execute(
     adapter: LLMProviderAdapter,
     request: UnifiedRequestAst,
     options: ToolLoopOptions = {}
   ): Promise<UnifiedResponseAst> {
-    const maxIterations = options.maxIterations ?? 10;
+    const maxIterations = options.maxIterations ?? 100;
     let currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), request);
     let iteration = 0;
 
