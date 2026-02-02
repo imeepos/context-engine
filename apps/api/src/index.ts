@@ -3,13 +3,13 @@ import { cors } from 'hono/cors';
 import { EnvironmentInjector } from '@sker/core';
 import { injectorMiddleware } from './middleware/injector';
 import { ToolExecutor } from './mcp/tool-executor';
-import { ResourceRenderer, MCP_RESOURCES } from './mcp/resource-renderer';
-import { SSEStream } from './sse/stream';
-import { PromptRendererService, PROMPT_ROUTES } from './services/prompt-renderer.service';
-import { HelloPrompt } from './www/hello.prompt';
-import { ApiDocsResource } from './www/docs.resource';
+import { ResourceRenderer } from './mcp/resource-renderer';
+import { PromptService } from './services/prompt.service';
+import { JsonRpcProcessor } from './mcp/json-rpc';
 
-// Import controllers to trigger decorators
+// Import services to trigger decorators
+import './www/prompts/hello.prompt';
+import './www/resources/docs.resource';
 import './controllers/mcp.controller';
 
 async function createApp() {
@@ -20,18 +20,8 @@ async function createApp() {
   await platformInjector.init();
   const appInjector = EnvironmentInjector.createApplicationInjector([
     { provide: ToolExecutor, useClass: ToolExecutor },
-    {
-      provide: MCP_RESOURCES, useValue: [
-        { uri: 'docs://api', name: 'API Documentation', description: 'MCP API usage documentation', component: ApiDocsResource }
-      ]
-    },
     { provide: ResourceRenderer, useClass: ResourceRenderer },
-    {
-      provide: PROMPT_ROUTES, useValue: [
-        { path: '/hello/:name', component: HelloPrompt, params: {} }
-      ]
-    },
-    { provide: PromptRendererService, useClass: PromptRendererService }
+    { provide: PromptService, useClass: PromptService }
   ]);
   await appInjector.init();
 
@@ -44,120 +34,86 @@ async function createApp() {
     return c.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // MCP endpoints
-  app.post('/mcp/initialize', (c) => {
-    return c.json({
+  // Unified JSON-RPC endpoint
+  app.post('/mcp', async (c) => {
+    const request = await c.req.json();
+    const injector = c.get('injector');
+    const processor = new JsonRpcProcessor();
+
+    // Register MCP methods
+    processor.register('initialize', async () => ({
       protocolVersion: '2024-11-05',
       capabilities: {
         tools: {},
-        resources: {}
+        resources: {},
+        prompts: {}
       },
       serverInfo: {
         name: 'sker-mcp-api',
         version: '1.0.0'
       }
+    }));
+
+    processor.register('tools/list', async () => {
+      const executor = injector.get(ToolExecutor);
+      return { tools: executor.listTools() };
     });
-  });
 
-  app.get('/mcp/tools/list', (c) => {
-    const injector = c.get('injector');
-    const executor = injector.get(ToolExecutor);
-    const tools = executor.listTools();
-
-    return c.json({ tools });
-  });
-
-  app.post('/mcp/tools/call', async (c) => {
-    const { name, arguments: args } = await c.req.json();
-    const injector = c.get('injector');
-    const executor = injector.get(ToolExecutor);
-
-    try {
+    processor.register('tools/call', async (params) => {
+      const { name, arguments: args } = params;
+      const executor = injector.get(ToolExecutor);
       const result = await executor.executeTool(name, args, injector);
-      return c.json(result);
-    } catch (error) {
-      return c.json({
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }, 500);
-    }
-  });
-
-  app.get('/mcp/resources/list', (c) => {
-    const injector = c.get('injector');
-    const renderer = injector.get(ResourceRenderer);
-    const resources = renderer.listResources();
-
-    return c.json({ resources });
-  });
-
-  app.post('/mcp/resources/read', async (c) => {
-    const { uri } = await c.req.json();
-    const injector = c.get('injector');
-    const renderer = injector.get(ResourceRenderer);
-
-    try {
-      const result = await renderer.readResource(uri);
-      return c.json(result);
-    } catch (error) {
-      return c.json({
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }, 404);
-    }
-  });
-
-  // Prompt rendering endpoint
-  app.get('/prompt/*', (c) => {
-    const path = c.req.path.replace('/prompt', '');
-    const injector = c.get('injector');
-    const renderer = injector.get(PromptRendererService);
-
-    try {
-      const markdown = renderer.render(path);
-      return c.text(markdown, 200, {
-        'Content-Type': 'text/markdown'
-      });
-    } catch (error) {
-      return c.json({
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }, 404);
-    }
-  });
-
-  // SSE endpoint for streaming tool execution
-  app.get('/mcp/tools/stream/:name', async (c) => {
-    const name = c.req.param('name');
-    const args = c.req.query();
-
-    const stream = new SSEStream();
-    const injector = c.get('injector');
-    const executor = injector.get(ToolExecutor);
-
-    // Execute tool and stream results
-    (async () => {
-      try {
-        stream.send('start', { tool: name });
-        const result = await executor.executeTool(name, args, injector);
-        stream.send('result', result);
-        stream.send('done', {});
-      } catch (error) {
-        stream.send('error', {
-          message: error instanceof Error ? error.message : 'Unknown error'
-        });
-      } finally {
-        stream.close();
-      }
-    })();
-
-    return c.body(stream.stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive'
-      }
+      return result;
     });
+
+    processor.register('resources/list', async () => {
+      const renderer = injector.get(ResourceRenderer);
+      return { resources: renderer.listResources() };
+    });
+
+    processor.register('resources/read', async (params) => {
+      const { uri } = params;
+      const renderer = injector.get(ResourceRenderer);
+      return await renderer.readResource(uri);
+    });
+
+    processor.register('prompts/list', async () => {
+      const promptService = injector.get(PromptService);
+      return { prompts: promptService.listPrompts() };
+    });
+
+    processor.register('prompts/get', async (params) => {
+      const { name, arguments: args } = params;
+      const promptService = injector.get(PromptService);
+      const messages = await promptService.getPrompt(name, args);
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: messages
+            }
+          }
+        ]
+      };
+    });
+
+    const response = await processor.process(request);
+    return c.json(response);
   });
 
   return app;
 }
 
-export default createApp();
+// Create app instance at module level
+let appInstance: Awaited<ReturnType<typeof createApp>> | null = null;
+
+export default {
+  async fetch(request: Request, env: any, ctx: any) {
+    if (!appInstance) {
+      appInstance = await createApp();
+    }
+    return appInstance.fetch(request, env, ctx);
+  }
+};

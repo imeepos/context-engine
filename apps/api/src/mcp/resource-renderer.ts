@@ -1,45 +1,61 @@
-import { Injectable, Inject, InjectionToken } from '@sker/core';
+import { Injectable, root, ResourceMetadataKey, ResourceMetadata } from '@sker/core';
 import { renderComponent } from '../utils/render-component';
 import React from 'react';
 
-export interface ResourceDefinition {
+export interface ResourceInfo {
   uri: string;
   name: string;
-  description: string;
-  component: () => React.ReactElement;
+  description?: string;
+  mimeType?: string;
 }
-
-export const MCP_RESOURCES = new InjectionToken<ResourceDefinition[]>('MCP_RESOURCES');
 
 @Injectable({ providedIn: 'root' })
 export class ResourceRenderer {
-  private resources = new Map<string, ResourceDefinition>();
+  private resources: ResourceMetadata[] = [];
 
-  constructor(@Inject(MCP_RESOURCES) resources: ResourceDefinition[]) {
-    resources.forEach(r => this.resources.set(r.uri, r));
+  constructor() {
+    // 从装饰器元数据读取所有注册的 Resources
+    try {
+      this.resources = root.get(ResourceMetadataKey) || [];
+    } catch (error) {
+      console.warn('Failed to load resource metadata:', error);
+      this.resources = [];
+    }
   }
 
-  listResources() {
-    return Array.from(this.resources.values()).map(r => ({
+  listResources(): ResourceInfo[] {
+    return this.resources.map(r => ({
       uri: r.uri,
       name: r.name,
       description: r.description,
-      mimeType: 'text/markdown'
+      mimeType: r.mimeType || 'text/markdown'
     }));
   }
 
   async readResource(uri: string) {
-    const resource = this.resources.get(uri);
-    if (!resource) {
+    const resourceMeta = this.resources.find(r => r.uri === uri);
+    if (!resourceMeta) {
       throw new Error(`Resource not found: ${uri}`);
     }
 
-    const markdown = renderComponent(resource.component);
+    // 从 root 注入器获取服务实例
+    const serviceInstance = root.get<any>(resourceMeta.target);
+
+    // 调用方法获取 React 组件
+    const method = serviceInstance[resourceMeta.propertyKey];
+    if (typeof method !== 'function') {
+      throw new Error(`Resource method not found: ${String(resourceMeta.propertyKey)}`);
+    }
+
+    const component = method.apply(serviceInstance, []);
+
+    // 渲染为 Markdown
+    const markdown = renderComponent(() => component);
 
     return {
       contents: [{
         uri,
-        mimeType: 'text/markdown',
+        mimeType: resourceMeta.mimeType || 'text/markdown',
         text: markdown
       }]
     };

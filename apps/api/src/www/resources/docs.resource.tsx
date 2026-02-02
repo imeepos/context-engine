@@ -1,6 +1,8 @@
 import React from 'react';
+import { Injectable } from '@sker/core';
+import { Resource } from '@sker/core';
 
-export function ApiDocsResource() {
+function ApiDocsComponent() {
   return (
     <div>
       <h1>MCP API Documentation</h1>
@@ -30,4 +32,17 @@ export function ApiDocsResource() {
       </div>
     </div>
   );
+}
+
+@Injectable({ providedIn: 'root' })
+export class ApiDocsResourceService {
+  @Resource({
+    uri: 'docs://api',
+    name: 'API Documentation',
+    description: 'MCP API usage documentation',
+    mimeType: 'text/markdown'
+  })
+  getApiDocs(): React.ReactElement {
+    return <ApiDocsComponent />;
+  }
 }
