@@ -1,3 +1,5 @@
+主要语言：中文
+
 # claude-templates
 
 Turborepo monorepo for Sker framework packages and applications.
@@ -333,3 +335,4 @@ pnpm claude
 - Dual ESM/CJS output via tsup for @sker/core
 - Vitest for testing with coverage support
 - Private registry at http://43.240.223.138:4873
+
