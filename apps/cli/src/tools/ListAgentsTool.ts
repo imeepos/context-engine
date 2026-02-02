@@ -1,8 +1,9 @@
-import { Tool } from '@sker/core'
+import { Tool, Inject, Injectable } from '@sker/core'
 import { AgentRegistryService } from '../services/agent-registry.service'
 
+@Injectable()
 export class ListAgentsTool {
-  constructor(private agentRegistry: AgentRegistryService) {}
+  constructor(@Inject(AgentRegistryService) private agentRegistry: AgentRegistryService) {}
 
   @Tool({
     name: 'list_agents',

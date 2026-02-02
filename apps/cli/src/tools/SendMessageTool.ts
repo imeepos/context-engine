@@ -1,9 +1,10 @@
-import { Tool, ToolArg } from '@sker/core'
+import { Tool, ToolArg, Inject, Injectable } from '@sker/core'
 import { MessageBrokerService } from '../services/message-broker.service'
 import { z } from 'zod'
 
+@Injectable()
 export class SendMessageTool {
-  constructor(private messageBroker: MessageBrokerService) {}
+  constructor(@Inject(MessageBrokerService) private messageBroker: MessageBrokerService) {}
 
   @Tool({
     name: 'send_message',

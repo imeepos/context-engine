@@ -1,12 +1,13 @@
-import { Tool, ToolArg } from '@sker/core'
+import { Tool, ToolArg, Inject, Injectable } from '@sker/core'
 import { MessageBrokerService } from '../services/message-broker.service'
 import { AgentRegistryService } from '../services/agent-registry.service'
 import { z } from 'zod'
 
+@Injectable()
 export class GetMessageHistoryTool {
   constructor(
-    private messageBroker: MessageBrokerService,
-    private agentRegistry: AgentRegistryService
+    @Inject(MessageBrokerService) private messageBroker: MessageBrokerService,
+    @Inject(AgentRegistryService) private agentRegistry: AgentRegistryService
   ) {}
 
   @Tool({

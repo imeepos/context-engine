@@ -51,13 +51,25 @@ describe('Page.render() with reconciler integration', () => {
     expect(result.tools).toHaveLength(2);
     expect(result.tools[0]).toMatchObject({
       name: 'submit',
-      type: 'button',
-      label: 'Submit'
+      description: 'Submit',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
     });
     expect(result.tools[1]).toMatchObject({
       name: 'email',
-      type: 'input',
-      placeholder: 'Email'
+      description: 'Email',
+      parameters: {
+        type: 'object',
+        properties: {
+          value: {
+            type: 'string',
+            description: 'Email'
+          }
+        },
+        required: ['value']
+      }
     });
   });
 

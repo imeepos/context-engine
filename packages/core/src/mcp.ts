@@ -11,6 +11,9 @@ export interface ToolMetadata extends ToolOptions {
     propertyKey: string | symbol;
 }
 export const ToolMetadataKey = new InjectionToken<ToolMetadata[]>(`ToolMetadataKey`)
+
+// Initialize ToolMetadataKey with empty array in root injector
+root.set([{ provide: ToolMetadataKey, useValue: [], multi: false }])
 export const Tool = (options: ToolOptions): MethodDecorator => {
     return ((target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
         root.set([
@@ -35,6 +38,9 @@ export interface ToolArgMetadata {
     paramName?: string;
 }
 export const ToolArgMetadataKey = new InjectionToken<ToolArgMetadata[]>(`ToolArgMetadataKey`)
+
+// Initialize ToolArgMetadataKey with empty array in root injector
+root.set([{ provide: ToolArgMetadataKey, useValue: [], multi: false }])
 export interface ToolArgOptions {
     zod: any;
     paramName: string;

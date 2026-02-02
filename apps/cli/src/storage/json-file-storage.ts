@@ -39,6 +39,44 @@ export class JsonFileStorage implements Storage {
     await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
   }
 
+  async writeIfVersion<T extends { version: number }>(
+    key: string,
+    data: T,
+    expectedVersion: number
+  ): Promise<boolean> {
+    const filePath = this.getFilePath(key)
+    const lockPath = `${filePath}.lock`
+    await fs.mkdir(path.dirname(filePath), { recursive: true })
+
+    try {
+      await fs.writeFile(lockPath, '', { flag: 'wx' })
+    } catch (error: any) {
+      if (error.code === 'EEXIST') {
+        return false
+      }
+      throw error
+    }
+
+    try {
+      const current = await this.read<T>(key)
+      if (current && current.version !== expectedVersion) {
+        return false
+      }
+      await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
+      return true
+    } catch (error: any) {
+      if (error.code === 'ENOENT' && expectedVersion === 0) {
+        await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
+        return true
+      }
+      throw error
+    } finally {
+      try {
+        await fs.unlink(lockPath)
+      } catch {}
+    }
+  }
+
   async delete(key: string): Promise<void> {
     const filePath = this.getFilePath(key)
     try {

@@ -1,8 +1,7 @@
 import React from 'react'
 import { Injector } from '@sker/core'
-import { AgentListComponent } from './AgentList'
-import { MessageListComponent } from './MessageList'
-import { ChatInputComponent } from './ChatInput'
+import { Layout } from '../components/Layout'
+import { AgentListComponent } from '../components/AgentList'
 
 interface DashboardProps {
   injector: Injector
@@ -10,11 +9,9 @@ interface DashboardProps {
 
 export function DashboardComponent({ injector }: DashboardProps) {
   return (
-    <div>
+    <Layout injector={injector}>
       <h1>多Agent通信系统</h1>
       <AgentListComponent injector={injector} />
-      <MessageListComponent injector={injector} />
-      <ChatInputComponent injector={injector} />
-    </div>
+    </Layout>
   )
 }

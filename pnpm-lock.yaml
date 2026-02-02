@@ -6,11 +6,7 @@ settings:
 
 importers:
 
-  .:
-    devDependencies:
-      turbo:
-        specifier: ^2.3.3
-        version: 2.8.0
+  .: {}
 
   apps/cli:
     dependencies:
@@ -182,6 +178,9 @@ importers:
 
   packages/prompt-renderer:
     dependencies:
+      '@sker/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@sker/core':
         specifier: workspace:*
         version: link:../core

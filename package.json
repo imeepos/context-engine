@@ -4,14 +4,12 @@
   "private": true,
   "description": "",
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "clean": "turbo run clean"
+    "build": "pnpm -r --workspace-concurrency=1 build",
+    "dev": "pnpm -r --workspace-concurrency=1 dev",
+    "lint": "pnpm -r --workspace-concurrency=1 lint",
+    "test": "pnpm -r --workspace-concurrency=1 test",
+    "clean": "pnpm -r clean && rm -rf node_modules/.cache"
   },
-  "devDependencies": {
-    "turbo": "^2.3.3"
-  },
+  "devDependencies": {},
   "packageManager": "pnpm@10.28.2"
 }

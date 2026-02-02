@@ -9,21 +9,38 @@ import { Command } from 'commander'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.join(__dirname, '..', '.env') })
-import { root, createInjector } from '@sker/core'
+import { root, createInjector, ToolMetadataKey } from '@sker/core'
 import {
   LLMService,
   LLM_ANTHROPIC_CONFIG,
   AnthropicAdapter,
   LLM_PROVIDER_ADAPTER,
-  ToolCallLoop
+  ToolCallLoop,
+  UnifiedToolExecutor
 } from '@sker/compiler'
 import { JsonFileStorage } from './storage/json-file-storage'
 import { AgentRegistryService } from './services/agent-registry.service'
 import { MessageBrokerService } from './services/message-broker.service'
+import { TaskManagerService } from './services/task-manager.service'
+import { TaskDependencyResolverService } from './services/task-dependency-resolver.service'
 import { SendMessageTool } from './tools/SendMessageTool'
 import { ListAgentsTool } from './tools/ListAgentsTool'
 import { GetMessageHistoryTool } from './tools/GetMessageHistoryTool'
+import { NavigateTool } from './tools/NavigateTool'
+import { CreateTaskTool } from './tools/CreateTaskTool'
+import { BatchCreateTasksTool } from './tools/BatchCreateTasksTool'
+import { ClaimTaskTool } from './tools/ClaimTaskTool'
+import { CompleteTaskTool } from './tools/CompleteTaskTool'
+import { CancelTaskTool } from './tools/CancelTaskTool'
+import { ListTasksTool } from './tools/ListTasksTool'
+import { GetTaskTool } from './tools/GetTaskTool'
+import { UpdateTaskTool } from './tools/UpdateTaskTool'
+import { DynamicToolExecutorService } from './tools/DynamicToolExecutorService'
+import { HybridToolExecutor } from './tools/HybridToolExecutor'
 import { UnifiedRequestBuilder } from '@sker/compiler'
+import { createRouter } from './router'
+import { ReactiveState } from './state/reactive-state'
+import { MESSAGES, MESSAGE_SUBSCRIBER, AGENTS, CURRENT_AGENT_ID, NAVIGATE } from './tokens'
 
 async function main() {
   const program = new Command()
@@ -54,10 +71,11 @@ async function main() {
 
       const agentRegistry = new AgentRegistryService(storage)
       const messageBroker = new MessageBrokerService(storage, agentRegistry)
+      const taskManager = new TaskManagerService(storage)
+      await taskManager.init()
 
       try {
         const currentAgent = await agentRegistry.register(options.id)
-        console.log(`[Agent ${currentAgent.id} 已上线]\n`)
       } catch (error: any) {
         console.error(`注册失败: ${error.message}`)
         process.exit(1)
@@ -65,37 +83,109 @@ async function main() {
 
       await messageBroker.init()
 
+      const taskDependencyResolver = new TaskDependencyResolverService(taskManager)
+
       const llmInjector = createInjector([
         { provide: LLM_ANTHROPIC_CONFIG, useValue: { apiKey, baseUrl } },
         { provide: LLM_PROVIDER_ADAPTER, useClass: AnthropicAdapter, multi: true },
+        { provide: DynamicToolExecutorService, useClass: DynamicToolExecutorService },
+        { provide: HybridToolExecutor, useClass: HybridToolExecutor },
+        { provide: UnifiedToolExecutor, useClass: HybridToolExecutor },
         { provide: ToolCallLoop, useClass: ToolCallLoop },
         { provide: LLMService, useClass: LLMService },
         { provide: MessageBrokerService, useValue: messageBroker },
-        { provide: AgentRegistryService, useValue: agentRegistry }
+        { provide: AgentRegistryService, useValue: agentRegistry },
+        { provide: TaskManagerService, useValue: taskManager },
+        { provide: TaskDependencyResolverService, useValue: taskDependencyResolver },
+        { provide: SendMessageTool, useClass: SendMessageTool },
+        { provide: ListAgentsTool, useClass: ListAgentsTool },
+        { provide: GetMessageHistoryTool, useClass: GetMessageHistoryTool },
+        { provide: NavigateTool, useClass: NavigateTool },
+        { provide: CreateTaskTool, useClass: CreateTaskTool },
+        { provide: BatchCreateTasksTool, useClass: BatchCreateTasksTool },
+        { provide: ClaimTaskTool, useClass: ClaimTaskTool },
+        { provide: CompleteTaskTool, useClass: CompleteTaskTool },
+        { provide: CancelTaskTool, useClass: CancelTaskTool },
+        { provide: ListTasksTool, useClass: ListTasksTool },
+        { provide: GetTaskTool, useClass: GetTaskTool },
+        { provide: UpdateTaskTool, useClass: UpdateTaskTool }
       ])
 
       const llmService = llmInjector.get(LLMService)
-
-      console.log('多Agent通信系统 - 由 LLM 驱动')
-      console.log('=====================================')
-      console.log(`当前 Agent: ${agentRegistry.getCurrentAgent()?.id}`)
-      console.log('可用命令:')
-      console.log('  - 直接输入消息与 LLM 对话')
-      console.log('  - LLM 可以调用工具: send_message, list_agents, get_message_history')
-      console.log('  - 按 Ctrl+C 退出\n')
+      const dynamicToolExecutor = llmInjector.get(DynamicToolExecutorService)
 
       const onlineAgents = await agentRegistry.getOnlineAgents()
-      console.log('在线 Agent 列表:')
-      onlineAgents.forEach(agent => {
-        const isCurrent = agent.id === agentRegistry.getCurrentAgent()?.id
-        console.log(`  - ${agent.id}${isCurrent ? ' (你)' : ''}`)
-      })
-      console.log()
+      const currentAgent = agentRegistry.getCurrentAgent()
 
-      messageBroker.onMessageReceived((message) => {
-        console.log(`\n[收到来自 ${message.from} 的消息]`)
-        console.log(`${message.from}: ${message.content}\n`)
-        process.stdout.write('> ')
+      // 加载所有历史消息
+      const allMessages: any[] = []
+      for (const agent of onlineAgents) {
+        if (agent.id !== currentAgent?.id) {
+          const history = await messageBroker.getMessageHistory(agent.id)
+          allMessages.push(...history)
+        }
+      }
+
+      // 响应式状态管理
+      const reactiveState = new ReactiveState({
+        agents: onlineAgents,
+        currentAgentId: currentAgent?.id || '',
+        messages: allMessages
+      })
+
+      const browser = createRouter(llmInjector)
+      let currentPage = browser.open(NavigateTool.getCurrentUrl())
+      let renderResult: any = null
+
+      // 辅助函数：获取当前状态的 providers
+      const getStateProviders = () => {
+        const state = reactiveState.getState()
+        return [
+          { provide: AGENTS, useValue: state.agents },
+          { provide: CURRENT_AGENT_ID, useValue: state.currentAgentId },
+          { provide: MESSAGES, useValue: state.messages },
+          { provide: MESSAGE_SUBSCRIBER, useValue: (callback: (messages: any[]) => void) => {
+            return reactiveState.subscribe((state) => callback(state.messages))
+          }},
+          { provide: NAVIGATE, useValue: (url: string) => {
+            NavigateTool.setCurrentUrl(url)
+            // 不立即渲染，等待工具调用完成后统一渲染
+          }}
+        ]
+      }
+
+      // 渲染UI函数
+      const renderUI = () => {
+        currentPage = browser.open(NavigateTool.getCurrentUrl(), getStateProviders())
+        renderResult = currentPage.render()
+
+        // 注册动态工具
+        dynamicToolExecutor.clear()
+        renderResult.executors.forEach((executor: () => void | Promise<void>, id: string) => {
+          dynamicToolExecutor.register(id, executor)
+        })
+
+        // 清屏并重新渲染
+        console.clear()
+        console.log(renderResult.prompt)
+      }
+
+      // 初始渲染
+      renderUI()
+
+      // 订阅状态变化，自动重新渲染
+      reactiveState.subscribe(() => {
+        renderUI()
+      })
+
+      messageBroker.onMessageReceived(async (message) => {
+        const updatedAgents = await agentRegistry.getOnlineAgents()
+        const currentState = reactiveState.getState()
+        reactiveState.setState({
+          ...currentState,
+          agents: updatedAgents,
+          messages: [...currentState.messages, message]
+        })
       })
 
       const rl = readline.createInterface({
@@ -117,23 +207,26 @@ async function main() {
         try {
           const request = new UnifiedRequestBuilder()
             .model('claude-sonnet-4-5-20250929')
+            .system(renderResult.prompt)
             .user(trimmed)
             .build()
 
-          console.log('\n[LLM 正在思考...]\n')
-
-          const response = await llmService.chatWithTools(
+          await llmService.chatWithTools(
             request,
-            [SendMessageTool, ListAgentsTool, GetMessageHistoryTool],
-            { maxIterations: 5 }
-          )
-
-          if (response.content && response.content.length > 0) {
-            const textContent = response.content.find(c => c.type === 'text')
-            if (textContent && 'text' in textContent) {
-              console.log(`LLM: ${textContent.text}\n`)
+            renderResult.tools,
+            {
+              maxIterations: 5,
+              onAfterToolExecution: async () => {
+                // 更新状态
+                const updatedAgents = await agentRegistry.getOnlineAgents()
+                reactiveState.setState({
+                  ...reactiveState.getState(),
+                  agents: updatedAgents
+                })
+                return renderResult.prompt
+              }
             }
-          }
+          )
         } catch (error: any) {
           console.error(`\n错误: ${error.message}\n`)
         }

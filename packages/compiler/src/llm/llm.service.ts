@@ -2,7 +2,7 @@ import { Injectable, Inject, Optional, Type } from '@sker/core';
 import { Observable } from 'rxjs';
 import { LLMProviderAdapter, LLM_PROVIDER_ADAPTER } from './adapter';
 import { ToolCallLoop, ToolLoopOptions } from './tool-loop';
-import { UnifiedRequestAst, UnifiedResponseAst, UnifiedStreamEventAst, UnifiedProvider } from '../ast';
+import { UnifiedRequestAst, UnifiedResponseAst, UnifiedStreamEventAst, UnifiedProvider, UnifiedTool } from '../ast';
 import { buildUnifiedTools } from '../unified/tool-builder';
 
 export interface ChatWithToolsOptions extends ToolLoopOptions {
@@ -15,7 +15,7 @@ export class LLMService {
 
   constructor(
     @Inject(LLM_PROVIDER_ADAPTER) private adapters: LLMProviderAdapter[] = [],
-    private toolLoop: ToolCallLoop
+    @Inject(ToolCallLoop) private toolLoop: ToolCallLoop
   ) {
     this.adapterMap = new Map(adapters.map(a => [a.provider, a]));
   }
@@ -30,13 +30,12 @@ export class LLMService {
 
   async chatWithTools(
     request: UnifiedRequestAst,
-    toolClasses: Type<any>[],
+    tools: UnifiedTool[],
     options: ChatWithToolsOptions = {}
   ): Promise<UnifiedResponseAst> {
     const provider = options.provider ?? request._provider ?? 'anthropic';
     const adapter = this.getAdapter(provider);
 
-    const tools = buildUnifiedTools(toolClasses);
     const requestWithTools = Object.assign(Object.create(Object.getPrototypeOf(request)), request, { tools });
 
     return this.toolLoop.execute(adapter, requestWithTools, options);

@@ -1,4 +1,4 @@
-import { Injectable } from '@sker/core';
+import { Injectable, Inject } from '@sker/core';
 import { UnifiedToolExecutor, UnifiedToolResult } from './tool-executor';
 import { UnifiedMessageBuilder } from './message-builder';
 import { LLMProviderAdapter } from './adapter';
@@ -8,11 +8,12 @@ export interface ToolLoopOptions {
   maxIterations?: number;
   onToolCall?: (toolUse: UnifiedToolUseContent) => void;
   onToolResult?: (result: UnifiedToolResult) => void;
+  onAfterToolExecution?: () => Promise<string>;
 }
 
 @Injectable()
 export class ToolCallLoop {
-  constructor(private toolExecutor: UnifiedToolExecutor) {}
+  constructor(@Inject(UnifiedToolExecutor) private toolExecutor: UnifiedToolExecutor) {}
 
   async execute(
     adapter: LLMProviderAdapter,
@@ -41,9 +42,19 @@ export class ToolCallLoop {
       results.forEach(r => options.onToolResult?.(r));
 
       const updatedMessages = this.appendToolResults(currentRequest, response, results);
-      currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), currentRequest, {
-        messages: updatedMessages
-      });
+
+      // 工具执行后重新渲染提示词
+      if (options.onAfterToolExecution) {
+        const newSystemPrompt = await options.onAfterToolExecution();
+        currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), currentRequest, {
+          messages: updatedMessages,
+          system: newSystemPrompt
+        });
+      } else {
+        currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), currentRequest, {
+          messages: updatedMessages
+        });
+      }
       iteration++;
     }
 

@@ -1,8 +1,10 @@
 import { createInjector, Inject, Injectable, InjectionToken, Injector, Provider } from '@sker/core'
+import { UnifiedTool } from '@sker/compiler'
 import React from 'react';
 import { renderToMarkdown } from '../reconciler/renderer';
 import { extractTools } from '../reconciler/extractor';
-import { createElement, createTextNode } from '../reconciler/dom';
+import { createElement } from '../reconciler/dom';
+import { reconciler } from '../reconciler/host-config';
 
 export interface Route<T = any> {
   path: string;
@@ -119,13 +121,8 @@ export interface PromptURL {
 
 export interface RenderResult {
   prompt: string;
-  tools: Tool[];
-}
-
-export interface Tool {
-  name: string;
-  description?: string;
-  parameters?: any;
+  tools: UnifiedTool[];
+  executors: Map<string, () => void | Promise<void>>;
 }
 
 export interface ToolCall {
@@ -138,6 +135,11 @@ export class Page {
   constructor(@Inject(Injector) private parent: Injector) { }
   render(providers: Provider[] = []): RenderResult {
     const currentRoute = this.parent.get(CURRENT_ROUTE);
+    if (!currentRoute) {
+      const url = this.parent.get(CURRENT_URL);
+      const routes = this.parent.get(ROUTES, []);
+      throw new Error(`No route matched for URL: ${url.pathname}. Available routes: ${routes.map(r => r.path).join(', ')}`);
+    }
     const component = currentRoute.route.component;
     const injector = createInjector([
       { provide: COMPONENT, useValue: component },
@@ -145,36 +147,16 @@ export class Page {
     ], this.parent);
 
     const element = React.createElement(component, { injector });
-    const vnode = this.renderReactToVNode(element);
+    const container = createElement('root', {}, []);
+    const root = reconciler.createContainer(container, 0, null, false, null, '', () => {}, null);
+
+    reconciler.updateContainer(element, root, null, () => {});
+
+    const vnode = container.children[0] || container;
     const prompt = renderToMarkdown(vnode);
-    const tools = extractTools(vnode);
+    const { tools, executors } = extractTools(vnode);
 
-    return { prompt, tools };
-  }
-
-  private renderReactToVNode(element: any): any {
-    if (typeof element === 'string' || typeof element === 'number') {
-      return createTextNode(String(element));
-    }
-
-    if (!element || typeof element !== 'object') {
-      return createTextNode('');
-    }
-
-    const { type, props } = element;
-
-    if (typeof type === 'string') {
-      const children = React.Children.toArray(props.children || [])
-        .map(child => this.renderReactToVNode(child));
-      return createElement(type, props, children);
-    }
-
-    if (typeof type === 'function') {
-      const result = type(props);
-      return this.renderReactToVNode(result);
-    }
-
-    return createTextNode('');
+    return { prompt, tools, executors };
   }
   async execute(toolName: string, params?: any): Promise<any> {
     if (!toolName) {
