@@ -20,6 +20,12 @@ export interface ModuleMetadata {
    * 导出的服务或令牌，供其他模块使用
    */
   exports?: InjectionTokenType<any>[];
+
+  /**
+   * 功能级别的服务，将在 featureInjector 中注册
+   * 用于请求级别或其他需要隔离的场景
+   */
+  features?: Provider[];
 }
 
 /**
@@ -174,4 +180,52 @@ export function resolveModule(moduleType: Type<any> | DynamicModule): Provider[]
   }
 
   return providers;
+}
+
+/**
+ * 解析模块的 features，展平 imports 并合并 features
+ */
+export function resolveFeatures(moduleType: Type<any> | DynamicModule): Provider[] {
+  // 处理 DynamicModule
+  if (isDynamicModule(moduleType)) {
+    const features: Provider[] = [];
+
+    // 递归解析 imports 的 features
+    if (moduleType.imports) {
+      for (const importedModule of moduleType.imports) {
+        const importedFeatures = resolveFeatures(importedModule);
+        features.push(...importedFeatures);
+      }
+    }
+
+    // 添加 DynamicModule 的 features
+    if (moduleType.features) {
+      features.push(...moduleType.features);
+    }
+
+    return features;
+  }
+
+  // 处理静态模块
+  const metadata = getModuleMetadata(moduleType);
+  if (!metadata) {
+    throw new Error(`${moduleType.name} is not a valid module. Did you forget @Module() decorator?`);
+  }
+
+  const features: Provider[] = [];
+
+  // 递归解析 imports 的 features
+  if (metadata.imports) {
+    for (const importedModule of metadata.imports) {
+      const importedFeatures = resolveFeatures(importedModule);
+      features.push(...importedFeatures);
+    }
+  }
+
+  // 添加当前模块的 features
+  if (metadata.features) {
+    features.push(...metadata.features);
+  }
+
+  return features;
 }

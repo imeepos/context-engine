@@ -81,6 +81,7 @@ export * from './util';
 export * from './cors';
 export { PlatformRef } from './platform-ref';
 export { ApplicationRef } from './application-ref';
+export { ModuleRef } from './module-ref';
 export { createPlatform, createPlatformFactory } from './platform';
 export {
   Module,
@@ -88,6 +89,8 @@ export {
   isModule,
   isDynamicModule,
   resolveModule,
+  resolveFeatures,
   type ModuleMetadata,
   type DynamicModule,
 } from './decorators/module.decorator';
+export { RequestContext, createRequestContext } from './request-context';

@@ -23,11 +23,16 @@ export class PlatformRef {
       throw new Error('Cannot bootstrap application on destroyed platform');
     }
 
-    const appInjector = EnvironmentInjector.createApplicationInjector(providers)
+    const appInjector = EnvironmentInjector.createApplicationInjector([
+      ...providers,
+      {
+        provide: ApplicationRef, useFactory: () => {
+          return new ApplicationRef(appInjector);
+        }, deps: [Injector]
+      },
+    ])
 
-    const app = new ApplicationRef(appInjector);
-    this.applications.push(app);
-    return app;
+    return appInjector.get(ApplicationRef);
   }
 
   /**

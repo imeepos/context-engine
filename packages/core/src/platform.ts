@@ -1,6 +1,7 @@
 import { Provider } from './provider';
 import { PlatformRef } from './platform-ref';
 import { EnvironmentInjector, root } from './environment-injector';
+import { Injector } from './injector';
 
 /**
  * 创建平台实例
@@ -8,8 +9,15 @@ import { EnvironmentInjector, root } from './environment-injector';
  * @returns 新的平台引用
  */
 export function createPlatform(providers: Provider[] = []): PlatformRef {
-  const platformInjector = EnvironmentInjector.createPlatformInjector(providers);
-  return new PlatformRef(platformInjector);
+  const platformInjector = EnvironmentInjector.createPlatformInjector([
+    ...providers,
+    {
+      provide: PlatformRef, useFactory: () => {
+        return new PlatformRef(platformInjector);
+      }, deps: [Injector]
+    }
+  ]);
+  return platformInjector.get(PlatformRef);
 }
 
 /**
