@@ -17,8 +17,6 @@ import {
 } from '../ast';
 import {
   GoogleResponseAst,
-  GoogleCandidate,
-  GoogleContent,
   GoogleUsageMetadata,
   GoogleTextPart,
   GoogleFunctionCallPart,

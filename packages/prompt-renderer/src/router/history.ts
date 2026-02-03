@@ -1,4 +1,4 @@
-import { parseUrl, type PromptURL } from './url';
+import { parseUrl } from './url';
 
 export interface Location {
   pathname: string;

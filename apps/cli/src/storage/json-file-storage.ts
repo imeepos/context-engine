@@ -73,7 +73,9 @@ export class JsonFileStorage implements Storage {
     } finally {
       try {
         await fs.unlink(lockPath)
-      } catch {}
+      } catch {
+        // Ignore unlock errors
+      }
     }
   }
 

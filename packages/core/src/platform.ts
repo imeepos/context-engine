@@ -1,6 +1,6 @@
 import { Provider } from './provider';
 import { PlatformRef } from './platform-ref';
-import { EnvironmentInjector, root } from './environment-injector';
+import { EnvironmentInjector } from './environment-injector';
 import { Injector } from './injector';
 
 /**

@@ -1,6 +1,5 @@
 import { Module } from '@sker/core'
 import { CompilerModule } from '@sker/compiler'
-import { LLM_ANTHROPIC_CONFIG, LLM_PROVIDER_ADAPTER, AnthropicAdapter } from '@sker/compiler'
 import { AgentRegistryService } from './services/agent-registry.service'
 import { MessageBrokerService } from './services/message-broker.service'
 import { TaskManagerService } from './services/task-manager.service'
@@ -51,4 +50,4 @@ import { MCP_CLIENT } from './tokens'
     { provide: UpdateTaskTool, useClass: UpdateTaskTool }
   ]
 })
-export class CliModule {}
+export class CliModule { }

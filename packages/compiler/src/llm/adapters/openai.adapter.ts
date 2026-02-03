@@ -1,4 +1,4 @@
-import { Injectable, Optional, Inject } from '@sker/core';
+import { Injectable, Optional } from '@sker/core';
 import OpenAI from 'openai';
 import { Observable } from 'rxjs';
 import { LLMProviderAdapter } from '../adapter';

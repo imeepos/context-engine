@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { AgentRegistryService } from './agent-registry.service'
 import { JsonFileStorage } from '../storage/json-file-storage'
 import * as path from 'path'

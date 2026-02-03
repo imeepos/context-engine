@@ -4,7 +4,7 @@
  * @version 1.0
  */
 
-import { UnifiedRequestAst, UnifiedResponseAst, UnifiedContent, UnifiedToolUseContent, UnifiedToolResultContent, MCPRequestAst, MCPResponseAst } from '../ast'
+import { UnifiedRequestAst, UnifiedResponseAst, UnifiedContent, UnifiedToolUseContent, MCPRequestAst, MCPResponseAst } from '../ast'
 import { JSONRPCRequest, JSONRPCResponse, MCPCallToolRequest, MCPCallToolResponse } from './types'
 
 /**

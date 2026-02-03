@@ -1,4 +1,4 @@
-import { Injectable, Optional, Inject } from '@sker/core';
+import { Injectable, Optional } from '@sker/core';
 import { Observable } from 'rxjs';
 import { LLMProviderAdapter } from '../adapter';
 import { LLM_GOOGLE_CONFIG } from '../config';

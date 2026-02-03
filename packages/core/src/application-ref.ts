@@ -1,7 +1,7 @@
 import { Injector, Type } from './injector';
 import { root, EnvironmentInjector } from './environment-injector';
-import { resolveModule, resolveFeatures, DynamicModule, getModuleMetadata, isDynamicModule } from './decorators/module.decorator';
-import { createApplicationInjector, getPlatformInjector } from './root';
+import { resolveModule, DynamicModule, getModuleMetadata, isDynamicModule } from './decorators/module.decorator';
+import { getPlatformInjector } from './root';
 import { Provider } from './provider';
 import { ModuleRef } from './module-ref';
 import { InjectionToken } from './injection-token';

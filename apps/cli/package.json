@@ -31,8 +31,10 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@sker/eslint-config": "workspace:*",
     "@types/node": "^22.10.5",
     "@types/react": "^18.3.12",
+    "eslint": "^9.39.2",
     "tsup": "^8.5.1",
     "tsx": "^4.19.2",
     "typescript": "^5.9.2",

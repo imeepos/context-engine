@@ -579,6 +579,7 @@ export class EnvironmentInjector extends Injector {
    */
   private getFromHost<T>(token: InjectionTokenType<T>): T {
     // 找到根注入器（宿主注入器）
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     let hostInjector: Injector = this;
     while (
       hostInjector.parent &&
@@ -734,7 +735,7 @@ export class EnvironmentInjector extends Injector {
       if (isOnDestroy(instance)) {
         await instance.onDestroy();
       }
-    } catch (error) {
+    } catch (_error) {
       // 吞没销毁过程中的错误，不影响其他实例的销毁
       // 在生产环境中可以考虑记录日志
     }

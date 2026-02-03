@@ -1,5 +1,5 @@
 import { root } from "./environment-injector";
-import { InjectionTokenType, Type } from "./injector";
+import { InjectionTokenType } from "./injector";
 
 /**
  * 注入器作用域类型
@@ -40,6 +40,7 @@ export interface InjectableOptions {
 /**
  * Injectable 元数据
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface InjectableMetadata extends InjectableOptions { }
 
 /**

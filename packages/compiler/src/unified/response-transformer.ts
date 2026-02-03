@@ -4,7 +4,7 @@
  * @version 2.0
  */
 
-import { Ast, UnifiedResponseAst, UnifiedContent, UnifiedStopReason, UnifiedUsage } from '../ast';
+import { UnifiedResponseAst, UnifiedContent, UnifiedStopReason, UnifiedUsage } from '../ast';
 import {
   AnthropicResponseAst,
   AnthropicContentBlock,
@@ -17,7 +17,6 @@ import {
 } from '../ast';
 import {
   GoogleResponseAst,
-  GoogleCandidate,
   GoogleContentPart,
   GoogleUsageMetadata
 } from '../ast';

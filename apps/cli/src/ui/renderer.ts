@@ -1,4 +1,3 @@
-import { Injector } from '@sker/core'
 import { NavigateTool } from '../tools/NavigateTool'
 import { DynamicToolExecutorService } from '../tools/DynamicToolExecutorService'
 import { StateManager } from './state-manager'
@@ -29,12 +28,16 @@ export class UIRenderer {
       { provide: AGENTS, useValue: state.agents },
       { provide: CURRENT_AGENT_ID, useValue: state.currentAgentId },
       { provide: MESSAGES, useValue: state.messages },
-      { provide: MESSAGE_SUBSCRIBER, useValue: (callback: (messages: any[]) => void) => {
-        return this.stateManager.subscribe((state) => callback(state.messages))
-      }},
-      { provide: NAVIGATE, useValue: (url: string) => {
-        NavigateTool.setCurrentUrl(url)
-      }}
+      {
+        provide: MESSAGE_SUBSCRIBER, useValue: (callback: (messages: any[]) => void) => {
+          return this.stateManager.subscribe((state) => callback(state.messages))
+        }
+      },
+      {
+        provide: NAVIGATE, useValue: (url: string) => {
+          NavigateTool.setCurrentUrl(url)
+        }
+      }
     ]
   }
 

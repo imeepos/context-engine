@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@sker/core';
 import { UnifiedToolExecutor, UnifiedToolResult } from './tool-executor';
 import { UnifiedMessageBuilder } from './message-builder';
 import { LLMProviderAdapter } from './adapter';
-import { UnifiedRequestAst, UnifiedResponseAst, UnifiedToolUseContent, UnifiedContent, UnifiedMessage } from '../ast';
+import { UnifiedRequestAst, UnifiedResponseAst, UnifiedToolUseContent, UnifiedMessage } from '../ast';
 
 export interface ToolLoopOptions {
   maxIterations?: number;

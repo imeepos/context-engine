@@ -1,5 +1,4 @@
 import { Controller, Injectable, Get, Query, Inject } from '@sker/core';
-import { PageRendererService, type RenderFormat } from '../services/page-renderer.service';
 import { HomePage, GitDocsPage } from '../www/pages';
 import { Browser } from '@sker/prompt-renderer';
 

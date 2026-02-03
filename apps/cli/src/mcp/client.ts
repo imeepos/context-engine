@@ -67,7 +67,7 @@ export class McpClient implements IMcpClient {
           // Connection is likely established, verify by listing tools
           try {
             await this.client.listTools()
-          } catch (verifyError) {
+          } catch (_verifyError) {
             // If tools listing also fails, the connection truly failed
             throw error
           }
@@ -142,7 +142,7 @@ export class McpClient implements IMcpClient {
         this.client!.callTool({ name, arguments: args }),
         timeoutPromise
       ])
-      return result
+      return result as CallToolResult
     } catch (error) {
       const mcpError = handleMcpError(error)
       throw new McpToolExecutionError(
@@ -169,7 +169,14 @@ export class McpClient implements IMcpClient {
     await this.ensureConnected()
 
     const response = await this.client!.readResource({ uri })
-    return response.contents[0]?.text || ''
+    const content = response.contents[0]
+    if (!content) return ''
+
+    // Handle both text and blob content types
+    if ('text' in content) {
+      return content.text
+    }
+    return ''
   }
 
   async listPrompts(): Promise<Prompt[]> {
@@ -186,17 +193,30 @@ export class McpClient implements IMcpClient {
 
   async getPrompt(
     name: string,
-    args?: Record<string, unknown>
+    args?: Record<string, string>
   ): Promise<string> {
     await this.ensureConnected()
 
     const response = await this.client!.getPrompt({
       name,
-      arguments: args
+      arguments: args as Record<string, string>
     })
 
     return response.messages
-      .map(msg => msg.content.text)
+      .map(msg => {
+        const content = msg.content
+        if (Array.isArray(content)) {
+          return content
+            .map((c: any) => {
+              if (c.type === 'text') {
+                return c.text
+              }
+              return ''
+            })
+            .join('')
+        }
+        return ''
+      })
       .join('\n')
   }
 
@@ -227,7 +247,7 @@ export class McpClient implements IMcpClient {
 
       try {
         await this.connect()
-      } catch (error) {
+      } catch (_error) {
         this.scheduleReconnect()
       }
     }, delay)

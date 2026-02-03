@@ -85,7 +85,7 @@ describe('MessageBrokerService', () => {
       await agentRegistry2.register('agent-1')
       const broker2 = new MessageBrokerService(storage, agentRegistry2)
 
-      return new Promise<void>(async (resolve) => {
+      await new Promise<void>((resolve) => {
         broker.onMessageReceived(async () => {
           // Wait a bit for the file to be updated
           await new Promise(r => setTimeout(r, 100))
@@ -94,7 +94,8 @@ describe('MessageBrokerService', () => {
           resolve()
         })
 
-        await broker2.sendMessage('agent-0', 'Test message')
+        // Send message after callback is registered
+        void broker2.sendMessage('agent-0', 'Test message')
       })
     })
   })

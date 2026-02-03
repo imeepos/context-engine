@@ -105,7 +105,7 @@ async function main() {
       }
 
       // 从注入器获取服务
-      const llmService = app.injector.get(LLMService)
+      const _llmService = app.injector.get(LLMService)
 
       // 加载历史消息
       const onlineAgents = await agentRegistry.getOnlineAgents()

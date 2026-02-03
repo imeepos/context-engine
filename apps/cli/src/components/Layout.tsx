@@ -6,7 +6,7 @@ interface LayoutProps {
   children: React.ReactNode
 }
 
-export function Layout({ injector, children }: LayoutProps) {
+export function Layout({ children }: LayoutProps) {
   return (
     <div>
       {children}

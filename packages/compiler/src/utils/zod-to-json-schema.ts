@@ -21,7 +21,7 @@ export function zodToJsonSchema(zodSchema: z.ZodTypeAny): any {
     const schema = zodSchema.toJSONSchema()
     // 移除 $schema 字段以保持向后兼容
     if (schema && typeof schema === 'object' && '$schema' in schema) {
-        const { $schema, ...rest } = schema
+        const { $schema: _$schema, ...rest } = schema
         return rest
     }
     return schema

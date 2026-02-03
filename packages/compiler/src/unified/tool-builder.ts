@@ -5,8 +5,8 @@
  */
 
 import { root, ToolMetadataKey, ToolArgMetadataKey, Type } from '@sker/core'
-import { ToolMetadata, ToolArgMetadata } from '@sker/core'
-import { AnthropicTool, OpenAITool, GoogleTool, GoogleToolFunctionDeclaration, UnifiedTool, UnifiedToolParameters } from '../ast'
+import { ToolMetadata } from '@sker/core'
+import { AnthropicTool, OpenAITool, GoogleTool, GoogleToolFunctionDeclaration, UnifiedTool } from '../ast'
 import { zodToJsonSchema, isOptionalParam } from '../utils/zod-to-json-schema'
 import { buildToolArgsMap } from '../utils/tool-args-map'
 

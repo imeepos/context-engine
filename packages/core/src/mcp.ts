@@ -15,7 +15,7 @@ export const ToolMetadataKey = new InjectionToken<ToolMetadata[]>(`ToolMetadataK
 // Initialize ToolMetadataKey with empty array in root injector
 root.set([{ provide: ToolMetadataKey, useValue: [], multi: false }])
 export const Tool = (options: ToolOptions): MethodDecorator => {
-    return ((target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
+    return ((target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
         root.set([
             {
                 provide: ToolMetadataKey,
@@ -87,7 +87,7 @@ export const PromptMetadataKey = new InjectionToken<PromptMetadata[]>('PromptMet
 root.set([{ provide: PromptMetadataKey, useValue: [], multi: false }])
 
 export const Prompt = (options: PromptOptions): MethodDecorator => {
-    return ((target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
+    return ((target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
         root.set([
             {
                 provide: PromptMetadataKey,
@@ -123,7 +123,7 @@ export const ResourceMetadataKey = new InjectionToken<ResourceMetadata[]>('Resou
 root.set([{ provide: ResourceMetadataKey, useValue: [], multi: false }])
 
 export const Resource = (options: ResourceOptions): MethodDecorator => {
-    return ((target: Object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
+    return ((target: object, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
         root.set([
             {
                 provide: ResourceMetadataKey,

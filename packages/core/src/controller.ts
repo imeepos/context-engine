@@ -79,7 +79,7 @@ function createHttpMethodDecorator(method: RequestMethod) {
     zodOrContentType?: unknown,
     contentType?: string
   ): MethodDecorator => {
-    return (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+    return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
       let routePath: string;
       let responseSchema: unknown;
       let finalContentType: string = 'application/json';
@@ -187,7 +187,7 @@ function createParamDecorator(type: ParamType): (key?: string | unknown, zod?: u
    * @Body('name', z.string()) name: string  - 明确指定字段名
    * @Body(z.string()) name: string          - 从参数名推断字段名
    */
-  return (key?: string | unknown, zod?: unknown) => (target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
+  return (key?: string | unknown, zod?: unknown) => (target: object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
     if (!propertyKey) {
       throw new Error('参数装饰器只能用于方法参数');
     }
@@ -231,14 +231,14 @@ export const Query = createParamDecorator(ParamType.QUERY);
 export const Body = createParamDecorator(ParamType.BODY);
 
 export function RequirePermissions(permissions: unknown): MethodDecorator {
-  return (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
     const methodTarget = descriptor.value || (target as Record<string | symbol, unknown>)[propertyKey];
     Reflect.defineMetadata(MIDDLEWARE_METADATA, { permissions }, methodTarget);
   };
 }
 
 export function ApiDescription(description: string, tags?: string[]): MethodDecorator {
-  return (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
     const methodTarget = descriptor.value || (target as Record<string | symbol, unknown>)[propertyKey];
     Reflect.defineMetadata(OPENAPI_DESCRIPTION_METADATA, description, methodTarget);
     if (tags) {

@@ -1,4 +1,4 @@
-import { root, ToolMetadataKey, ToolArgMetadataKey, ToolMetadata, ToolArgMetadata } from '@sker/core'
+import { root, ToolMetadataKey, ToolArgMetadataKey, ToolMetadata } from '@sker/core'
 import { AnthropicContentBlockDeltaAst, AnthropicContentBlockStartAst, AnthropicContentBlockStopAst, AnthropicMessageDeltaAst, AnthropicMessageStartAst, AnthropicMessageStopAst, AnthropicRequestAst, AnthropicResponseAst, Ast, GoogleRequestAst, GoogleResponseAst, OpenAIRequestAst, OpenAiResponseAst, Visitor, AnthropicToolUseBlock } from "./ast";
 import { isOptionalParam } from './utils/zod-to-json-schema'
 import { buildToolArgsMap } from './utils/tool-args-map'
@@ -13,16 +13,16 @@ export class ToolExecutorVisitor implements Visitor {
     visit(ast: Ast, ctx: any) {
         return ast.visit(this, ctx);
     }
-    visitAnthropicRequestAst(ast: AnthropicRequestAst, ctx: any) {
+    visitAnthropicRequestAst(_ast: AnthropicRequestAst, _ctx: any) {
         throw new Error("Method not implemented.");
     }
-    visitOpenAIRequestAst(ast: OpenAIRequestAst, ctx: any) {
+    visitOpenAIRequestAst(_ast: OpenAIRequestAst, _ctx: any) {
         throw new Error("Method not implemented.");
     }
-    visitGoogleRequestAst(ast: GoogleRequestAst, ctx: any) {
+    visitGoogleRequestAst(_ast: GoogleRequestAst, _ctx: any) {
         throw new Error("Method not implemented.");
     }
-    visitOpenAiResponseAst(ast: OpenAiResponseAst, ctx: any): ToolResult[] {
+    visitOpenAiResponseAst(ast: OpenAiResponseAst, _ctx: any): ToolResult[] {
         const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
         const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
 
@@ -85,7 +85,7 @@ export class ToolExecutorVisitor implements Visitor {
 
         return results
     }
-    visitGoogleResponseAst(ast: GoogleResponseAst, ctx: any): ToolResult[] {
+    visitGoogleResponseAst(ast: GoogleResponseAst, _ctx: any): ToolResult[] {
         const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
         const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
 
@@ -151,7 +151,7 @@ export class ToolExecutorVisitor implements Visitor {
 
         return results
     }
-    async visitAnthropicResponseAst(ast: AnthropicResponseAst, ctx: any): Promise<ToolResult[]> {
+    async visitAnthropicResponseAst(ast: AnthropicResponseAst, _ctx: any): Promise<ToolResult[]> {
         const toolUses = ast.content.filter((block): block is AnthropicToolUseBlock => block.type === 'tool_use');
 
         const toolMetadatas = root.get(ToolMetadataKey) ?? []
@@ -212,37 +212,37 @@ export class ToolExecutorVisitor implements Visitor {
 
         return results
     }
-    visitAnthropicMessageStartAst(ast: AnthropicMessageStartAst, ctx: any) {
+    visitAnthropicMessageStartAst(_ast: AnthropicMessageStartAst, _ctx: any) {
         throw new Error("Method not implemented.");
     }
-    visitAnthropicContentBlockDeltaAst(ast: AnthropicContentBlockDeltaAst, ctx: any) {
+    visitAnthropicContentBlockDeltaAst(_ast: AnthropicContentBlockDeltaAst, _ctx: any) {
         throw new Error("Method not implemented.");
     }
-    visitAnthropicContentBlockStartAst(ast: AnthropicContentBlockStartAst, ctx: any) {
+    visitAnthropicContentBlockStartAst(_ast: AnthropicContentBlockStartAst, _ctx: any) {
         throw new Error("Method not implemented.");
     }
-    visitAnthropicContentBlockStopAst(ast: AnthropicContentBlockStopAst, ctx: any) {
+    visitAnthropicContentBlockStopAst(_ast: AnthropicContentBlockStopAst, _ctx: any) {
         throw new Error("Method not implemented.");
     }
-    visitAnthropicMessageDeltaAst(ast: AnthropicMessageDeltaAst, ctx: any) {
+    visitAnthropicMessageDeltaAst(_ast: AnthropicMessageDeltaAst, _ctx: any) {
         throw new Error("Method not implemented.");
     }
-    visitAnthropicMessageStopAst(ast: AnthropicMessageStopAst, ctx: any) {
+    visitAnthropicMessageStopAst(_ast: AnthropicMessageStopAst, _ctx: any) {
         throw new Error("Method not implemented.");
     }
-    visitUnifiedRequestAst(ast: any, ctx: any): any {
+    visitUnifiedRequestAst(_ast: any, _ctx: any): any {
         throw new Error("Method not implemented.");
     }
-    visitUnifiedResponseAst(ast: any, ctx: any): any {
+    visitUnifiedResponseAst(_ast: any, _ctx: any): any {
         throw new Error("Method not implemented.");
     }
-    visitUnifiedStreamEventAst(ast: any, ctx: any): any {
+    visitUnifiedStreamEventAst(_ast: any, _ctx: any): any {
         throw new Error("Method not implemented.");
     }
-    visitMCPRequestAst(ast: any, ctx: any): any {
+    visitMCPRequestAst(_ast: any, _ctx: any): any {
         throw new Error("Method not implemented.");
     }
-    visitMCPResponseAst(ast: any, ctx: any): any {
+    visitMCPResponseAst(_ast: any, _ctx: any): any {
         throw new Error("Method not implemented.");
     }
 }

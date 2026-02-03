@@ -52,7 +52,7 @@ export function Inject<T>(
   options?: InjectOptions,
 ): ParameterDecorator {
   return function (
-    target: Object,
+    target: object,
     _propertyKey: string | symbol | undefined,
     parameterIndex: number,
   ) {

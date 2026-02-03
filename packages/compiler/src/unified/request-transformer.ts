@@ -4,7 +4,7 @@
  * @version 2.0
  */
 
-import { Ast, Visitor, UnifiedRequestAst, UnifiedMessage, UnifiedContent, UnifiedTool } from '../ast';
+import { UnifiedRequestAst, UnifiedMessage, UnifiedTool } from '../ast';
 import {
   AnthropicRequestAst,
   AnthropicRequestMessage,

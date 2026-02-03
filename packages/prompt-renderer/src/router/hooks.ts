@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { createHistory, type NavigationHistory, type Location } from './history';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { type NavigationHistory, type Location } from './history';
 import { buildUrl } from './url';
 
 interface RouterContextValue {

@@ -15,7 +15,7 @@ export class MCPToolExecutorVisitor implements Visitor {
         return ast.visit(this, ctx)
     }
 
-    async visitMCPRequestAst(ast: MCPRequestAst, ctx: any): Promise<MCPResponseAst> {
+    async visitMCPRequestAst(ast: MCPRequestAst, _ctx: any): Promise<MCPResponseAst> {
         if (ast.method !== 'tools/call') {
             const response = new MCPResponseAst()
             response.id = ast.id || null
@@ -101,53 +101,53 @@ export class MCPToolExecutorVisitor implements Visitor {
         }
     }
 
-    visitMCPResponseAst(ast: MCPResponseAst, ctx: any) {
+    visitMCPResponseAst(ast: MCPResponseAst, _ctx: any) {
         return ast
     }
 
-    visitAnthropicRequestAst(ast: any, ctx: any) {
+    visitAnthropicRequestAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitOpenAIRequestAst(ast: any, ctx: any) {
+    visitOpenAIRequestAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitGoogleRequestAst(ast: any, ctx: any) {
+    visitGoogleRequestAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitOpenAiResponseAst(ast: any, ctx: any) {
+    visitOpenAiResponseAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitGoogleResponseAst(ast: any, ctx: any) {
+    visitGoogleResponseAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitAnthropicResponseAst(ast: any, ctx: any) {
+    visitAnthropicResponseAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitAnthropicMessageStartAst(ast: any, ctx: any) {
+    visitAnthropicMessageStartAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitAnthropicContentBlockDeltaAst(ast: any, ctx: any) {
+    visitAnthropicContentBlockDeltaAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitAnthropicContentBlockStartAst(ast: any, ctx: any) {
+    visitAnthropicContentBlockStartAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitAnthropicContentBlockStopAst(ast: any, ctx: any) {
+    visitAnthropicContentBlockStopAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitAnthropicMessageDeltaAst(ast: any, ctx: any) {
+    visitAnthropicMessageDeltaAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitAnthropicMessageStopAst(ast: any, ctx: any) {
+    visitAnthropicMessageStopAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitUnifiedRequestAst(ast: any, ctx: any) {
+    visitUnifiedRequestAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitUnifiedResponseAst(ast: any, ctx: any) {
+    visitUnifiedResponseAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
-    visitUnifiedStreamEventAst(ast: any, ctx: any) {
+    visitUnifiedStreamEventAst(_ast: any, _ctx: any) {
         throw new Error('Method not implemented.')
     }
 }

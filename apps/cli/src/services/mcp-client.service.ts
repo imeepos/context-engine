@@ -9,7 +9,7 @@ export class McpClientService implements OnInit, OnDestroy {
   async onInit(): Promise<void> {
     try {
       await this.mcpClient.connect()
-    } catch (error) {
+    } catch (_error) {
       console.warn('MCP 服务器连接失败，远程工具将不可用')
     }
   }

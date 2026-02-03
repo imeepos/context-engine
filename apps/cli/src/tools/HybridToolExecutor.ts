@@ -4,7 +4,6 @@ import { UnifiedToolUseContent } from '@sker/compiler'
 import { DynamicToolExecutorService } from './DynamicToolExecutorService'
 import { RemoteToolProxy } from './RemoteToolProxy'
 import { McpClientService } from '../services/mcp-client.service'
-import { ToolType } from './types'
 
 function buildToolArgsMap(toolArgMetadatas: ToolArgMetadata[]): Map<string, ToolArgMetadata[]> {
   const map = new Map<string, ToolArgMetadata[]>()
@@ -40,7 +39,7 @@ export class HybridToolExecutor {
     @Inject(DynamicToolExecutorService) private dynamicExecutor: DynamicToolExecutorService,
     @Inject(RemoteToolProxy) private remoteProxy: RemoteToolProxy,
     @Inject(McpClientService) private mcpService: McpClientService
-  ) {}
+  ) { }
 
   async execute(toolUse: UnifiedToolUseContent): Promise<UnifiedToolResult> {
     // 检查是否是远程工具

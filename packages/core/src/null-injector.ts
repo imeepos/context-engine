@@ -1,4 +1,4 @@
-import { Injector, InjectionTokenType, Type } from './injector';
+import { Injector, InjectionTokenType } from './injector';
 import type { Provider } from './provider';
 
 /**

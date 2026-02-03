@@ -1,11 +1,6 @@
 import React from 'react'
-import { Injector } from '@sker/core'
 
-interface ChatInputProps {
-  injector: Injector
-}
-
-export function ChatInputComponent({ injector }: ChatInputProps) {
+export function ChatInputComponent() {
   return (
     <div>
       <h2>发送消息</h2>

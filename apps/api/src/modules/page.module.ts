@@ -1,11 +1,9 @@
 import { Module } from '@sker/core';
-import { PageRendererService } from '../services/page-renderer.service';
 import { createBrowser, Browser, ROUTES } from '@sker/prompt-renderer';
 import { HomePage, GitDocsPage } from '../www/pages';
 
 @Module({
   providers: [
-    { provide: PageRendererService, useClass: PageRendererService },
     {
       provide: Browser, useFactory: () => createBrowser([
         {
@@ -18,6 +16,6 @@ import { HomePage, GitDocsPage } from '../www/pages';
       ])
     }
   ],
-  exports: [PageRendererService]
+  exports: [Browser, ROUTES]
 })
 export class PageModule { }

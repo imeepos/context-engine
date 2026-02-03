@@ -19,7 +19,6 @@ export type Writable<T> = {
 /**
  * abstract 类
  */
-// @ts-ignore - T is intentionally unused as a type parameter marker
 export interface AbstractType<T = any> extends Function {
   prototype: T;
 }

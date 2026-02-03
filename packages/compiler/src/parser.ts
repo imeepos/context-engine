@@ -132,23 +132,23 @@ export class ParserVisitor implements Visitor {
         return ast;
     }
 
-    visitUnifiedRequestAst(ast: any, ctx: any): any {
+    visitUnifiedRequestAst(ast: any, _ctx: any): any {
         return ast;
     }
 
-    visitUnifiedResponseAst(ast: any, ctx: any): any {
+    visitUnifiedResponseAst(ast: any, _ctx: any): any {
         return ast;
     }
 
-    visitUnifiedStreamEventAst(ast: any, ctx: any): any {
+    visitUnifiedStreamEventAst(ast: any, _ctx: any): any {
         return ast;
     }
 
-    visitMCPRequestAst(ast: any, ctx: any): any {
+    visitMCPRequestAst(ast: any, _ctx: any): any {
         return ast;
     }
 
-    visitMCPResponseAst(ast: any, ctx: any): any {
+    visitMCPResponseAst(ast: any, _ctx: any): any {
         return ast;
     }
 
@@ -198,7 +198,7 @@ export class ParserVisitor implements Visitor {
                                     const json = JSON.parse(data)
                                     const ast = this.parseJson(json)
                                     subscriber.next(ast)
-                                } catch (e) {
+                                } catch (_e) {
                                     // Skip invalid JSON
                                 }
                             }

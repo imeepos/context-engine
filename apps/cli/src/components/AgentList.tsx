@@ -1,8 +1,7 @@
 import React from 'react'
 import { Injector } from '@sker/core'
-import { Agent } from '../types/agent'
 import { Tool } from '@sker/prompt-renderer'
-import { AGENTS, CURRENT_AGENT_ID, NAVIGATE, MESSAGES } from '../tokens'
+import { AGENTS, CURRENT_AGENT_ID, MESSAGES } from '../tokens'
 import { NavigateTool } from '../tools/NavigateTool'
 
 interface AgentListProps {
@@ -12,7 +11,6 @@ interface AgentListProps {
 export function AgentListComponent({ injector }: AgentListProps) {
   const agents = injector.get(AGENTS)
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
-  const navigate = injector.get(NAVIGATE)
   const allMessages = injector.get(MESSAGES)
 
   return (
@@ -40,7 +38,7 @@ export function AgentListComponent({ injector }: AgentListProps) {
             {' '}
             <Tool
               use={NavigateTool}
-              boundParams={{ path: `/chat/${agent.id}` }}
+              params={{ path: `/chat/${agent.id}` }}
               key={`navigate-${agent.id}`}
             >
               查看

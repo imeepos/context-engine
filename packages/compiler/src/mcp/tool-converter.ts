@@ -5,7 +5,7 @@
  */
 
 import { UnifiedTool } from '../ast'
-import { MCPTool, MCPToolInputSchema } from './types'
+import { MCPTool } from './types'
 
 /**
  * 将 UnifiedTool 转换为 MCP 格式

@@ -3,7 +3,6 @@ import { Module } from '../decorators/module.decorator';
 import { createPlatform } from '../platform';
 import { PlatformRef } from '../platform-ref';
 import { ApplicationRef } from '../application-ref';
-import { Injectable } from '../injectable';
 
 describe('Module Isolation', () => {
   let platform: PlatformRef;
