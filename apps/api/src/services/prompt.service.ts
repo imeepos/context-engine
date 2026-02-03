@@ -43,7 +43,7 @@ export class PromptService {
     }
 
     // 从 root 注入器获取服务实例
-    const serviceInstance = root.get(promptMeta.target);
+    const serviceInstance = root.get(promptMeta.target) as any;
 
     // 调用方法获取 React 组件
     const method = serviceInstance[promptMeta.propertyKey];
