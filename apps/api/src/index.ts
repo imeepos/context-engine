@@ -6,12 +6,16 @@ import type { ExecutionContext } from 'hono';
 import { AppModule } from './modules/app.module';
 import { registerControllers } from './utils/register-controllers';
 import * as pageController from './controllers/page.controller';
-import { handleMcpRequest } from './mcp/server';
+import type { Injector } from '@sker/core';
+import { handleMcpRequest } from "./mcp/server";
+
+// Export Durable Object
+export { McpSessionDurableObject } from './mcp/session-durable-object';
 
 async function createApp() {
   const logger = createLogger('App');
   logger.log('Creating Hono app...');
-  const app = new Hono();
+  const app = new Hono<{ Bindings: Env }>();
 
   // Create platform and bootstrap application
   logger.log('Creating platform...');
@@ -21,7 +25,6 @@ async function createApp() {
   logger.log('Bootstrapping AppModule...');
   await application.bootstrap(AppModule);
   logger.log('AppModule bootstrapped successfully');
-
 
   // Middleware
   logger.log('Registering CORS middleware...');
@@ -40,7 +43,7 @@ async function createApp() {
     return c.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // MCP endpoint
+  // MCP endpoint - use handleMcpRequest with session management
   logger.log('Registering MCP endpoint...');
   app.all('/mcp', async (c) => {
     logger.log('[MCP] Request received:', c.req.method, c.req.url);

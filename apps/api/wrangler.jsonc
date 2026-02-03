@@ -20,5 +20,20 @@
       "database_name": "sker",
       "database_id": "d9068995-1e09-488e-b582-bb2e1eee4178"
     }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MCP_SESSION",
+        "class_name": "McpSessionDurableObject",
+        "script_name": "sker-mcp-api"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["McpSessionDurableObject"]
+    }
   ]
 }

@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "build": "tsup --watch",
-    "types": "wrangler types --env dev",
+    "build": "tsup",
+    "types": "wrangler types",
     "deploy": "wrangler deploy",
     "test": "vitest run",
     "test:watch": "vitest",

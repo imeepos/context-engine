@@ -6,5 +6,5 @@ export default defineConfig({
   dts: false,
   clean: true,
   minify: false,
-  external: ['react']
+  external: ['react', 'cloudflare:workers']
 });

@@ -68,7 +68,7 @@ async function resolveMethodParams(c: Context, argsMetadata: Record<string, Rout
   return params;
 }
 
-export function registerControllers(app: Hono, application: ApplicationRef): void {
+export function registerControllers(app: Hono<{ Bindings: Env }>, application: ApplicationRef): void {
   try {
     logger.log('Starting controller registration...');
     const controllers = root.get(CONTROLLES, []);
