@@ -6,7 +6,8 @@
     "nodejs_compat"
   ],
   "vars": {
-    "ENVIRONMENT": "production"
+    "ENVIRONMENT": "production",
+    "SITE_URL": "https://mcp.sker.us"
   },
   "observability": {
     "logs": {
@@ -33,7 +34,9 @@
   "migrations": [
     {
       "tag": "v1",
-      "new_classes": ["McpSessionDurableObject"]
+      "new_classes": [
+        "McpSessionDurableObject"
+      ]
     }
   ]
 }

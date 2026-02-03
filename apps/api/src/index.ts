@@ -5,7 +5,6 @@ import { createLogger, createPlatform } from '@sker/core';
 import type { ExecutionContext } from 'hono';
 import { AppModule } from './modules/app.module';
 import { registerControllers } from './utils/register-controllers';
-import * as pageController from './controllers/page.controller';
 
 // Export Durable Object
 export { McpSessionDurableObject } from './mcp/session-durable-object';
@@ -64,11 +63,6 @@ async function createApp() {
   logger.log('Auto-registering controllers...');
   registerControllers(app, application);
   logger.log('Controllers registered successfully');
-
-  // Page routes (SSR with HTML/Markdown support)
-  logger.log('Registering page routes...');
-  app.get('/', pageController.renderHomePage);
-  app.get('/docs/git', pageController.renderGitDocsPage);
 
   logger.log('App created successfully');
   return app;

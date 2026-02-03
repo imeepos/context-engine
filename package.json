@@ -8,6 +8,7 @@
     "dev": "pnpm -r --workspace-concurrency=1 dev",
     "lint": "pnpm -r --workspace-concurrency=1 lint",
     "test": "pnpm -r --workspace-concurrency=1 test",
+    "check-types": "pnpm -r --workspace-concurrency=1 check-types",
     "clean": "pnpm -r clean && rm -rf node_modules/.cache"
   },
   "devDependencies": {},

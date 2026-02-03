@@ -1,35 +1,45 @@
-import { Context } from 'hono';
-import { PageRendererService } from '../services/page-renderer.service';
+import { Controller, Injectable, Get, Query, Inject } from '@sker/core';
+import { PageRendererService, type RenderFormat } from '../services/page-renderer.service';
 import { HomePage, GitDocsPage } from '../www/pages';
 
-export async function renderHomePage(c: Context) {
-  const injector = c.get('injector');
-  const renderer = injector.get(PageRendererService);
+@Controller('/pages')
+@Injectable({ providedIn: 'auto' })
+export class PageController {
+  constructor(
+    @Inject(PageRendererService) private renderer: PageRendererService
+  ) { }
 
-  const acceptHeader = c.req.header('accept');
-  const format = renderer.detectFormat(acceptHeader);
+  @Get('/home')
+  async renderHomePage(@Query('format') format?: RenderFormat) {
+    const detectedFormat = format || 'html';
 
-  const html = renderer.renderPage(HomePage, {}, format, {
-    title: 'Sker API - Home',
-    description: 'Modern API with Git/File management and MCP support'
-  });
+    const html = this.renderer.renderPage(HomePage, {}, detectedFormat, {
+      title: 'Sker API - Home',
+      description: 'Modern API with Git/File management and MCP support'
+    });
 
-  const contentType = format === 'markdown' ? 'text/markdown' : 'text/html';
-  return c.html(html, 200, { 'Content-Type': contentType });
+    const contentType = detectedFormat === 'markdown' ? 'text/markdown' : 'text/html';
+    return new Response(html, {
+      status: 200,
+      headers: { 'Content-Type': contentType }
+    });
+  }
+
+  @Get('/git-docs')
+  async renderGitDocsPage(@Query('format') format?: RenderFormat) {
+    const detectedFormat = format || 'html';
+
+    const html = this.renderer.renderPage(GitDocsPage, {}, detectedFormat, {
+      title: 'Git Integration Guide',
+      description: 'Complete guide for GitHub/Gitea integration'
+    });
+
+    const contentType = detectedFormat === 'markdown' ? 'text/markdown' : 'text/html';
+    return new Response(html, {
+      status: 200,
+      headers: { 'Content-Type': contentType }
+    });
+  }
 }
 
-export async function renderGitDocsPage(c: Context) {
-  const injector = c.get('injector');
-  const renderer = injector.get(PageRendererService);
 
-  const acceptHeader = c.req.header('accept');
-  const format = renderer.detectFormat(acceptHeader);
-
-  const html = renderer.renderPage(GitDocsPage, {}, format, {
-    title: 'Git Integration Guide',
-    description: 'Complete guide for GitHub/Gitea integration'
-  });
-
-  const contentType = format === 'markdown' ? 'text/markdown' : 'text/html';
-  return c.html(html, 200, { 'Content-Type': contentType });
-}

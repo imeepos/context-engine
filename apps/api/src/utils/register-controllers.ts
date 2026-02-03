@@ -116,6 +116,12 @@ export function registerControllers(app: Hono<{ Bindings: Env }>, application: A
 
             const params = await resolveMethodParams(c, argsMetadata);
             const result = await controllerInstance[methodName](...params);
+
+            // 如果返回值是 Response 对象，直接返回
+            if (result instanceof Response) {
+              return result;
+            }
+
             return c.json({ success: true, data: result });
           } catch (error: any) {
             return c.json({ success: false, error: error.message }, 400);

@@ -9,7 +9,7 @@ export class EchoToolService {
     description: 'Echo back the input message'
   })
   async echo(
-    @ToolArg('message', z.string().describe('Message to echo back'))
+    @ToolArg({ paramName: 'message', zod: z.string().describe('Message to echo back') })
     message: string
   ): Promise<CallToolResult> {
     return {
