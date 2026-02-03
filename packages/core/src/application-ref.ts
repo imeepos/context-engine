@@ -3,7 +3,7 @@ import { APP_INITIALIZER, type Initializer } from './app-initializer';
 import { isOnInit } from './on-init';
 import { isOnDestroy } from './lifecycle';
 import { EnvironmentInjector } from './environment-injector';
-import { resolveModule } from './decorators/module.decorator';
+import { resolveModule, DynamicModule } from './decorators/module.decorator';
 
 /**
  * 应用引用类，管理 applicationInjector
@@ -17,9 +17,9 @@ export class ApplicationRef {
 
   /**
    * 启动应用：解析模块、执行 APP_INITIALIZER，触发 OnInit
-   * @param moduleType 可选的模块类型，使用 @Module 装饰器装饰的类
+   * @param moduleType 可选的模块类型，使用 @Module 装饰器装饰的类，或 DynamicModule
    */
-  async bootstrap(moduleType?: Type<any>): Promise<void> {
+  async bootstrap(moduleType?: Type<any> | DynamicModule): Promise<void> {
     if (this._isBootstrapped) {
       throw new Error('Application already bootstrapped');
     }

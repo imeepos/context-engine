@@ -40,7 +40,7 @@ async function createApp() {
     return c.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // MCP endpoint
+  // MCP SSE endpoint (requires Accept: text/event-stream)
   app.all('/mcp', (c) => mcpTransport.handleRequest(c.req.raw));
 
   return app;

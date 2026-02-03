@@ -195,10 +195,20 @@ constructor(
 **多值注入**：
 
 ```typescript
+import { InjectionToken } from '@sker/core';
+
+// 使用 InjectionToken 实现类型安全
+interface Interceptor {
+  intercept(request: any): any;
+}
+
+const INTERCEPTORS = new InjectionToken<Interceptor[]>('http.interceptors');
+
 { provide: INTERCEPTORS, useClass: AuthInterceptor, multi: true }
 { provide: INTERCEPTORS, useClass: LoggingInterceptor, multi: true }
 
-// 注入时获得数组：[AuthInterceptor, LoggingInterceptor]
+// 注入时获得类型安全的数组
+const interceptors: Interceptor[] = injector.get(INTERCEPTORS);
 ```
 
 ### 6. InjectionToken 注入令牌
@@ -359,5 +369,182 @@ export class Logger {
 @Controller()
 export class UserController {
   constructor(private userService: UserService) {}
+}
+```
+
+### 14. 模块系统
+
+**PlatformRef**：`packages/core/src/platform-ref.ts`
+
+平台引用类，管理 platformInjector，支持创建多个应用实例。
+
+```typescript
+import { PlatformRef, createPlatform } from '@sker/core';
+
+// 创建平台
+const platform: PlatformRef = createPlatform([
+  { provide: 'PLATFORM_ID', useValue: 'server' }
+]);
+
+// 创建应用实例
+const app = platform.bootstrapApplication([
+  { provide: 'API_URL', useValue: 'https://api.example.com' }
+]);
+
+// 销毁平台及所有应用
+await platform.destroy();
+```
+
+**ApplicationRef**：`packages/core/src/application-ref.ts`
+
+应用引用类，管理 applicationInjector，提供应用级别的生命周期管理。
+
+```typescript
+import { ApplicationRef } from '@sker/core';
+
+// 启动应用（解析模块、执行 APP_INITIALIZER、触发 OnInit）
+await app.bootstrap(AppModule);
+
+// 检查状态
+console.log(app.isBootstrapped);  // true
+console.log(app.isDestroyed);     // false
+
+// 销毁应用
+await app.destroy();
+```
+
+**@Module 装饰器**：`packages/core/src/decorators/module.decorator.ts`
+
+模块装饰器，用于声明模块的 providers、imports 和 exports。
+
+```typescript
+import { Module } from '@sker/core';
+
+// 共享模块
+@Module({
+  providers: [LoggerService, ConfigService],
+  exports: [LoggerService]  // 导出供其他模块使用
+})
+class SharedModule {}
+
+// 功能模块
+@Module({
+  imports: [SharedModule],  // 导入共享模块（只获取导出的服务）
+  providers: [UserService, AuthService]
+})
+class UserModule {}
+
+// 应用模块
+@Module({
+  imports: [SharedModule, UserModule],
+  providers: [AppService]
+})
+class AppModule {}
+```
+
+**完整示例**：
+
+```typescript
+import { Module, createPlatform } from '@sker/core';
+
+// 1. 定义模块
+@Module({
+  providers: [DatabaseService],
+  exports: [DatabaseService]
+})
+class DatabaseModule {}
+
+@Module({
+  imports: [DatabaseModule],
+  providers: [UserService]
+})
+class UserModule {}
+
+// 2. 创建平台并启动应用
+const platform = createPlatform();
+const app = platform.bootstrapApplication();
+
+// 3. 启动应用（自动解析模块依赖）
+await app.bootstrap(UserModule);
+
+// 4. 使用服务
+const userService = app.injector.get(UserService);
+
+// 5. 清理
+await app.destroy();
+await platform.destroy();
+```
+
+## 开发工作流
+
+### 可用脚本
+
+| 脚本 | 命令 | 说明 |
+|------|------|------|
+| build | `pnpm build` | 使用 tsup 构建包（生成 ESM/CJS 双格式输出到 dist/） |
+| claude | `pnpm claude` | 运行 Claude Code（跳过权限检查） |
+| lint | `pnpm lint` | 使用 ESLint 检查代码（最多 0 个警告） |
+| check-types | `pnpm check-types` | TypeScript 类型检查（不生成输出） |
+| test | `pnpm test` | 运行测试（使用 Vitest） |
+| test:watch | `pnpm test:watch` | 监听模式运行测试 |
+
+### 开发流程
+
+1. **安装依赖**
+   ```bash
+   pnpm install
+   ```
+
+2. **开发模式**
+   ```bash
+   pnpm test:watch  # 监听模式运行测试
+   ```
+
+3. **类型检查**
+   ```bash
+   pnpm check-types
+   ```
+
+4. **代码检查**
+   ```bash
+   pnpm lint
+   ```
+
+5. **构建**
+   ```bash
+   pnpm build
+   ```
+
+### 测试
+
+使用 Vitest 进行测试：
+
+```bash
+# 运行所有测试
+pnpm test
+
+# 监听模式（开发时推荐）
+pnpm test:watch
+```
+
+### 构建输出
+
+使用 tsup 构建，生成双格式输出：
+
+- **ESM**: `dist/index.mjs` + `dist/index.d.ts`
+- **CJS**: `dist/index.js` + `dist/index.d.ts`
+
+导出配置（package.json）：
+
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./dist/index.mjs"
+    }
+  }
 }
 ```

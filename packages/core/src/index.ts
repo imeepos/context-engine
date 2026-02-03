@@ -86,6 +86,8 @@ export {
   Module,
   getModuleMetadata,
   isModule,
+  isDynamicModule,
   resolveModule,
   type ModuleMetadata,
+  type DynamicModule,
 } from './decorators/module.decorator';

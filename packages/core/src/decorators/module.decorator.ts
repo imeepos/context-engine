@@ -1,7 +1,6 @@
 import 'reflect-metadata';
-import { Type } from '../injector';
+import { Type, InjectionTokenType } from '../injector';
 import { Provider } from '../provider';
-import { InjectionToken } from '../injection-token';
 
 /**
  * 模块元数据接口
@@ -15,12 +14,22 @@ export interface ModuleMetadata {
   /**
    * 导入的其他模块
    */
-  imports?: Type<any>[];
+  imports?: (Type<any> | DynamicModule)[];
 
   /**
    * 导出的服务或令牌，供其他模块使用
    */
-  exports?: (Type<any> | InjectionToken<any>)[];
+  exports?: InjectionTokenType<any>[];
+}
+
+/**
+ * 动态模块接口，用于支持 forRoot 等动态配置模式
+ */
+export interface DynamicModule extends ModuleMetadata {
+  /**
+   * 模块类型
+   */
+  module: Type<any>;
 }
 
 const MODULE_METADATA_KEY = Symbol('module:metadata');
@@ -59,9 +68,40 @@ export function isModule(target: any): boolean {
 }
 
 /**
+ * 检查是否为动态模块
+ */
+export function isDynamicModule(value: any): value is DynamicModule {
+  return !!value && typeof value === 'object' && 'module' in value;
+}
+
+/**
  * 获取模块的导出 providers
  */
-function getModuleExports(moduleType: Type<any>): Provider[] {
+function getModuleExports(moduleType: Type<any> | DynamicModule): Provider[] {
+  // 处理 DynamicModule
+  if (isDynamicModule(moduleType)) {
+    const exportedProviders: Provider[] = [];
+
+    if (!moduleType.exports || moduleType.exports.length === 0) {
+      return exportedProviders;
+    }
+
+    const allProviders = resolveModule(moduleType);
+
+    for (const exportToken of moduleType.exports) {
+      const provider = allProviders.find(p => {
+        const provideToken = typeof p === 'function' ? p : (p as any).provide;
+        return provideToken === exportToken;
+      });
+      if (provider) {
+        exportedProviders.push(provider);
+      }
+    }
+
+    return exportedProviders;
+  }
+
+  // 处理静态模块
   const metadata = getModuleMetadata(moduleType);
   if (!metadata) {
     throw new Error(`${moduleType.name} is not a valid module. Did you forget @Module() decorator?`);
@@ -69,15 +109,12 @@ function getModuleExports(moduleType: Type<any>): Provider[] {
 
   const exportedProviders: Provider[] = [];
 
-  // 如果没有 exports，返回空数组
   if (!metadata.exports || metadata.exports.length === 0) {
     return exportedProviders;
   }
 
-  // 收集所有 providers（包括 imports 的）
   const allProviders = resolveModule(moduleType);
 
-  // 只返回在 exports 中声明的 providers
   for (const exportToken of metadata.exports) {
     const provider = allProviders.find(p => {
       const provideToken = typeof p === 'function' ? p : (p as any).provide;
@@ -94,7 +131,28 @@ function getModuleExports(moduleType: Type<any>): Provider[] {
 /**
  * 解析模块，展平 imports 并合并 providers
  */
-export function resolveModule(moduleType: Type<any>): Provider[] {
+export function resolveModule(moduleType: Type<any> | DynamicModule): Provider[] {
+  // 处理 DynamicModule
+  if (isDynamicModule(moduleType)) {
+    const providers: Provider[] = [];
+
+    // 递归解析 imports，只获取导出的 providers
+    if (moduleType.imports) {
+      for (const importedModule of moduleType.imports) {
+        const exportedProviders = getModuleExports(importedModule);
+        providers.push(...exportedProviders);
+      }
+    }
+
+    // 添加 DynamicModule 的 providers
+    if (moduleType.providers) {
+      providers.push(...moduleType.providers);
+    }
+
+    return providers;
+  }
+
+  // 处理静态模块
   const metadata = getModuleMetadata(moduleType);
   if (!metadata) {
     throw new Error(`${moduleType.name} is not a valid module. Did you forget @Module() decorator?`);

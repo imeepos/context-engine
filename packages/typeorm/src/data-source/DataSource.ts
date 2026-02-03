@@ -1,13 +1,13 @@
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
 import { Repository } from '../repository/Repository.js'
-
+import { Injectable } from '@sker/core'
+@Injectable()
 export class DataSource {
   private repositories = new Map<Function, Repository<any>>()
 
   constructor(
-    private db: D1Database,
-    private entities: Function[]
-  ) {}
+    private db: D1Database
+  ) { }
 
   getRepository<T>(entity: Function): Repository<T> {
     if (this.repositories.has(entity)) {
