@@ -3,8 +3,13 @@ import * as dotenv from 'dotenv'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { Command } from 'commander'
-import { initializeApp } from './core/app-initializer'
-import { createDIContainer } from './core/di-container'
+import { createPlatform } from '@sker/core'
+import { LLMService, LLM_ANTHROPIC_CONFIG } from '@sker/compiler'
+import { CliModule } from './cli.module'
+import { JsonFileStorage } from './storage/json-file-storage'
+import { AgentRegistryService } from './services/agent-registry.service'
+import { MessageBrokerService } from './services/message-broker.service'
+import { TaskManagerService } from './services/task-manager.service'
 import { StateManager } from './ui/state-manager'
 import { ChatSession } from './core/chat-session'
 
@@ -37,25 +42,47 @@ async function main() {
 
       const baseUrl = process.env.ANTHROPIC_BASE_URL
 
-      // 初始化应用服务
-      const services = await initializeApp(options.id)
+      // 初始化存储和服务
+      const storage = new JsonFileStorage()
+      await storage.init()
 
-      // 创建依赖注入容器
-      const llmInjector = createDIContainer({
-        apiKey,
-        baseUrl,
-        messageBroker: services.messageBroker,
-        agentRegistry: services.agentRegistry,
-        taskManager: services.taskManager,
-        taskDependencyResolver: services.taskDependencyResolver
-      })
+      const agentRegistry = new AgentRegistryService(storage)
+      const messageBroker = new MessageBrokerService(storage, agentRegistry)
+      const taskManager = new TaskManagerService(storage)
+      await taskManager.init()
+
+      let currentAgent
+      try {
+        currentAgent = await agentRegistry.register(options.id)
+      } catch (error: any) {
+        console.error(`注册失败: ${error.message}`)
+        process.exit(1)
+      }
+
+      await messageBroker.init()
+
+      // 创建 platform 和 application
+      const platform = createPlatform()
+      const app = platform.bootstrapApplication([
+        { provide: LLM_ANTHROPIC_CONFIG, useValue: { apiKey, baseUrl } },
+        { provide: JsonFileStorage, useValue: storage },
+        { provide: AgentRegistryService, useValue: agentRegistry },
+        { provide: MessageBrokerService, useValue: messageBroker },
+        { provide: TaskManagerService, useValue: taskManager }
+      ])
+
+      // 启动应用模块
+      await app.bootstrap(CliModule)
+
+      // 从注入器获取服务
+      const llmService = app.injector.get(LLMService)
 
       // 加载历史消息
-      const onlineAgents = await services.agentRegistry.getOnlineAgents()
+      const onlineAgents = await agentRegistry.getOnlineAgents()
       const allMessages: any[] = []
       for (const agent of onlineAgents) {
-        if (agent.id !== services.currentAgent?.id) {
-          const history = await services.messageBroker.getMessageHistory(agent.id)
+        if (agent.id !== currentAgent?.id) {
+          const history = await messageBroker.getMessageHistory(agent.id)
           allMessages.push(...history)
         }
       }
@@ -64,21 +91,28 @@ async function main() {
       const stateManager = new StateManager(
         {
           agents: onlineAgents,
-          currentAgentId: services.currentAgent?.id || '',
+          currentAgentId: currentAgent?.id || '',
           messages: allMessages
         },
-        services.agentRegistry
+        agentRegistry
       )
 
       // 创建并启动聊天会话
       const chatSession = new ChatSession({
-        llmInjector,
-        agentRegistry: services.agentRegistry,
-        messageBroker: services.messageBroker,
+        llmInjector: app.injector,
+        agentRegistry,
+        messageBroker,
         stateManager
       })
 
       await chatSession.start()
+
+      // 清理资源
+      process.on('SIGINT', async () => {
+        await app.destroy()
+        await platform.destroy()
+        process.exit(0)
+      })
     })
 
   program.parse()

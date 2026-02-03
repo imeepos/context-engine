@@ -239,4 +239,10 @@ export class ToolExecutorVisitor implements Visitor {
     visitUnifiedStreamEventAst(ast: any, ctx: any): any {
         throw new Error("Method not implemented.");
     }
+    visitMCPRequestAst(ast: any, ctx: any): any {
+        throw new Error("Method not implemented.");
+    }
+    visitMCPResponseAst(ast: any, ctx: any): any {
+        throw new Error("Method not implemented.");
+    }
 }

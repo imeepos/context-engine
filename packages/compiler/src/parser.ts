@@ -144,6 +144,14 @@ export class ParserVisitor implements Visitor {
         return ast;
     }
 
+    visitMCPRequestAst(ast: any, ctx: any): any {
+        return ast;
+    }
+
+    visitMCPResponseAst(ast: any, ctx: any): any {
+        return ast;
+    }
+
     async visitResponse(response: Response): Promise<Ast | Observable<Ast>> {
         if (!response.ok) {
             const error = await response.text()

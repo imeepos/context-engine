@@ -1,9 +1,7 @@
 import { Injector, Type } from './injector';
-import { APP_INITIALIZER, type Initializer } from './app-initializer';
-import { isOnInit } from './on-init';
-import { isOnDestroy } from './lifecycle';
-import { EnvironmentInjector } from './environment-injector';
+import { root } from './environment-injector';
 import { resolveModule, DynamicModule } from './decorators/module.decorator';
+import { getPlatformInjector } from './root';
 
 /**
  * 应用引用类，管理 applicationInjector
@@ -30,38 +28,13 @@ export class ApplicationRef {
     // 如果提供了模块类型，解析并注册 providers
     if (moduleType) {
       const providers = resolveModule(moduleType);
-      if (typeof (this.injector as EnvironmentInjector).set === 'function') {
-        (this.injector as EnvironmentInjector).set(providers);
-      }
+      this.injector.set(providers);
     }
-
-    // 执行 APP_INITIALIZER
-    await this.runInitializers();
-
-    // 触发所有服务的 OnInit
-    await this.runOnInit();
+    await root.init();
+    await getPlatformInjector().init();
+    await this.injector.init();
 
     this._isBootstrapped = true;
-  }
-
-  /**
-   * 执行所有 APP_INITIALIZER
-   */
-  private async runInitializers(): Promise<void> {
-    // 手动执行初始化器
-    const initializers = this.injector.get<Initializer[]>(APP_INITIALIZER, []);
-    for (const initializer of initializers) {
-      await initializer.init();
-    }
-  }
-
-  /**
-   * 触发所有服务的 OnInit
-   */
-  private async runOnInit(): Promise<void> {
-    if (typeof (this.injector as EnvironmentInjector).init === 'function') {
-      await (this.injector as EnvironmentInjector).init();
-    }
   }
 
   /**
@@ -70,9 +43,9 @@ export class ApplicationRef {
   async destroy(): Promise<void> {
     if (this._isDestroyed) return;
 
-    if (typeof (this.injector as EnvironmentInjector).destroy === 'function') {
-      await (this.injector as EnvironmentInjector).destroy();
-    }
+    await this.injector.destroy();
+    await getPlatformInjector().destroy();
+    await root.destroy();
 
     this._isDestroyed = true;
   }

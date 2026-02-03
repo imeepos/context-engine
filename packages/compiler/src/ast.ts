@@ -327,6 +327,8 @@ export interface Visitor {
     visitUnifiedRequestAst(ast: UnifiedRequestAst, ctx: any): any;
     visitUnifiedResponseAst(ast: UnifiedResponseAst, ctx: any): any;
     visitUnifiedStreamEventAst(ast: UnifiedStreamEventAst, ctx: any): any;
+    visitMCPRequestAst(ast: MCPRequestAst, ctx: any): any;
+    visitMCPResponseAst(ast: MCPResponseAst, ctx: any): any;
 }
 
 export abstract class BaseVisitor implements Visitor {
@@ -376,6 +378,12 @@ export abstract class BaseVisitor implements Visitor {
         return null;
     }
     visitUnifiedStreamEventAst(ast: UnifiedStreamEventAst, ctx: any): any {
+        return null;
+    }
+    visitMCPRequestAst(ast: MCPRequestAst, ctx: any): any {
+        return null;
+    }
+    visitMCPResponseAst(ast: MCPResponseAst, ctx: any): any {
         return null;
     }
 }
@@ -493,4 +501,28 @@ export interface UnifiedTool {
     name: string;
     description: string;
     parameters: UnifiedToolParameters;
+}
+
+// ==================== MCP Request/Response Types ====================
+
+export class MCPRequestAst extends Ast {
+    method!: string;
+    params?: Record<string, unknown>;
+    id?: string | number;
+    visit(visitor: Visitor, ctx: any) {
+        return visitor.visitMCPRequestAst(this, ctx);
+    }
+}
+
+export class MCPResponseAst extends Ast {
+    id!: string | number | null;
+    result?: unknown;
+    error?: {
+        code: number;
+        message: string;
+        data?: unknown;
+    };
+    visit(visitor: Visitor, ctx: any) {
+        return visitor.visitMCPResponseAst(this, ctx);
+    }
 }
