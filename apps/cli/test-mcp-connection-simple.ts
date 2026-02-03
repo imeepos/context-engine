@@ -45,6 +45,31 @@ async function testMcpConnection() {
       }
     })
 
+    console.log('\n正在获取可用资源列表...')
+    const resources = await client.listResources()
+    console.log(`✓ 找到 ${resources.length} 个资源:\n`)
+
+    resources.forEach((resource, index) => {
+      console.log(`${index + 1}. ${resource.uri}`)
+      if (resource.name) {
+        console.log(`   名称: ${resource.name}`)
+      }
+      if (resource.description) {
+        console.log(`   描述: ${resource.description}`)
+      }
+    })
+
+    console.log('\n正在获取可用提示列表...')
+    const prompts = await client.listPrompts()
+    console.log(`✓ 找到 ${prompts.length} 个提示:\n`)
+
+    prompts.forEach((prompt, index) => {
+      console.log(`${index + 1}. ${prompt.name}`)
+      if (prompt.description) {
+        console.log(`   ${prompt.description}`)
+      }
+    })
+
     await client.disconnect()
     console.log('\n✓ 已断开连接')
     console.log('最终状态:', client.getState())
