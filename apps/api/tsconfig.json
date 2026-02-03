@@ -6,6 +6,6 @@
     "jsx": "react",
     "types": ["@cloudflare/workers-types", "@types/react"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "worker-configuration.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

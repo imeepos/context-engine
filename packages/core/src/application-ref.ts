@@ -21,7 +21,7 @@ export class ApplicationRef {
   private moduleRefs = new Map<Type<any>, ModuleRef>();
   private featureToModuleMap = new Map<Type<any>, Type<any>>(); // feature -> module 映射
 
-  constructor(public readonly injector: Injector) { }
+  constructor(public readonly injector: EnvironmentInjector) { }
 
   /**
    * 启动应用：解析模块、执行 APP_INITIALIZER，触发 OnInit

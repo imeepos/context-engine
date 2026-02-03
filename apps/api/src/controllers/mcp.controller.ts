@@ -1,7 +1,7 @@
 import { Injectable, Tool, ToolArg } from '@sker/core';
 import { z } from 'zod';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class McpController {
   @Tool({
     name: 'echo',

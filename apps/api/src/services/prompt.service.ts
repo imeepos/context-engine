@@ -14,7 +14,7 @@ export interface PromptDefinition {
   arguments?: PromptArgument[];
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class PromptService {
   private prompts: PromptMetadata[] = [];
 

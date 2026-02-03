@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { EnvironmentInjector } from '@sker/core';
+import { createPlatform } from '@sker/core';
+import type { ExecutionContext } from 'hono';
 import { injectorMiddleware } from './middleware/injector';
-import { PromptService } from './services/prompt.service';
-import { createMcpServer, createMcpTransport } from './mcp/server';
+import { AppModule } from './modules/app.module';
+import { MCP_TRANSPORT } from './modules/mcp.module';
 
 // Import services to trigger decorators
 import './www/prompts/hello.prompt';
@@ -13,18 +14,11 @@ import './controllers/mcp.controller';
 async function createApp() {
   const app = new Hono();
 
-  // Setup platform and application injectors
-  const platformInjector = EnvironmentInjector.createPlatformInjector([]);
-  await platformInjector.init();
-  const appInjector = EnvironmentInjector.createApplicationInjector([
-    { provide: PromptService, useClass: PromptService }
-  ]);
-  await appInjector.init();
+  // Create platform and bootstrap application
+  const platform = createPlatform();
+  const application = platform.bootstrapApplication();
+  await application.bootstrap(AppModule);
 
-  // Create MCP server and transport
-  const mcpServer = createMcpServer(appInjector);
-  const mcpTransport = createMcpTransport();
-  await mcpServer.connect(mcpTransport);
 
   // Middleware
   app.use('*', cors({
@@ -33,7 +27,7 @@ async function createApp() {
     allowHeaders: ['Content-Type', 'mcp-session-id', 'Last-Event-ID', 'mcp-protocol-version'],
     exposeHeaders: ['mcp-session-id', 'mcp-protocol-version']
   }));
-  app.use('*', injectorMiddleware(appInjector));
+  app.use('*', injectorMiddleware(application.injector));
 
   // Health check
   app.get('/health', (c) => {
@@ -41,7 +35,10 @@ async function createApp() {
   });
 
   // MCP SSE endpoint (requires Accept: text/event-stream)
-  app.all('/mcp', (c) => mcpTransport.handleRequest(c.req.raw));
+  app.all('/mcp', (c) => {
+    const mcpTransport = c.get('injector').get(MCP_TRANSPORT);
+    return mcpTransport.handleRequest(c.req.raw);
+  });
 
   return app;
 }
@@ -50,7 +47,7 @@ async function createApp() {
 let appInstance: Awaited<ReturnType<typeof createApp>> | null = null;
 
 export default {
-  async fetch(request: Request, env: any, ctx: any) {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     if (!appInstance) {
       appInstance = await createApp();
     }

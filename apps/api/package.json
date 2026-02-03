@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "build": "tsup",
+    "types": "wrangler types --env dev",
     "deploy": "wrangler deploy",
     "test": "vitest run",
     "test:watch": "vitest",
