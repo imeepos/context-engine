@@ -68,16 +68,25 @@ let appInstance: Awaited<ReturnType<typeof createApp>> | null = null;
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-    const logger = createLogger('Fetch');
-    logger.log(`Incoming request: ${request.method} ${new URL(request.url).pathname}`);
+    console.log('[Fetch] START - Incoming request:', request.method, new URL(request.url).pathname);
 
     if (!appInstance) {
-      logger.log('App instance not created, creating now...');
-      appInstance = await createApp();
-      logger.log('App instance created');
+      console.log('[Fetch] App instance not created, creating now...');
+      try {
+        appInstance = await createApp();
+        console.log('[Fetch] App instance created successfully');
+      } catch (error) {
+        console.error('[Fetch] Failed to create app:', error);
+        return new Response(JSON.stringify({ error: 'Failed to initialize app' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     }
 
-    logger.log('Forwarding request to Hono app...');
-    return appInstance.fetch(request, env, ctx);
+    console.log('[Fetch] Forwarding request to Hono app...');
+    const response = await appInstance.fetch(request, env, ctx);
+    console.log('[Fetch] Response status:', response.status);
+    return response;
   }
 };

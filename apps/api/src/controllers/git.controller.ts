@@ -17,7 +17,7 @@ export class GitController {
   constructor(
     @Inject(GitService) private gitService: GitService,
     @Inject(SyncService) private syncService: SyncService
-  ) {}
+  ) { }
 
   @Post('/connect')
   async connectRepository(@Body(connectRepositorySchema) body: z.infer<typeof connectRepositorySchema>) {
@@ -48,5 +48,23 @@ export class GitController {
   async getConnections(@Param('repositoryId') repositoryId: string) {
     const connections = await this.gitService.getConnections(repositoryId);
     return connections;
+  }
+
+  @Get('/test-di')
+  async testDependencyInjection() {
+    console.log('[GitController] testDependencyInjection called');
+    console.log('[GitController] gitService:', this.gitService);
+    console.log('[GitController] syncService:', this.syncService);
+
+    const result = {
+      message: 'Dependency injection is working',
+      services: {
+        gitService: !!this.gitService,
+        syncService: !!this.syncService
+      }
+    };
+
+    console.log('[GitController] returning result:', result);
+    return result;
   }
 }
