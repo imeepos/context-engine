@@ -1,4 +1,4 @@
-import { Injectable } from '@sker/core';
+import { Injectable, Inject } from '@sker/core';
 import { DataSource } from '@sker/typeorm';
 import { RemoteConnection, RemoteProvider, Repository } from '../entities';
 import { GitHubService, GiteaService } from '../services/git';
@@ -10,9 +10,9 @@ interface ConnectRepoDto {
   accessToken: string;
 }
 
-@Injectable()
+@Injectable({ providedIn: 'auto' })
 export class GitService {
-  constructor(private dataSource: DataSource) {}
+  constructor(@Inject(DataSource) private dataSource: DataSource) {}
 
   async connectRepository(dto: ConnectRepoDto) {
     const providerRepo = this.dataSource.getRepository(RemoteProvider);

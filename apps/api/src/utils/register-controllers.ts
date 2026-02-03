@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { EnvironmentInjector } from '@sker/core';
+import { EnvironmentInjector, createLogger, root } from '@sker/core';
 import {
   CONTROLLES,
   PATH_METADATA,
@@ -10,6 +10,8 @@ import {
   RequestMethod,
   ParamType
 } from '@sker/core';
+
+const logger = createLogger('RegisterControllers');
 
 interface RouteArgMetadata {
   index: number;
@@ -63,15 +65,19 @@ async function resolveMethodParams(c: Context, argsMetadata: Record<string, Rout
 
 export function registerControllers(app: Hono, injector: EnvironmentInjector): void {
   try {
-    const controllers = injector.get(CONTROLLES, []);
+    logger.log('Starting controller registration...');
+    const controllers = root.get(CONTROLLES, []);
+    logger.log(`Found ${controllers.length} controllers`);
 
     for (const ControllerClass of controllers) {
       const controllerPath = Reflect.getMetadata(PATH_METADATA, ControllerClass) || '';
+      logger.log(`Registering controller: ${ControllerClass.name} at path: ${controllerPath}`);
       const prototype = ControllerClass.prototype;
 
       const methodNames = Object.getOwnPropertyNames(prototype).filter(
         name => name !== 'constructor' && typeof prototype[name] === 'function'
       );
+      logger.log(`Found ${methodNames.length} methods in ${ControllerClass.name}`);
 
       for (const methodName of methodNames) {
         const method = prototype[methodName];
@@ -83,11 +89,31 @@ export function registerControllers(app: Hono, injector: EnvironmentInjector): v
         const fullPath = `${controllerPath}${methodPath}`.replace(/\/+/g, '/');
         const honoMethod = getHttpMethodName(httpMethod);
         const argsMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, method);
+        logger.log(`Registering route: ${honoMethod.toUpperCase()} ${fullPath} -> ${ControllerClass.name}.${methodName}`);
 
         app[honoMethod](fullPath, async (c: Context) => {
           try {
+            // Verify metadata before getting controller instance
+            const paramTypes = Reflect.getMetadata('design:paramtypes', ControllerClass);
+            const metadataInfo = paramTypes ? paramTypes.map((t: any) => t?.name || 'undefined').join(', ') : 'NO METADATA';
+
             const requestInjector = c.get('injector');
             const controllerInstance = requestInjector.get(ControllerClass) as any;
+
+            // Check if dependencies were injected
+            const diagnostics = {
+              controller: ControllerClass.name,
+              paramTypes: metadataInfo,
+              gitService: controllerInstance.gitService ? 'injected' : 'undefined',
+              syncService: controllerInstance.syncService ? 'injected' : 'undefined',
+              instanceKeys: Object.keys(controllerInstance)
+            };
+
+            // Return diagnostics for debugging
+            if (c.req.query('debug') === 'true') {
+              return c.json({ diagnostics });
+            }
+
             const params = await resolveMethodParams(c, argsMetadata);
             const result = await controllerInstance[methodName](...params);
             return c.json({ success: true, data: result });
@@ -97,7 +123,8 @@ export function registerControllers(app: Hono, injector: EnvironmentInjector): v
         });
       }
     }
+    logger.log('Controller registration completed');
   } catch (error) {
-    // No controllers registered yet
+    logger.error(`Failed to register controllers: ${error}`);
   }
 }

@@ -1,12 +1,12 @@
-import { Injectable } from '@sker/core';
+import { Injectable, Inject } from '@sker/core';
 import { DataSource } from '@sker/typeorm';
 import { RemoteConnection, SyncTask, Commit, FileVersion } from '../../entities';
 import type { GitProviderService } from './git-provider.interface';
 
-@Injectable()
+@Injectable({ providedIn: 'auto' })
 export class SyncService {
   constructor(
-    private dataSource: DataSource,
+    @Inject(DataSource) private dataSource: DataSource,
     private providerService: GitProviderService
   ) {}
 

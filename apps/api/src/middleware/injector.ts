@@ -1,4 +1,5 @@
 import { EnvironmentInjector, Injector, REQUEST, InjectionToken } from '@sker/core';
+import { DataSource } from '@sker/typeorm';
 import { Context, Next } from 'hono';
 import type { ExecutionContext } from 'hono';
 
@@ -16,7 +17,8 @@ export const injectorMiddleware = (appInjector: Injector) => {
     const requestInjector = EnvironmentInjector.createFeatureInjector([
       { provide: REQUEST, useValue: c.req.raw },
       { provide: ENV, useValue: c.env },
-      { provide: EXECUTION_CONTEXT, useValue: c.executionCtx }
+      { provide: EXECUTION_CONTEXT, useValue: c.executionCtx },
+      { provide: DataSource, useValue: new DataSource(c.env.DB) }
     ], appInjector);
     c.set('injector', requestInjector);
 

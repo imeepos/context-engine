@@ -1,4 +1,4 @@
-import { Controller, Injectable, Post, Get, Body, Param } from '@sker/core';
+import { Controller, Injectable, Post, Get, Body, Param, Inject } from '@sker/core';
 import { z } from 'zod';
 import { SyncService } from '../services/git';
 import { GitService } from '../services/git.service';
@@ -12,11 +12,11 @@ const connectRepositorySchema = z.object({
 });
 
 @Controller('/git')
-@Injectable()
+@Injectable({ providedIn: 'auto' })
 export class GitController {
   constructor(
-    private gitService: GitService,
-    private syncService: SyncService
+    @Inject(GitService) private gitService: GitService,
+    @Inject(SyncService) private syncService: SyncService
   ) {}
 
   @Post('/connect')
