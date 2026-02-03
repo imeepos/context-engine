@@ -26,15 +26,16 @@ describe('RequestContext', () => {
       }
     }
 
+    const featureProviders = [{ provide: RequestScopedService, useClass: RequestScopedService }];
+
     @Module({
-      features: [{ provide: RequestScopedService, useClass: RequestScopedService }]
+      features: featureProviders
     })
     class TestModule {}
 
     const app = platform.bootstrapApplication();
     await app.bootstrap(TestModule);
 
-    const featureProviders = app.getFeatureProviders();
     expect(featureProviders).toHaveLength(1);
 
     const requestContext = createRequestContext(featureProviders, app.injector);
@@ -56,15 +57,15 @@ describe('RequestContext', () => {
       }
     }
 
+    const featureProviders = [{ provide: CounterService, useClass: CounterService }];
+
     @Module({
-      features: [{ provide: CounterService, useClass: CounterService }]
+      features: featureProviders
     })
     class TestModule2 {}
 
     const app = platform.bootstrapApplication();
     await app.bootstrap(TestModule2);
-
-    const featureProviders = app.getFeatureProviders();
 
     const ctx1 = createRequestContext(featureProviders, app.injector);
     const ctx2 = createRequestContext(featureProviders, app.injector);
@@ -87,8 +88,10 @@ describe('RequestContext', () => {
     @Injectable()
     class RequestService {}
 
+    const featureProviders = [{ provide: RequestService, useClass: RequestService }];
+
     @Module({
-      features: [{ provide: RequestService, useClass: RequestService }]
+      features: featureProviders
     })
     class TestModule3 {}
 
@@ -99,7 +102,7 @@ describe('RequestContext', () => {
     const mockResponse = { status: 200 };
 
     const requestContext = createRequestContext(
-      app.getFeatureProviders(),
+      featureProviders,
       app.injector,
       [
         { provide: REQUEST, useValue: mockRequest },
