@@ -1,6 +1,6 @@
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
 import { Repository } from '../repository/Repository.js'
-import { Injectable } from '@sker/core'
+import { Injectable, Type } from '@sker/core'
 @Injectable()
 export class DataSource {
   private repositories = new Map<Function, Repository<any>>()
@@ -9,7 +9,7 @@ export class DataSource {
     private db: D1Database
   ) { }
 
-  getRepository<T>(entity: Function): Repository<T> {
+  getRepository<T>(entity: Type<T>): Repository<T> {
     if (this.repositories.has(entity)) {
       return this.repositories.get(entity)!
     }

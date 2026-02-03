@@ -12,7 +12,7 @@ export class SyncService {
 
   async syncRepository(connectionId: string): Promise<void> {
     const connectionRepo = this.dataSource.getRepository(RemoteConnection);
-    const connection = await connectionRepo.findOne(connectionId);
+    const connection = await connectionRepo.findOne(connectionId) as RemoteConnection | null;
 
     if (!connection) {
       throw new Error(`Connection ${connectionId} not found`);
@@ -30,10 +30,13 @@ export class SyncService {
       startedAt: new Date().toISOString(),
       completedAt: '',
       createdAt: new Date().toISOString()
-    });
+    }) as SyncTask;
 
     try {
       const [owner, repo] = connection.remoteRepoName.split('/');
+      if (!owner || !repo) {
+        throw new Error(`Invalid remote repo name format: ${connection.remoteRepoName}`);
+      }
       const commits = await this.providerService.getCommits(owner, repo, 'main');
 
       const commitRepo = this.dataSource.getRepository(Commit);
@@ -73,7 +76,7 @@ export class SyncService {
 
   async getSyncStatus(connectionId: string) {
     const taskRepo = this.dataSource.getRepository(SyncTask);
-    const tasks = await taskRepo.find();
-    return tasks.filter(t => t.connectionId === connectionId);
+    const tasks = await taskRepo.find() as SyncTask[];
+    return tasks.filter((t) => t.connectionId === connectionId);
   }
 }

@@ -7,6 +7,13 @@ import type {
   FileContent,
   WebhookConfig
 } from './git-provider.interface';
+import type {
+  GiteaRepoResponse,
+  GiteaBranchResponse,
+  GiteaCommitResponse,
+  GiteaFileResponse,
+  GiteaWebhookResponse
+} from './types';
 
 @Injectable()
 export class GiteaService implements GitProviderService {
@@ -33,7 +40,7 @@ export class GiteaService implements GitProviderService {
   }
 
   async getRepository(owner: string, repo: string): Promise<RemoteRepo> {
-    const data = await this.fetch(`/repos/${owner}/${repo}`);
+    const data = await this.fetch(`/repos/${owner}/${repo}`) as GiteaRepoResponse;
     return {
       id: String(data.id),
       name: data.name,
@@ -45,16 +52,16 @@ export class GiteaService implements GitProviderService {
   }
 
   async listBranches(owner: string, repo: string): Promise<RemoteBranch[]> {
-    const data = await this.fetch(`/repos/${owner}/${repo}/branches`);
-    return data.map((branch: any) => ({
+    const data = await this.fetch(`/repos/${owner}/${repo}/branches`) as GiteaBranchResponse[];
+    return data.map((branch) => ({
       name: branch.name,
       sha: branch.commit.id
     }));
   }
 
   async getCommits(owner: string, repo: string, branch: string): Promise<RemoteCommit[]> {
-    const data = await this.fetch(`/repos/${owner}/${repo}/commits?sha=${branch}`);
-    return data.map((commit: any) => ({
+    const data = await this.fetch(`/repos/${owner}/${repo}/commits?sha=${branch}`) as GiteaCommitResponse[];
+    return data.map((commit) => ({
       sha: commit.sha,
       message: commit.commit.message,
       author: {
@@ -62,18 +69,18 @@ export class GiteaService implements GitProviderService {
         email: commit.commit.author.email,
         date: commit.commit.author.date
       },
-      parents: commit.parents.map((p: any) => p.sha)
+      parents: commit.parents.map(p => p.sha)
     }));
   }
 
   async getFileContent(owner: string, repo: string, path: string, ref: string): Promise<FileContent> {
-    const data = await this.fetch(`/repos/${owner}/${repo}/contents/${path}?ref=${ref}`);
+    const data = await this.fetch(`/repos/${owner}/${repo}/contents/${path}?ref=${ref}`) as GiteaFileResponse;
     const content = Buffer.from(data.content, 'base64').toString('utf-8');
     return {
-      path: data.path,
+      path: path,
       content,
       sha: data.sha,
-      size: data.size
+      size: 0
     };
   }
 
@@ -90,7 +97,7 @@ export class GiteaService implements GitProviderService {
           secret: config.secret
         }
       })
-    });
+    }) as GiteaWebhookResponse;
     return { id: String(data.id) };
   }
 

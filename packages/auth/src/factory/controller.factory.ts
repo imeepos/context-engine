@@ -7,7 +7,7 @@
 import 'reflect-metadata';
 import { createAuthEndpoint, sessionMiddleware } from 'better-auth/api';
 import type { Endpoint, EndpointContext } from 'better-auth';
-import { RequestMethod, root, FEATURE_PROVIDERS, createInjector, Injector, isObservable, RESPONSE, isPromise, REQUEST } from '@sker/core';
+import { RequestMethod, root, FEATURE_PROVIDERS, createInjector, Injector, isObservable, RESPONSE, isPromise, REQUEST, Type } from '@sker/core';
 
 import { permissionMiddleware } from '../permission';
 import type { ControllerConstructor, EndpointConfig, RouteParameter } from './factory.types';
@@ -90,7 +90,7 @@ function createEndpointHandler(
       if (isPromise(result)) {
         result = await result;
       }
-      if(result instanceof Response){
+      if (result instanceof Response) {
         const res = reqInjector.get(RESPONSE) as ServerResponse;
         const req = reqInjector.get(REQUEST) as IncomingMessage;
 
@@ -185,7 +185,7 @@ function createEndpointHandler(
 /**
  * Convert a controller class to Better Auth endpoints
  */
-export function controllerFactory(ControllerClass: ControllerConstructor): Record<string, Endpoint> {
+export function controllerFactory(ControllerClass: Type<any>): Record<string, Endpoint> {
   const controllerPath = extractControllerPath(ControllerClass);
   const endpoints: Record<string, Endpoint> = {};
   const methodNames = getControllerMethods(ControllerClass);

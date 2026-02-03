@@ -16,7 +16,7 @@ export class GitService {
 
   async connectRepository(dto: ConnectRepoDto) {
     const providerRepo = this.dataSource.getRepository(RemoteProvider);
-    const provider = await providerRepo.findOne(dto.providerId);
+    const provider = await providerRepo.findOne(dto.providerId) as RemoteProvider | null;
 
     if (!provider) {
       throw new Error(`Provider ${dto.providerId} not found`);
@@ -63,8 +63,8 @@ export class GitService {
 
   async getConnections(repositoryId: string) {
     const connectionRepo = this.dataSource.getRepository(RemoteConnection);
-    const connections = await connectionRepo.find();
-    return connections.filter((c: RemoteConnection) => c.repositoryId === repositoryId);
+    const connections = await connectionRepo.find() as RemoteConnection[];
+    return connections.filter((c) => c.repositoryId === repositoryId);
   }
 
   async disconnectRepository(connectionId: string) {
