@@ -79,3 +79,13 @@ export * from './logger';
 export * from './error-handler';
 export * from './util';
 export * from './cors';
+export { PlatformRef } from './platform-ref';
+export { ApplicationRef } from './application-ref';
+export { createPlatform, createPlatformFactory } from './platform';
+export {
+  Module,
+  getModuleMetadata,
+  isModule,
+  resolveModule,
+  type ModuleMetadata,
+} from './decorators/module.decorator';

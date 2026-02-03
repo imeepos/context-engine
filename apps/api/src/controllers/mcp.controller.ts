@@ -1,4 +1,4 @@
-import { Controller, Injectable, Tool, ToolArg } from '@sker/core';
+import { Injectable, Tool, ToolArg } from '@sker/core';
 import { z } from 'zod';
 
 @Injectable({ providedIn: 'root' })
