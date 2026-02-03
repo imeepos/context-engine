@@ -2,21 +2,27 @@ import { InjectionToken } from './injection-token';
 import { ForwardRef } from './forward-ref';
 import { HostAttributeToken } from './host-attribute-token';
 import { Provider } from './provider';
+export const Type = Function;
 
-/**
- * 类
- */
+export function isType(v: any): v is Type<any> {
+  return typeof v === 'function';
+}
+
 export interface Type<T> extends Function {
   new(...args: any[]): T;
 }
-export function isType<T>(val: any): val is Type<T> {
-  return typeof val === 'function'
-}
+
+export type Writable<T> = {
+  -readonly [K in keyof T]: T[K];
+};
+
 /**
  * abstract 类
  */
 // @ts-ignore - T is intentionally unused as a type parameter marker
-export interface AbstractType<T = unknown> extends Function { }
+export interface AbstractType<T = any> extends Function {
+  prototype: T;
+}
 export type StringToken<T> = string & { __type?: T };
 export type SymbolToken<T> = symbol & { __type?: T };
 /**
