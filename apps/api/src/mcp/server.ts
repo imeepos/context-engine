@@ -2,7 +2,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import {
-  EnvironmentInjector,
   ToolMetadataKey,
   ToolArgMetadataKey,
   ResourceMetadataKey,
@@ -10,13 +9,14 @@ import {
   ToolMetadata,
   ToolArgMetadata,
   ResourceMetadata,
-  PromptMetadata
+  PromptMetadata,
+  Injector
 } from '@sker/core';
 import { renderComponent } from '../utils/render-component';
 import { z } from 'zod';
 import React from 'react';
 
-export function createMcpServer(injector: EnvironmentInjector) {
+export function createMcpServer(injector: Injector) {
   const server = new McpServer({
     name: 'sker-mcp-api',
     version: '1.0.0'

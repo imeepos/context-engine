@@ -42,7 +42,11 @@ export class Browser {
 
     const pageInjector = createInjector([
       { provide: CURRENT_URL, useFactory: () => parsePromptURL(url) },
-      { provide: CURRENT_ROUTE, useFactory: (parsedUrl: URL, pageInjector: Injector) => matchRoute(parsedUrl.pathname, pageInjector), deps: [CURRENT_URL, Injector] },
+      { provide: CURRENT_ROUTE, useFactory: (...deps: unknown[]) => {
+        const parsedUrl = deps[0] as URL;
+        const pageInjector = deps[1] as Injector;
+        return matchRoute(parsedUrl.pathname, pageInjector);
+      }, deps: [CURRENT_URL, Injector] },
       { provide: CURRENT_PAGE, useClass: Page },
       ...providers
     ], this.parent)

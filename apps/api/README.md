@@ -30,8 +30,6 @@ src/
 │   └── injector.ts               # 请求级 injector 中间件
 ├── resources/
 │   └── docs.resource.tsx         # React 资源组件
-└── sse/
-    └── stream.ts                 # SSE 流实现
 ```
 
 ## 快速开始
@@ -113,11 +111,6 @@ Content-Type: application/json
 {
   "uri": "docs://api"
 }
-```
-
-### SSE 流式工具执行
-```http
-GET /mcp/tools/stream/echo?message=Hello
 ```
 
 ## 创建自定义工具
@@ -221,13 +214,6 @@ export const injectorMiddleware = (appInjector: EnvironmentInjector) => {
 1. React 组件定义资源结构
 2. `createElement()` 创建 VNode
 3. `renderToMarkdown()` 转换为 Markdown
-
-### SSE 实现
-```typescript
-const stream = new SSEStream();
-stream.send('event', { data: '...' });
-stream.close();
-```
 
 ## 配置
 

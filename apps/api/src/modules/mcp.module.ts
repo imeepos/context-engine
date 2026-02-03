@@ -2,6 +2,7 @@ import { Module, APP_INITIALIZER, InjectionToken, Injector } from '@sker/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { createMcpServer, createMcpTransport } from '../mcp/server';
+import { HelloPromptService, ApiDocsResourceService } from '../www/index';
 
 export const MCP_SERVER = new InjectionToken<McpServer>('MCP_SERVER');
 export const MCP_TRANSPORT = new InjectionToken<WebStandardStreamableHTTPServerTransport>('MCP_TRANSPORT');
@@ -14,7 +15,7 @@ export const MCP_TRANSPORT = new InjectionToken<WebStandardStreamableHTTPServerT
   providers: [
     {
       provide: MCP_SERVER,
-      useFactory: (injector) => createMcpServer(injector),
+      useFactory: (injector: Injector) => createMcpServer(injector),
       deps: [Injector]
     },
     {
@@ -29,6 +30,10 @@ export const MCP_TRANSPORT = new InjectionToken<WebStandardStreamableHTTPServerT
       deps: [MCP_SERVER, MCP_TRANSPORT],
       multi: true
     }
+  ],
+  features: [
+    { provide: HelloPromptService, useClass: HelloPromptService },
+    { provide: ApiDocsResourceService, useClass: ApiDocsResourceService },
   ],
   exports: [MCP_SERVER, MCP_TRANSPORT]
 })

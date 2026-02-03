@@ -18,7 +18,7 @@ export interface BaseProvider<T> {
   provide: InjectionTokenType<T>;
   multi?: MultiType;
   key?: string; // 仅当 multi: 'record' 时有效
-  mapKey?: any; // 仅当 multi: 'map' 时有效
+  mapKey?: unknown; // 仅当 multi: 'map' 时有效
 }
 
 /**
@@ -34,7 +34,7 @@ export interface ValueProvider<T> extends BaseProvider<T> {
  * @template T 提供的实例类型
  */
 export interface ClassProvider<T> extends BaseProvider<T> {
-  useClass: (new (...args: any[]) => T) | ForwardRef<new (...args: any[]) => T>;
+  useClass: (new (...args: any[]) => T) | ForwardRef<new (...args: any[]) => T> | Function;
 }
 
 /**
@@ -83,7 +83,7 @@ export interface LazyFactoryProvider<T> extends BaseProvider<T> {
  * 提供者联合类型，包含所有可能的提供者类型
  * @template T 提供的值的类型，默认为 any
  */
-export type Provider<T = any> =
+export type Provider<T = unknown> =
   | ValueProvider<T>
   | ClassProvider<T>
   | FactoryProvider<T>

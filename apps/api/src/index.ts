@@ -6,11 +6,6 @@ import { injectorMiddleware } from './middleware/injector';
 import { AppModule } from './modules/app.module';
 import { MCP_TRANSPORT } from './modules/mcp.module';
 
-// Import services to trigger decorators
-import './www/prompts/hello.prompt';
-import './www/resources/docs.resource';
-import './controllers/mcp.controller';
-
 async function createApp() {
   const app = new Hono();
 

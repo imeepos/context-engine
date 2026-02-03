@@ -25,11 +25,11 @@ import { EnvironmentInjectorUtils } from './environment-injector-utils';
  * 支持多种提供者类型、实例缓存和多值注入
  */
 export class EnvironmentInjector extends Injector {
-  private readonly instances = new Map<any, any>();
-  private readonly providers = new Map<any, Provider[]>();
-  private readonly autoResolvedClasses = new Set<any>();
-  private readonly resolvingTokens = new Set<any>();
-  private readonly dependencyPath: any[] = [];
+  private readonly instances = new Map<InjectionTokenType<unknown>, unknown>();
+  private readonly providers = new Map<InjectionTokenType<unknown>, Provider[]>();
+  private readonly autoResolvedClasses = new Set<InjectionTokenType<unknown>>();
+  private readonly resolvingTokens = new Set<InjectionTokenType<unknown>>();
+  private readonly dependencyPath: InjectionTokenType<unknown>[] = [];
   private isDestroyed = false;
 
   /**
@@ -240,7 +240,7 @@ export class EnvironmentInjector extends Injector {
     // 检查缓存
     if (this.instances.has(resolvedToken)) {
       const instance = this.instances.get(resolvedToken);
-      return instance;
+      return instance as T;
     }
 
     // 检查循环依赖
@@ -302,7 +302,7 @@ export class EnvironmentInjector extends Injector {
     });
   }
 
-  set(providers: (Provider | Type<any>)[]): void {
+  set(providers: (Provider | Type<unknown> | Function)[]): void {
     const list = providers.map(it => {
       if (isType(it)) {
         return { provide: it, useClass: it } as Provider
@@ -321,7 +321,7 @@ export class EnvironmentInjector extends Injector {
   ): T {
     // Set 模式
     if (EnvironmentInjectorUtils.isSetProvider(providers)) {
-      const set = new Set<any>();
+      const set = new Set<unknown>();
       for (const p of providers) {
         if (p.multi !== 'set') continue;
         set.add(this.createSingleInstance(p));
@@ -331,7 +331,7 @@ export class EnvironmentInjector extends Injector {
 
     // Map 模式
     if (EnvironmentInjectorUtils.isMapProvider(providers)) {
-      const map = new Map<any, any>();
+      const map = new Map<unknown, unknown>();
       for (const p of providers) {
         if (p.multi !== 'map') continue;
         EnvironmentInjectorUtils.validateMapProvider(p);
@@ -343,7 +343,7 @@ export class EnvironmentInjector extends Injector {
 
     // Record 模式
     if (EnvironmentInjectorUtils.isRecordProvider(providers)) {
-      const record: Record<string, any> = {};
+      const record: Record<string, unknown> = {};
       for (const p of providers) {
         if (p.multi !== 'record') continue;
         EnvironmentInjectorUtils.validateRecordProvider(p);
@@ -357,7 +357,7 @@ export class EnvironmentInjector extends Injector {
     if (EnvironmentInjectorUtils.isArrayProvider(providers)) {
       return providers
         .filter(p => p.multi === true)
-        .map((p) => this.createSingleInstance(p)) as any;
+        .map((p) => this.createSingleInstance(p)) as T;
     }
 
     // 对于非多值注入，使用最后注册的提供者（后面的覆盖前面的）
@@ -373,42 +373,44 @@ export class EnvironmentInjector extends Injector {
    */
   private createSingleInstance<T>(provider: Provider): T {
     if ('useValue' in provider) {
-      return provider.useValue;
+      return provider.useValue as T;
     }
 
     if ('useClass' in provider) {
       const resolvedClass = resolveForwardRefCached(provider.useClass);
-      return this.createInstanceWithDI(resolvedClass);
+      return this.createInstanceWithDI(resolvedClass) as T;
     }
 
     if ('useFactory' in provider) {
       const resolvedDeps = resolveForwardRefsInDeps(provider.deps);
       const deps = (resolvedDeps || []).map((dep) => this.get(dep));
-      return provider.useFactory(...deps);
+      return provider.useFactory(...deps) as T;
     }
 
     if ('useExisting' in provider) {
       const resolvedExisting = resolveForwardRefCached(provider.useExisting);
-      return this.get(resolvedExisting);
+      return this.get(resolvedExisting) as T;
     }
 
     // ConstructorProvider
-    return this.createInstanceWithDI(provider.provide as any);
+    return this.createInstanceWithDI(provider.provide as Type<T>) as T;
   }
 
   /**
    * 使用依赖注入创建类实例
    */
   private createInstanceWithDI<T>(
-    ClassConstructor: new (...args: any[]) => T,
+    ClassConstructor: (new (...args: unknown[]) => T) | Function,
   ): T {
+    const Constructor = ClassConstructor as new (...args: unknown[]) => T;
+
     // 获取注入元数据
-    const injectMetadata = getInjectMetadata(ClassConstructor);
-    const injectOptions = getInjectOptionsMetadata(ClassConstructor);
+    const injectMetadata = getInjectMetadata(Constructor);
+    const injectOptions = getInjectOptionsMetadata(Constructor);
 
     if (!injectMetadata || injectMetadata.length === 0) {
       // 没有依赖，直接创建
-      const instance = new ClassConstructor();
+      const instance = new Constructor();
       return instance;
     }
 
@@ -416,7 +418,7 @@ export class EnvironmentInjector extends Injector {
     const dependencies = injectMetadata.map((token, index) => {
       if (token === undefined) {
         throw new Error(
-          `Cannot resolve dependency at index ${index} for ${ClassConstructor.name}. Make sure to use @Inject() decorator.`,
+          `Cannot resolve dependency at index ${index} for ${Constructor.name}. Make sure to use @Inject() decorator.`,
         );
       }
 
@@ -425,7 +427,7 @@ export class EnvironmentInjector extends Injector {
       return this.resolveDependency(resolvedToken, options);
     });
 
-    const instance = new ClassConstructor(...dependencies);
+    const instance = new Constructor(...dependencies);
     return instance;
   }
 
@@ -489,7 +491,7 @@ export class EnvironmentInjector extends Injector {
     } catch (error) {
       // 🚀 使用位运算检查可选标志
       if (hasFlag(flags, InternalInjectFlags.Optional)) {
-        return null as any;
+        return undefined as T;
       }
       throw error;
     }
@@ -506,7 +508,7 @@ export class EnvironmentInjector extends Injector {
 
     // 检查缓存
     if (this.instances.has(token)) {
-      return this.instances.get(token);
+      return this.instances.get(token) as T;
     }
 
     // 检查循环依赖
@@ -620,7 +622,7 @@ export class EnvironmentInjector extends Injector {
   }
 
   private async runOnInitServices(): Promise<void> {
-    const initializedInstances = new Set<any>();
+    const initializedInstances = new Set<unknown>();
 
     for (const instance of this.instances.values()) {
       if (isOnInit(instance)) {
@@ -647,9 +649,9 @@ export class EnvironmentInjector extends Injector {
   /**
    * 从 Provider 中提取类定义
    */
-  private extractClassFromProvider(provider: Provider): any {
+  private extractClassFromProvider(provider: Provider): Function | null {
     if ('useClass' in provider) {
-      return resolveForwardRefCached(provider.useClass);
+      return resolveForwardRefCached(provider.useClass) as Function;
     }
 
     // useFactory: 检查 provider.provide 本身是否是带有 @OnInit() 元数据的类
@@ -673,7 +675,7 @@ export class EnvironmentInjector extends Injector {
   /**
    * 初始化单个实例（严格模式）
    */
-  private async initInstance(instance: any): Promise<void> {
+  private async initInstance(instance: { onInit(): Promise<void> | void }): Promise<void> {
     try {
       await instance.onInit();
     } catch (error) {
@@ -708,7 +710,7 @@ export class EnvironmentInjector extends Injector {
   /**
    * 销毁单个实例
    */
-  private async destroyInstance(instance: any): Promise<void> {
+  private async destroyInstance(instance: unknown): Promise<void> {
     try {
       // 检查是否实现了 OnDestroy 接口
       if (isOnDestroy(instance)) {
@@ -723,7 +725,7 @@ export class EnvironmentInjector extends Injector {
   /**
    * 获取令牌的可读名称，用于错误消息
    */
-  private getTokenName(token: any): string {
+  private getTokenName(token: InjectionTokenType<unknown>): string {
     return EnvironmentInjectorUtils.getTokenName(token);
   }
 
@@ -736,7 +738,7 @@ export class EnvironmentInjector extends Injector {
    * - string, symbol - 本身就是可读的
    * - InjectionToken - 有 toString() 方法
    */
-  private validateToken(token: any): void {
+  private validateToken(token: InjectionTokenType<unknown>): void {
     // 只禁止 Object，因为它打印出来是 [object Object]，无法定位
     if (token === Object) {
       throw new Error(
@@ -753,7 +755,7 @@ export class EnvironmentInjector extends Injector {
   /**
    * 尝试自动解析 providedIn 服务
    */
-  private tryAutoResolveProvider(token: any): Provider | null {
+  private tryAutoResolveProvider(token: InjectionTokenType<unknown>): Provider | null {
     // 处理 InjectionToken（检查是否有 factory）
     if (token && typeof token === 'object' && 'factory' in token) {
       const factory = token.factory;
@@ -811,7 +813,7 @@ export class EnvironmentInjector extends Injector {
     } else {
       return {
         provide: token,
-        useClass: token,
+        useClass: token as Type<unknown>,
       };
     }
   }
