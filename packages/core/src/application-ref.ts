@@ -193,6 +193,17 @@ export class ApplicationRef {
   }
 
   /**
+   * 创建 feature 实例（便捷方法）
+   * @param feature Feature 类型
+   * @param providers 可选的额外 providers
+   * @returns Feature 实例
+   */
+  createFeature<T>(feature: Type<T>, providers?: Provider[]): T {
+    const factory = this.createFeatureFactory(feature);
+    return factory(providers);
+  }
+
+  /**
    * 销毁应用：触发 OnDestroy，清理资源
    */
   async destroy(): Promise<void> {

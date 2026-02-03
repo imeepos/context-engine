@@ -16,7 +16,9 @@ import { renderComponent } from '../utils/render-component';
 import { z } from 'zod';
 import React from 'react';
 
-export function createMcpServer(injector: Injector) {
+
+export function createMcpServer(injector: Injector): McpServer {
+
   const server = new McpServer({
     name: 'sker-mcp-api',
     version: '1.0.0'
@@ -118,6 +120,38 @@ export function createMcpServer(injector: Injector) {
   return server;
 }
 
-export function createMcpTransport() {
-  return new WebStandardStreamableHTTPServerTransport();
+// 会话管理 - 存储每个会话的 server 和 transport
+const sessions = new Map<string, { server: McpServer; transport: WebStandardStreamableHTTPServerTransport }>();
+
+// 为每个请求处理 MCP 请求，支持会话管理
+export async function handleMcpRequest(injector: Injector, request: Request): Promise<Response> {
+  const sessionId = request.headers.get('mcp-session-id');
+
+  // 如果有 session ID 且存在对应的 transport，复用它
+  if (sessionId && sessions.has(sessionId)) {
+    const { transport } = sessions.get(sessionId)!;
+    return transport.handleRequest(request);
+  }
+
+  // 创建新的 server 和 transport
+  const server = createMcpServer(injector);
+
+  const transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: () => crypto.randomUUID(),
+    onsessioninitialized: (id) => {
+      sessions.set(id, { server, transport });
+      console.log('[MCP] Session initialized:', id);
+    },
+    onsessionclosed: (id) => {
+      sessions.delete(id);
+      console.log('[MCP] Session closed:', id);
+    },
+    enableJsonResponse: false
+  });
+
+  // 连接 server 和 transport
+  await server.connect(transport);
+
+  // 处理请求
+  return transport.handleRequest(request);
 }

@@ -1,5 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { Injectable, Inject } from '@sker/core'
 import { MCP_CLIENT_CONFIG } from '../tokens'
 import { McpConnectionState } from './types'
@@ -18,7 +18,7 @@ import {
 @Injectable()
 export class McpClient implements IMcpClient {
   private client: Client | null = null
-  private transport: SSEClientTransport | null = null
+  private transport: StreamableHTTPClientTransport | null = null
   private state: McpConnectionState = McpConnectionState.DISCONNECTED
   private reconnectTimer: NodeJS.Timeout | null = null
 
@@ -28,7 +28,7 @@ export class McpClient implements IMcpClient {
 
   constructor(
     @Inject(MCP_CLIENT_CONFIG) private config: McpClientConfig
-  ) {}
+  ) { }
 
   async connect(): Promise<void> {
     if (this.state === McpConnectionState.CONNECTED) {
@@ -38,8 +38,15 @@ export class McpClient implements IMcpClient {
     this.state = McpConnectionState.CONNECTING
 
     try {
-      this.transport = new SSEClientTransport(
-        new URL('/mcp', this.config.baseUrl)
+      this.transport = new StreamableHTTPClientTransport(
+        new URL('/mcp', this.config.baseUrl),
+        {
+          requestInit: {
+            headers: {
+              'Accept': 'application/json, text/event-stream'
+            }
+          }
+        }
       )
 
       this.client = new Client({

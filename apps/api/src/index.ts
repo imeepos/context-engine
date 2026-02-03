@@ -1,12 +1,12 @@
 import "reflect-metadata";
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { createLogger, createPlatform, EnvironmentInjector } from '@sker/core';
+import { createLogger, createPlatform } from '@sker/core';
 import type { ExecutionContext } from 'hono';
 import { AppModule } from './modules/app.module';
-import { MCP_TRANSPORT } from './modules/mcp.module';
 import { registerControllers } from './utils/register-controllers';
 import * as pageController from './controllers/page.controller';
+import { handleMcpRequest } from './mcp/server';
 
 async function createApp() {
   const logger = createLogger('App');
@@ -40,11 +40,19 @@ async function createApp() {
     return c.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // MCP SSE endpoint (requires Accept: text/event-stream)
+  // MCP endpoint
   logger.log('Registering MCP endpoint...');
-  app.all('/mcp', (c) => {
-    const mcpTransport = application.injector.get(MCP_TRANSPORT);
-    return mcpTransport.handleRequest(c.req.raw);
+  app.all('/mcp', async (c) => {
+    logger.log('[MCP] Request received:', c.req.method, c.req.url);
+
+    try {
+      const response = await handleMcpRequest(application.injector, c.req.raw);
+      logger.log('[MCP] Response status:', response.status);
+      return response;
+    } catch (error) {
+      logger.log('[MCP] Error:', error);
+      throw error;
+    }
   });
 
   // Auto-register all controllers
