@@ -8,6 +8,12 @@
   "vars": {
     "ENVIRONMENT": "production"
   },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
   "d1_databases": [
     {
       "binding": "DB",

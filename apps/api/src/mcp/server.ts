@@ -135,11 +135,11 @@ export async function handleMcpRequest(injector: Injector, request: Request): Pr
 
   // 创建新的 server 和 transport
   const server = createMcpServer(injector);
+  const newSessionId = crypto.randomUUID();
 
   const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
+    sessionIdGenerator: () => newSessionId,
     onsessioninitialized: (id) => {
-      sessions.set(id, { server, transport });
       console.log('[MCP] Session initialized:', id);
     },
     onsessionclosed: (id) => {
@@ -149,7 +149,10 @@ export async function handleMcpRequest(injector: Injector, request: Request): Pr
     enableJsonResponse: false
   });
 
-  // 连接 server 和 transport
+  // 提前存储 session，避免竞态条件
+  sessions.set(newSessionId, { server, transport });
+
+  // 连接 server 和 transport（必须等待完成）
   await server.connect(transport);
 
   // 处理请求

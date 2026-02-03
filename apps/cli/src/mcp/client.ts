@@ -56,7 +56,25 @@ export class McpClient implements IMcpClient {
         capabilities: {}
       })
 
-      await this.client.connect(this.transport)
+      try {
+        await this.client.connect(this.transport)
+      } catch (error: any) {
+        // Workaround: MCP SDK 1.25.3 has a bug where the initialized notification
+        // fails with "Server not initialized" on Cloudflare Workers, but the
+        // connection is actually established. We verify by attempting to list tools.
+        if (error?.message?.includes('Server not initialized')) {
+          console.warn('⚠ Ignoring initialized notification error (known SDK bug)')
+          // Connection is likely established, verify by listing tools
+          try {
+            await this.client.listTools()
+          } catch (verifyError) {
+            // If tools listing also fails, the connection truly failed
+            throw error
+          }
+        } else {
+          throw error
+        }
+      }
 
       this.state = McpConnectionState.CONNECTED
 
