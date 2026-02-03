@@ -10,7 +10,7 @@ import {
   RequestMethod,
   ParamType
 } from '@sker/core';
-import { DataSource, D1_DATABASE } from '@sker/typeorm';
+import { D1_DATABASE } from '@sker/typeorm';
 
 const logger = createLogger('RegisterControllers');
 

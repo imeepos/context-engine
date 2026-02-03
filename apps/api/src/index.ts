@@ -6,8 +6,6 @@ import type { ExecutionContext } from 'hono';
 import { AppModule } from './modules/app.module';
 import { registerControllers } from './utils/register-controllers';
 import * as pageController from './controllers/page.controller';
-import type { Injector } from '@sker/core';
-import { handleMcpRequest } from "./mcp/server";
 
 // Export Durable Object
 export { McpSessionDurableObject } from './mcp/session-durable-object';
@@ -43,13 +41,17 @@ async function createApp() {
     return c.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // MCP endpoint - use handleMcpRequest with session management
+  // MCP endpoint - use Durable Object for session management
   logger.log('Registering MCP endpoint...');
   app.all('/mcp', async (c) => {
     logger.log('[MCP] Request received:', c.req.method, c.req.url);
 
     try {
-      const response = await handleMcpRequest(application.injector, c.req.raw);
+      // Use Durable Object for persistent session management
+      const id = c.env.MCP_SESSION.idFromName('mcp-session-id');
+
+      const stub = c.env.MCP_SESSION.get(id);
+      const response = await stub.fetch(c.req.raw);
       logger.log('[MCP] Response status:', response.status);
       return response;
     } catch (error) {
