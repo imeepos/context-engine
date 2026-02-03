@@ -1,7 +1,8 @@
-import { Controller, Injectable, Post, Get, Body, Param, Inject } from '@sker/core';
+import { Controller, Injectable, Post, Get, Body, Param, Inject, Injector } from '@sker/core';
 import { z } from 'zod';
 import { SyncService } from '../services/git';
 import { GitService } from '../services/git.service';
+import { HelloService } from '../d1';
 
 // Request schemas
 const connectRepositorySchema = z.object({
@@ -16,7 +17,8 @@ const connectRepositorySchema = z.object({
 export class GitController {
   constructor(
     @Inject(GitService) private gitService: GitService,
-    @Inject(SyncService) private syncService: SyncService
+    @Inject(SyncService) private syncService: SyncService,
+    @Inject(Injector) private injector: Injector
   ) { }
 
   @Post('/connect')
@@ -53,15 +55,14 @@ export class GitController {
   @Get('/test-di')
   async testDependencyInjection() {
     console.log('[GitController] testDependencyInjection called');
-    console.log('[GitController] gitService:', this.gitService);
-    console.log('[GitController] syncService:', this.syncService);
-    console.log('[GitController] Injector:', this.gitService.injector)
+    const helloService = this.injector.get(HelloService)
 
     const result = {
       message: 'Dependency injection is working',
       services: {
         gitService: !!this.gitService,
-        syncService: !!this.syncService
+        syncService: !!this.syncService,
+        helloService: helloService.version
       }
     };
 

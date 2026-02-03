@@ -11,4 +11,4 @@ import { Module, Logger, ErrorHandler } from '@sker/core';
   ],
   exports: [Logger, ErrorHandler]
 })
-export class SharedModule {}
+export class SharedModule { }

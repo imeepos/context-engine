@@ -12,7 +12,7 @@ interface ConnectRepoDto {
 
 @Injectable({ providedIn: 'auto' })
 export class GitService {
-  constructor(@Inject(DataSource) private dataSource: DataSource, @Inject(Injector) public injector: Injector) { }
+  constructor(@Inject(DataSource) private dataSource: DataSource) { }
 
   async connectRepository(dto: ConnectRepoDto) {
     const providerRepo = this.dataSource.getRepository(RemoteProvider);
