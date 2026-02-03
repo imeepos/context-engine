@@ -55,6 +55,7 @@ export class GitController {
     console.log('[GitController] testDependencyInjection called');
     console.log('[GitController] gitService:', this.gitService);
     console.log('[GitController] syncService:', this.syncService);
+    console.log('[GitController] Injector:', this.gitService.injector)
 
     const result = {
       message: 'Dependency injection is working',

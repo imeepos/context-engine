@@ -1,5 +1,12 @@
 import { InjectionTokenType, Type } from './injector';
 import { EnvironmentInjector } from './environment-injector';
+import { Provider } from './provider';
+
+/**
+ * Feature Factory 类型
+ * 用于创建请求级别的 feature 实例
+ */
+export type FeatureFactory<T> = (providers?: Provider[]) => T;
 
 /**
  * 模块引用类，表示一个已实例化的模块
@@ -29,6 +36,15 @@ export class ModuleRef {
    */
   get<T>(token: InjectionTokenType<T>): T {
     return this.injector.get<T>(token);
+  }
+
+  /**
+   * 获取 feature factory
+   * @param featureType Feature 类型
+   * @returns Feature factory 函数
+   */
+  getFeatureFactory<T>(featureType: Type<T>): FeatureFactory<T> {
+    return this.injector.get<FeatureFactory<T>>(featureType);
   }
 
   /**

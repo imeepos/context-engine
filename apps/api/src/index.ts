@@ -1,9 +1,8 @@
 import "reflect-metadata";
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { createLogger, createPlatform } from '@sker/core';
+import { createLogger, createPlatform, EnvironmentInjector } from '@sker/core';
 import type { ExecutionContext } from 'hono';
-import { injectorMiddleware } from './middleware/injector';
 import { AppModule } from './modules/app.module';
 import { MCP_TRANSPORT } from './modules/mcp.module';
 import { registerControllers } from './utils/register-controllers';
@@ -33,7 +32,6 @@ async function createApp() {
     exposeHeaders: ['mcp-session-id', 'mcp-protocol-version']
   }));
   logger.log('Registering injector middleware...');
-  app.use('*', injectorMiddleware(application.injector));
 
   // Health check
   logger.log('Registering health check endpoint...');
@@ -45,13 +43,13 @@ async function createApp() {
   // MCP SSE endpoint (requires Accept: text/event-stream)
   logger.log('Registering MCP endpoint...');
   app.all('/mcp', (c) => {
-    const mcpTransport = c.get('injector').get(MCP_TRANSPORT);
+    const mcpTransport = application.injector.get(MCP_TRANSPORT);
     return mcpTransport.handleRequest(c.req.raw);
   });
 
   // Auto-register all controllers
   logger.log('Auto-registering controllers...');
-  registerControllers(app, application.injector);
+  registerControllers(app, application);
   logger.log('Controllers registered successfully');
 
   // Page routes (SSR with HTML/Markdown support)
@@ -64,28 +62,13 @@ async function createApp() {
 }
 
 // Create app instance at module level
-let appInstance: Awaited<ReturnType<typeof createApp>> | null = null;
-
+const appInstance = createApp();
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     console.log('[Fetch] START - Incoming request:', request.method, new URL(request.url).pathname);
-
-    if (!appInstance) {
-      console.log('[Fetch] App instance not created, creating now...');
-      try {
-        appInstance = await createApp();
-        console.log('[Fetch] App instance created successfully');
-      } catch (error) {
-        console.error('[Fetch] Failed to create app:', error);
-        return new Response(JSON.stringify({ error: 'Failed to initialize app' }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-    }
-
+    const app = await appInstance;
     console.log('[Fetch] Forwarding request to Hono app...');
-    const response = await appInstance.fetch(request, env, ctx);
+    const response = await app.fetch(request, env, ctx);
     console.log('[Fetch] Response status:', response.status);
     return response;
   }

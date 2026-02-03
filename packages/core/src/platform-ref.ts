@@ -50,6 +50,11 @@ export class PlatformRef {
       await (this.injector as any).destroy();
     }
 
+    // 清理全局 platform injector 引用
+    if (this.injector === EnvironmentInjector.getPlatformInjector()) {
+      (EnvironmentInjector as any).platformInjectorInstance = null;
+    }
+
     this._isDestroyed = true;
   }
 

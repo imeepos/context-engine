@@ -7,9 +7,9 @@ import { Provider } from './provider';
  * 类
  */
 export interface Type<T> extends Function {
-  new(...args: unknown[]): T;
+  new(...args: any[]): T;
 }
-export function isType<T>(val: unknown): val is Type<T> {
+export function isType<T>(val: any): val is Type<T> {
   return typeof val === 'function'
 }
 /**

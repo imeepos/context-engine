@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { EnvironmentInjector, createLogger, root } from '@sker/core';
+import { createLogger, REQUEST, root, type ApplicationRef, InjectionToken } from '@sker/core';
 import {
   CONTROLLES,
   PATH_METADATA,
@@ -10,8 +10,13 @@ import {
   RequestMethod,
   ParamType
 } from '@sker/core';
+import { DataSource, D1_DATABASE } from '@sker/typeorm';
 
 const logger = createLogger('RegisterControllers');
+
+// 定义请求级别的 tokens
+export const ENV = new InjectionToken<any>('ENV');
+export const EXECUTION_CONTEXT = new InjectionToken<any>('EXECUTION_CONTEXT');
 
 interface RouteArgMetadata {
   index: number;
@@ -63,7 +68,7 @@ async function resolveMethodParams(c: Context, argsMetadata: Record<string, Rout
   return params;
 }
 
-export function registerControllers(app: Hono, injector: EnvironmentInjector): void {
+export function registerControllers(app: Hono, application: ApplicationRef): void {
   try {
     logger.log('Starting controller registration...');
     const controllers = root.get(CONTROLLES, []);
@@ -93,26 +98,21 @@ export function registerControllers(app: Hono, injector: EnvironmentInjector): v
 
         app[honoMethod](fullPath, async (c: Context) => {
           try {
-            // Verify metadata before getting controller instance
-            const paramTypes = Reflect.getMetadata('design:paramtypes', ControllerClass);
-            const metadataInfo = paramTypes ? paramTypes.map((t: any) => t?.name || 'undefined').join(', ') : 'NO METADATA';
-
-            const requestInjector = c.get('injector');
-            const controllerInstance = requestInjector.get(ControllerClass) as any;
-
-            // Check if dependencies were injected
-            const diagnostics = {
-              controller: ControllerClass.name,
-              paramTypes: metadataInfo,
-              gitService: controllerInstance.gitService ? 'injected' : 'undefined',
-              syncService: controllerInstance.syncService ? 'injected' : 'undefined',
-              instanceKeys: Object.keys(controllerInstance)
-            };
-
-            // Return diagnostics for debugging
-            if (c.req.query('debug') === 'true') {
-              return c.json({ diagnostics });
+            // 通过 ControllerClass 直接获取对应的 moduleRef
+            const moduleRef = application.getModuleRefByFeature(ControllerClass);
+            if (!moduleRef) {
+              throw new Error(`No module found for controller ${ControllerClass.name}`);
             }
+
+            const factory = moduleRef.getFeatureFactory<any>(ControllerClass);
+
+            // 传入请求级别的 providers
+            const controllerInstance = factory([
+              { provide: REQUEST, useValue: c.req.raw },
+              { provide: ENV, useValue: c.env },
+              { provide: EXECUTION_CONTEXT, useValue: c.executionCtx },
+              { provide: D1_DATABASE, useValue: c.env.DB }
+            ]);
 
             const params = await resolveMethodParams(c, argsMetadata);
             const result = await controllerInstance[methodName](...params);

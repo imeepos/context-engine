@@ -8,8 +8,9 @@ import { Provider } from '../provider';
 export interface ModuleMetadata {
   /**
    * 模块提供的服务
+   * 支持直接传入类（会自动转换为 {provide: Class, useClass: Class}）
    */
-  providers?: Provider[];
+  providers?: (Type<any> | Provider)[];
 
   /**
    * 导入的其他模块
@@ -24,8 +25,9 @@ export interface ModuleMetadata {
   /**
    * 功能级别的服务，将在 featureInjector 中注册
    * 用于请求级别或其他需要隔离的场景
+   * 支持直接传入类（会自动转换为 {provide: Class, useClass: Class}）
    */
-  features?: Provider[];
+  features?: (Type<any> | Provider)[];
 }
 
 /**
@@ -150,9 +152,9 @@ export function resolveModule(moduleType: Type<any> | DynamicModule): Provider[]
       }
     }
 
-    // 添加 DynamicModule 的 providers
+    // 添加 DynamicModule 的 providers（转换 Type<any>）
     if (moduleType.providers) {
-      providers.push(...moduleType.providers);
+      providers.push(...moduleType.providers.map(normalizeProvider));
     }
 
     return providers;
@@ -174,12 +176,22 @@ export function resolveModule(moduleType: Type<any> | DynamicModule): Provider[]
     }
   }
 
-  // 添加当前模块的 providers
+  // 添加当前模块的 providers（转换 Type<any>）
   if (metadata.providers) {
-    providers.push(...metadata.providers);
+    providers.push(...metadata.providers.map(normalizeProvider));
   }
 
   return providers;
+}
+
+/**
+ * 标准化 provider，将 Type<any> 转换为 ClassProvider
+ */
+function normalizeProvider(provider: Type<any> | Provider): Provider {
+  if (typeof provider === 'function') {
+    return { provide: provider, useClass: provider };
+  }
+  return provider;
 }
 
 /**
@@ -198,9 +210,9 @@ export function resolveFeatures(moduleType: Type<any> | DynamicModule): Provider
       }
     }
 
-    // 添加 DynamicModule 的 features
+    // 添加 DynamicModule 的 features（转换 Type<any>）
     if (moduleType.features) {
-      features.push(...moduleType.features);
+      features.push(...moduleType.features.map(normalizeProvider));
     }
 
     return features;
@@ -222,9 +234,9 @@ export function resolveFeatures(moduleType: Type<any> | DynamicModule): Provider
     }
   }
 
-  // 添加当前模块的 features
+  // 添加当前模块的 features（转换 Type<any>）
   if (metadata.features) {
-    features.push(...metadata.features);
+    features.push(...metadata.features.map(normalizeProvider));
   }
 
   return features;

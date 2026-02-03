@@ -98,9 +98,24 @@ export class ApplicationRef {
       }
     }
 
-    // 添加当前模块自己的 providers
+    // 添加当前模块自己的 providers（标准化 Type<any>）
     const ownProviders = metadata.providers || [];
-    allProviders.push(...ownProviders);
+    allProviders.push(...ownProviders.map(p =>
+      typeof p === 'function' ? { provide: p, useClass: p } : p
+    ));
+
+    // 为每个 feature 添加 factory provider
+    if (metadata.features) {
+      for (const feature of metadata.features) {
+        const featureType = typeof feature === 'function' ? feature : (feature as any).provide;
+        if (featureType) {
+          allProviders.push({
+            provide: featureType,
+            useFactory: () => this.createFeatureFactory(featureType),
+          });
+        }
+      }
+    }
 
     // 创建模块注入器，父级直接是 parentInjector
     const moduleInjector = EnvironmentInjector.createFeatureInjector(
@@ -145,16 +160,16 @@ export class ApplicationRef {
 
   /**
    * 创建 feature 工厂函数
-   * @param providers 请求级别的 providers（如 req/res）
+   * @param feature Feature 类型
    * @returns 工厂函数，用于创建 feature 实例
    */
-  createFeatureFactory(providers: Provider[] = []): <T>(feature: Type<T>) => T {
+  createFeatureFactory<T>(feature: Type<T>): (providers?: Provider[]) => T {
     if (!this._isBootstrapped) {
       throw new Error('Cannot create feature factory before application is bootstrapped');
     }
 
     // 返回工厂函数
-    return <T>(feature: Type<T>): T => {
+    return (providers: Provider[] = []): T => {
       // 1. 找到 feature 所属的 moduleRef
       const moduleType = this.featureToModuleMap.get(feature);
       if (!moduleType) {
@@ -175,15 +190,6 @@ export class ApplicationRef {
       // 3. 获取并返回实例
       return featureInjector.get<T>(feature);
     };
-  }
-
-  /**
-   * 创建 feature 实例
-   * @param feature Feature 类型
-   * @returns Feature 实例
-   */
-  createFeature<T>(feature: Type<T>, providers: Provider[] = []): T {
-    return this.createFeatureFactory([...providers])(feature);
   }
 
   /**
@@ -221,54 +227,24 @@ export class ApplicationRef {
   }
 
   /**
-   * 创建 feature 注入器
-   * @param additionalProviders 额外的 providers（可选）
-   * @param moduleType 可选的模块类型，指定 feature 所属的模块
-   * @returns 新的 feature 注入器实例
-   */
-  createFeatureInjector(additionalProviders: Provider[] = [], moduleType?: Type<any>): EnvironmentInjector {
-    if (!this._isBootstrapped) {
-      throw new Error('Cannot create feature injector before application is bootstrapped');
-    }
-
-    const allProviders = [...this.getFeatureProviders(), ...additionalProviders];
-
-    // 如果指定了模块类型，使用该模块的注入器作为父级
-    let parentInjector: Injector = this.injector;
-    if (moduleType) {
-      const moduleRef = this.moduleRefs.get(moduleType);
-      if (moduleRef) {
-        parentInjector = moduleRef.injector;
-      }
-    }
-
-    return EnvironmentInjector.createFeatureInjector(allProviders, parentInjector);
-  }
-
-  /**
-   * 获取所有 feature providers
-   * @returns 所有模块的 feature providers
-   */
-  getFeatureProviders(): Provider[] {
-    const allFeatures: Provider[] = [];
-
-    // 遍历所有模块，收集它们的 features
-    for (const moduleRef of this.moduleRefs.values()) {
-      const metadata = getModuleMetadata(moduleRef.moduleType);
-      if (metadata?.features) {
-        allFeatures.push(...metadata.features);
-      }
-    }
-
-    return allFeatures;
-  }
-
-  /**
    * 获取模块引用
    * @param moduleType 模块类型
    * @returns 模块引用，如果模块未注册则返回 undefined
    */
   getModuleRef<T = any>(moduleType: Type<T>): ModuleRef | undefined {
+    return this.moduleRefs.get(moduleType);
+  }
+
+  /**
+   * 根据 feature 类型获取对应的模块引用
+   * @param featureType Feature 类型
+   * @returns 模块引用，如果 feature 未注册则返回 undefined
+   */
+  getModuleRefByFeature<T = any>(featureType: Type<T>): ModuleRef | undefined {
+    const moduleType = this.featureToModuleMap.get(featureType);
+    if (!moduleType) {
+      return undefined;
+    }
     return this.moduleRefs.get(moduleType);
   }
 

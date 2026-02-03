@@ -15,7 +15,7 @@ import { PageModule } from './page.module';
     McpModule,
     PromptModule,
     GitModule,
-    PageModule
+    PageModule,
   ]
 })
-export class AppModule {}
+export class AppModule { }

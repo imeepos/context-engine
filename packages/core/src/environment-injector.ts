@@ -181,6 +181,24 @@ export class EnvironmentInjector extends Injector {
   }
 
   /**
+   * 仅用于测试：重置全局注入器状态
+   * @internal
+   */
+  static async resetForTesting(): Promise<void> {
+    // 先销毁现有的注入器
+    if (this.platformInjectorInstance) {
+      await this.platformInjectorInstance.destroy();
+    }
+    if (this.rootInjectorInstance) {
+      await this.rootInjectorInstance.destroy();
+    }
+
+    // 重置引用
+    this.rootInjectorInstance = null;
+    this.platformInjectorInstance = null;
+  }
+
+  /**
    * 创建应用注入器
    *
    * 应用注入器以全局平台注入器为父级，用于存储应用级的服务。
