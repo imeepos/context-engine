@@ -20,39 +20,39 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'h1') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `# ${content}\n` : '#\n';
+    return content ? `# ${content}` : '#';
   }
   if (element.type === 'h2') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `## ${content}\n` : '##\n';
+    return content ? `## ${content}` : '##';
   }
   if (element.type === 'h3') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `### ${content}\n` : '###\n';
+    return content ? `### ${content}` : '###';
   }
   if (element.type === 'h4') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `#### ${content}\n` : '####\n';
+    return content ? `#### ${content}` : '####';
   }
   if (element.type === 'h5') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `##### ${content}\n` : '#####\n';
+    return content ? `##### ${content}` : '#####';
   }
   if (element.type === 'h6') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `###### ${content}\n` : '######\n';
+    return content ? `###### ${content}` : '######';
   }
 
   if (element.type === 'ul') {
     return element.children
       .map(child => `- ${getTextContent(child)}`)
-      .join('\n') + '\n';
+      .join('\n');
   }
 
   if (element.type === 'ol') {
     return element.children
       .map((child, i) => `${i + 1}. ${getTextContent(child)}`)
-      .join('\n') + '\n';
+      .join('\n');
   }
 
   if (element.type === 'button') {
@@ -67,7 +67,7 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'p') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `${content}\n` : '';
+    return content;
   }
 
   if (element.type === 'div') {
@@ -75,8 +75,7 @@ export function renderToMarkdown(node: VNode): string {
       .filter(child => child !== null && child !== undefined)
       .map(child => renderToMarkdown(child));
 
-    const content = children.join('');
-    return content ? content + '\n' : '';
+    return children.join('');
   }
 
   if (element.type === 'span') {
