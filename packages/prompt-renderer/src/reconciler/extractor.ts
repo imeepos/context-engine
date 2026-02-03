@@ -153,6 +153,20 @@ function extractToolsInternal(
     }
   }
 
+  if (element.type === 'input') {
+    const name = element.props.name;
+    const placeholder = element.props.placeholder;
+
+    if (typeof name === 'string' && name.length > 0) {
+      const tool: Tool = {
+        name,
+        type: 'input',
+        placeholder
+      };
+      tools.push(tool);
+    }
+  }
+
   if (element.type === 'tool') {
     const { use, name, description, params, execute, key, boundParams } = element.props;
 

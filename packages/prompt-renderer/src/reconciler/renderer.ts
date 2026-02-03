@@ -1,7 +1,7 @@
 import { VNode, ElementNode, TextNode } from './types';
 
 function escapeMarkdown(text: string): string {
-  return text.replace(/([*_#])/g, '\\$1');
+  return text.replace(/([*_#\[\]])/g, '\\$1');
 }
 
 function getTextContent(node: VNode): string {
@@ -13,7 +13,7 @@ function getTextContent(node: VNode): string {
 
 export function renderToMarkdown(node: VNode): string {
   if (node.type === 'TEXT') {
-    return (node as TextNode).content;
+    return escapeMarkdown((node as TextNode).content.trim());
   }
 
   const element = node as ElementNode;
@@ -57,7 +57,7 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'button') {
     const label = getTextContent(element);
-    return `[button:${label}]`;
+    return `[${label}]`;
   }
 
   if (element.type === 'tool') {
@@ -65,17 +65,23 @@ export function renderToMarkdown(node: VNode): string {
     return `[@tool:${label}]`;
   }
 
+  if (element.type === 'input') {
+    const placeholder = element.props?.placeholder;
+    return placeholder ? `[Input: ${placeholder}]` : '[Input]';
+  }
+
   if (element.type === 'p') {
-    const content = element.children.map(getTextContent).join('');
-    return content;
+    const content = element.children.map(getTextContent).join('').trim();
+    return escapeMarkdown(content);
   }
 
   if (element.type === 'div') {
     const children = element.children
       .filter(child => child !== null && child !== undefined)
-      .map(child => renderToMarkdown(child));
+      .map(child => renderToMarkdown(child))
+      .filter(content => content.length > 0);
 
-    return children.join('');
+    return children.join('\n\n');
   }
 
   if (element.type === 'span') {
