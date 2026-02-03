@@ -1,0 +1,40 @@
+{
+  "name": "@sker/auth",
+  "version": "2.0.1",
+  "publishConfig": {
+    "access": "public",
+    "registry": "http://43.240.223.138:4873"
+  },
+  "description": "Authentication module using Better Auth",
+  "keywords": ["auth", "better-auth", "sker"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-auth": "^1.4.8",
+    "better-call": "^1.1.7",
+    "kysely": "^0.28.8",
+    "@sker/core": "workspace:*",
+    "reflect-metadata": "^0.2.2",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@sker/typescript-config": "workspace:*",
+    "@types/node": "^25.0.3",
+    "tsup": "^8.4.0",
+    "typescript": "5.9.2"
+  }
+}

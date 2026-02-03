@@ -12,6 +12,8 @@ import { MessageBrokerService } from './services/message-broker.service'
 import { TaskManagerService } from './services/task-manager.service'
 import { StateManager } from './ui/state-manager'
 import { ChatSession } from './core/chat-session'
+import { MCP_CLIENT_CONFIG } from './tokens'
+import { McpClientService } from './services/mcp-client.service'
 
 // Load .env file from the CLI package directory (ES module compatible)
 const __filename = fileURLToPath(import.meta.url)
@@ -31,6 +33,8 @@ async function main() {
     .description('Start interactive chat with LLM and multi-agent support')
     .option('--id <agentId>', 'Specify custom agent ID (e.g., agent-0, alice)')
     .option('--api-key <key>', 'Anthropic API key (or set ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN env var)')
+    .option('--mcp-url <url>', 'Remote MCP server URL', process.env.MCP_API_URL || 'https://mcp.sker.us')
+    .option('--no-mcp', 'Disable remote MCP connection')
     .action(async (options) => {
       const apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN
 
@@ -63,16 +67,42 @@ async function main() {
 
       // 创建 platform 和 application
       const platform = createPlatform()
-      const app = platform.bootstrapApplication([
+
+      const providers: any[] = [
         { provide: LLM_ANTHROPIC_CONFIG, useValue: { apiKey, baseUrl } },
         { provide: JsonFileStorage, useValue: storage },
         { provide: AgentRegistryService, useValue: agentRegistry },
         { provide: MessageBrokerService, useValue: messageBroker },
         { provide: TaskManagerService, useValue: taskManager }
-      ])
+      ]
+
+      // 添加 MCP 配置（如果启用）
+      if (options.mcp !== false) {
+        providers.push({
+          provide: MCP_CLIENT_CONFIG,
+          useValue: {
+            baseUrl: options.mcpUrl,
+            timeout: parseInt(process.env.MCP_API_TIMEOUT || '30000'),
+            retryAttempts: 3,
+            retryDelay: 1000
+          }
+        })
+      }
+
+      const app = platform.bootstrapApplication(providers)
 
       // 启动应用模块
       await app.bootstrap(CliModule)
+
+      // 如果启用了 MCP，显示连接状态
+      if (options.mcp !== false) {
+        const mcpService = app.injector.get(McpClientService)
+        if (mcpService.isConnected()) {
+          console.log('✓ 远程 MCP 服务器已连接')
+        } else {
+          console.warn('⚠ 远程 MCP 服务器连接失败，仅使用本地工具')
+        }
+      }
 
       // 从注入器获取服务
       const llmService = app.injector.get(LLMService)

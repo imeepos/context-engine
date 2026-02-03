@@ -19,6 +19,10 @@ import { GetTaskTool } from './tools/GetTaskTool'
 import { UpdateTaskTool } from './tools/UpdateTaskTool'
 import { DynamicToolExecutorService } from './tools/DynamicToolExecutorService'
 import { HybridToolExecutor } from './tools/HybridToolExecutor'
+import { McpClient } from './mcp/client'
+import { McpClientService } from './services/mcp-client.service'
+import { RemoteToolProxy } from './tools/RemoteToolProxy'
+import { MCP_CLIENT } from './tokens'
 
 @Module({
   imports: [CompilerModule],
@@ -29,6 +33,10 @@ import { HybridToolExecutor } from './tools/HybridToolExecutor'
     { provide: TaskDependencyResolverService, useClass: TaskDependencyResolverService },
     { provide: DynamicToolExecutorService, useClass: DynamicToolExecutorService },
     { provide: HybridToolExecutor, useClass: HybridToolExecutor },
+    { provide: McpClient, useClass: McpClient },
+    { provide: MCP_CLIENT, useExisting: McpClient },
+    { provide: McpClientService, useClass: McpClientService },
+    { provide: RemoteToolProxy, useClass: RemoteToolProxy },
     { provide: SendMessageTool, useClass: SendMessageTool },
     { provide: ListAgentsTool, useClass: ListAgentsTool },
     { provide: GetMessageHistoryTool, useClass: GetMessageHistoryTool },
