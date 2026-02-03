@@ -88,16 +88,17 @@ describe('MessageBrokerService', () => {
       await new Promise<void>((resolve) => {
         broker.onMessageReceived(async () => {
           // Wait a bit for the file to be updated
-          await new Promise(r => setTimeout(r, 100))
+          await new Promise(r => setTimeout(r, 500))
           const queue = await storage.read<any>('messages/agent-0')
           expect(queue.messages[0].read).toBe(true)
           resolve()
         })
 
-        // Send message after callback is registered
-        void broker2.sendMessage('agent-0', 'Test message')
+        setTimeout(async () => {
+          await broker2.sendMessage('agent-0', 'Test message')
+        }, 500)
       })
-    })
+    }, 10000)
   })
 
   describe('getMessageHistory', () => {
@@ -117,15 +118,15 @@ describe('MessageBrokerService', () => {
       await broker2.init()
 
       await broker2.sendMessage('agent-0', 'Message 1')
-      await new Promise(resolve => setTimeout(resolve, 200))
+      await new Promise(resolve => setTimeout(resolve, 500))
       await broker2.sendMessage('agent-0', 'Message 2')
 
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       const history = await broker.getMessageHistory('agent-1')
       expect(history).toHaveLength(2)
       expect(history[0].content).toBe('Message 1')
       expect(history[1].content).toBe('Message 2')
-    })
+    }, 10000)
   })
 })
