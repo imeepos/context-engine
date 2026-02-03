@@ -1,54 +1,52 @@
-import { Context } from 'hono';
+import { Controller, Injectable, Post, Get, Body, Param } from '@sker/core';
+import { z } from 'zod';
 import { SyncService } from '../services/git';
 import { GitService } from '../services/git.service';
 
-export async function connectRepository(c: Context) {
-  const injector = c.get('injector');
-  const gitService = injector.get(GitService);
+// Request schemas
+const connectRepositorySchema = z.object({
+  repositoryId: z.string(),
+  providerId: z.string(),
+  remoteRepoName: z.string(),
+  accessToken: z.string()
+});
 
-  const body = await c.req.json();
-  const connection = await gitService.connectRepository(body);
+@Controller('/git')
+@Injectable()
+export class GitController {
+  constructor(
+    private gitService: GitService,
+    private syncService: SyncService
+  ) {}
 
-  return c.json({ success: true, data: connection });
-}
+  @Post('/connect')
+  async connectRepository(@Body(connectRepositorySchema) body: z.infer<typeof connectRepositorySchema>) {
+    const connection = await this.gitService.connectRepository(body);
+    return connection;
+  }
 
-export async function syncRepository(c: Context) {
-  const injector = c.get('injector');
-  const syncService = injector.get(SyncService);
+  @Post('/sync/:connectionId')
+  async syncRepository(@Param('connectionId') connectionId: string) {
+    await this.syncService.syncRepository(connectionId);
+    return { message: 'Sync started' };
+  }
 
-  const connectionId = c.req.param('connectionId');
-  await syncService.syncRepository(connectionId);
+  @Get('/sync/:connectionId/status')
+  async getSyncStatus(@Param('connectionId') connectionId: string) {
+    const tasks = await this.syncService.getSyncStatus(connectionId);
+    return tasks;
+  }
 
-  return c.json({ success: true, message: 'Sync started' });
-}
+  @Post('/webhook/:providerId')
+  async handleWebhook(@Param('providerId') providerId: string, @Body() payload: any) {
+    // TODO: Verify webhook signature
+    // TODO: Process webhook event
+    return { status: 'ok' };
+  }
 
-export async function getSyncStatus(c: Context) {
-  const injector = c.get('injector');
-  const syncService = injector.get(SyncService);
-
-  const connectionId = c.req.param('connectionId');
-  const tasks = await syncService.getSyncStatus(connectionId);
-
-  return c.json({ success: true, data: tasks });
-}
-
-export async function handleWebhook(c: Context) {
-  const providerId = c.req.param('providerId');
-  const payload = await c.req.json();
-  const signature = c.req.header('x-hub-signature-256');
-
-  // TODO: Verify webhook signature
-  // TODO: Process webhook event
-
-  return c.json({ status: 'ok' });
-}
-
-export async function getConnections(c: Context) {
-  const injector = c.get('injector');
-  const gitService = injector.get(GitService);
-
-  const repositoryId = c.req.param('repositoryId');
-  const connections = await gitService.getConnections(repositoryId);
-
-  return c.json({ success: true, data: connections });
+  @Get('/connections/:repositoryId')
+  async getConnections(@Param('repositoryId') repositoryId: string) {
+    const connections = await this.gitService.getConnections(repositoryId);
+    return connections;
+  }
 }

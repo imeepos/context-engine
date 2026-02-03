@@ -7,6 +7,13 @@ import type {
   FileContent,
   WebhookConfig
 } from './git-provider.interface';
+import type {
+  GitHubRepoResponse,
+  GitHubBranchResponse,
+  GitHubCommitResponse,
+  GitHubFileResponse,
+  GitHubWebhookResponse
+} from './types';
 
 @Injectable()
 export class GitHubService implements GitProviderService {

@@ -23,6 +23,9 @@ export class GitService {
     }
 
     const [owner, repo] = dto.remoteRepoName.split('/');
+    if (!owner || !repo) {
+      throw new Error(`Invalid remote repo name format: ${dto.remoteRepoName}`);
+    }
 
     let providerService;
     if (provider.type === 'github') {
@@ -61,7 +64,7 @@ export class GitService {
   async getConnections(repositoryId: string) {
     const connectionRepo = this.dataSource.getRepository(RemoteConnection);
     const connections = await connectionRepo.find();
-    return connections.filter(c => c.repositoryId === repositoryId);
+    return connections.filter((c: RemoteConnection) => c.repositoryId === repositoryId);
   }
 
   async disconnectRepository(connectionId: string) {

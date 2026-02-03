@@ -2,6 +2,8 @@ import { Module } from '@sker/core';
 import { SharedModule } from './shared.module';
 import { McpModule } from './mcp.module';
 import { PromptModule } from './prompt.module';
+import { GitModule } from './git.module';
+import { PageModule } from './page.module';
 
 /**
  * AppModule - 根模块
@@ -11,7 +13,9 @@ import { PromptModule } from './prompt.module';
   imports: [
     SharedModule,
     McpModule,
-    PromptModule
+    PromptModule,
+    GitModule,
+    PageModule
   ]
 })
 export class AppModule {}
