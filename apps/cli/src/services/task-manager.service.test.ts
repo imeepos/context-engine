@@ -138,4 +138,42 @@ describe('TaskManagerService', () => {
       expect(agent1Tasks[0].id).toBe(task1.id)
     })
   })
+
+  describe('updateTask', () => {
+    it('should update task fields', async () => {
+      const task = await service.createTask({ title: 'Old Title', description: 'Old Desc' })
+
+      const success = await service.updateTask(task.id, {
+        title: 'New Title',
+        description: 'New Desc'
+      })
+
+      expect(success).toBe(true)
+      const updated = await service.getTask(task.id)
+      expect(updated?.title).toBe('New Title')
+      expect(updated?.description).toBe('New Desc')
+    })
+
+    it('should return false for non-existent task', async () => {
+      const success = await service.updateTask('non-existent-id', { title: 'New Title' })
+      expect(success).toBe(false)
+    })
+  })
+
+  describe('deleteTask', () => {
+    it('should delete task', async () => {
+      const task = await service.createTask({ title: 'Task to Delete', description: 'Desc' })
+
+      const success = await service.deleteTask(task.id)
+      expect(success).toBe(true)
+
+      const deleted = await service.getTask(task.id)
+      expect(deleted).toBeNull()
+    })
+
+    it('should return false for non-existent task', async () => {
+      const success = await service.deleteTask('non-existent-id')
+      expect(success).toBe(false)
+    })
+  })
 })

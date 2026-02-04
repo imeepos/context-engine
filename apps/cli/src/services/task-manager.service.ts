@@ -120,6 +120,36 @@ export class TaskManagerService {
     return Object.values(registry.tasks).filter(t => t.parentId === parentId)
   }
 
+  async updateTask(taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<boolean> {
+    const registry = await this.getRegistry()
+    const task = registry.tasks[taskId]
+
+    if (!task) return false
+
+    registry.tasks[taskId] = {
+      ...task,
+      ...updates,
+      updatedAt: Date.now()
+    }
+    registry.version++
+
+    await this.storage.write(this.STORAGE_KEY, registry)
+    return true
+  }
+
+  async deleteTask(taskId: string): Promise<boolean> {
+    const registry = await this.getRegistry()
+
+    if (!registry.tasks[taskId]) return false
+
+    const { [taskId]: _, ...remainingTasks } = registry.tasks
+    registry.tasks = remainingTasks
+    registry.version++
+
+    await this.storage.write(this.STORAGE_KEY, registry)
+    return true
+  }
+
   private async updateTaskStatus(
     taskId: string,
     status: TaskStatus,

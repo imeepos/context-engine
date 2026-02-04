@@ -54,6 +54,32 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
             创建新任务
           </Tool>
         </li>
+        <li>
+          <Tool name='edit_task' description='编辑任务' params={{
+            taskId: z.string().min(1).describe('Task ID'),
+            title: z.string().optional().describe('New task title'),
+            description: z.string().optional().describe('New task description'),
+            status: z.enum(['pending', 'blocked', 'in_progress', 'completed', 'failed', 'cancelled']).optional().describe('New task status')
+          }} execute={async (params: any, injector) => {
+            const taskManager = injector.get(TaskManagerService)
+            const { taskId, ...updates } = params
+            const success = await taskManager.updateTask(taskId, updates)
+            return success ? `Task updated: ${taskId}` : `Task not found: ${taskId}`
+          }}>
+            编辑任务
+          </Tool>
+        </li>
+        <li>
+          <Tool name='delete_task' description='删除任务' params={{
+            taskId: z.string().min(1).describe('Task ID to delete')
+          }} execute={async (params: any, injector) => {
+            const taskManager = injector.get(TaskManagerService)
+            const success = await taskManager.deleteTask(params.taskId)
+            return success ? `Task deleted: ${params.taskId}` : `Task not found: ${params.taskId}`
+          }}>
+            删除任务
+          </Tool>
+        </li>
       </ul>
 
       <h2>任务列表 (共 {tasks.length} 个)</h2>
