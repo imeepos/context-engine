@@ -6,37 +6,37 @@ describe('Markdown Renderer - Headings', () => {
   it('renders h1 to markdown', () => {
     const node = createElement('h1', {}, [createTextNode('Title')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('# Title');
+    expect(markdown).toBe('# Title\n');
   });
 
   it('renders h2 to markdown', () => {
     const node = createElement('h2', {}, [createTextNode('Subtitle')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('## Subtitle');
+    expect(markdown).toBe('## Subtitle\n');
   });
 
   it('renders h3 to markdown', () => {
     const node = createElement('h3', {}, [createTextNode('Section')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('### Section');
+    expect(markdown).toBe('### Section\n');
   });
 
   it('renders h4 to markdown', () => {
     const node = createElement('h4', {}, [createTextNode('Subsection')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('#### Subsection');
+    expect(markdown).toBe('#### Subsection\n');
   });
 
   it('renders h5 to markdown', () => {
     const node = createElement('h5', {}, [createTextNode('Minor heading')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('##### Minor heading');
+    expect(markdown).toBe('##### Minor heading\n');
   });
 
   it('renders h6 to markdown', () => {
     const node = createElement('h6', {}, [createTextNode('Smallest heading')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('###### Smallest heading');
+    expect(markdown).toBe('###### Smallest heading\n');
   });
 
   it('renders empty h1', () => {
@@ -50,7 +50,7 @@ describe('Markdown Renderer - Text Elements', () => {
   it('renders p to markdown', () => {
     const node = createElement('p', {}, [createTextNode('Paragraph text')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('Paragraph text');
+    expect(markdown).toBe('Paragraph text\n');
   });
 
   it('renders span to markdown', () => {
@@ -62,13 +62,13 @@ describe('Markdown Renderer - Text Elements', () => {
   it('renders div to markdown', () => {
     const node = createElement('div', {}, [createTextNode('Block text')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('Block text');
+    expect(markdown).toBe('Block text\n');
   });
 
   it('renders empty p', () => {
     const node = createElement('p', {}, []);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('');
+    expect(markdown).toBe('\n');
   });
 });
 
@@ -149,7 +149,7 @@ describe('Markdown Renderer - Nested Elements', () => {
     const p = createElement('p', {}, [createTextNode('Content')]);
     const div = createElement('div', {}, [p]);
     const markdown = renderToMarkdown(div);
-    expect(markdown).toBe('Content');
+    expect(markdown).toBe('Content\n\n');
   });
 
   it('renders div with multiple p children', () => {
@@ -157,7 +157,7 @@ describe('Markdown Renderer - Nested Elements', () => {
     const p2 = createElement('p', {}, [createTextNode('Second')]);
     const div = createElement('div', {}, [p1, p2]);
     const markdown = renderToMarkdown(div);
-    expect(markdown).toBe('First\n\nSecond');
+    expect(markdown).toBe('First\nSecond\n\n');
   });
 
   it('renders deeply nested structure', () => {
@@ -165,14 +165,14 @@ describe('Markdown Renderer - Nested Elements', () => {
     const p = createElement('p', {}, [span]);
     const div = createElement('div', {}, [p]);
     const markdown = renderToMarkdown(div);
-    expect(markdown).toBe('Deep');
+    expect(markdown).toBe('Deep\n\n');
   });
 
   it('renders h1 with nested span', () => {
     const span = createElement('span', {}, [createTextNode('Title')]);
     const h1 = createElement('h1', {}, [span]);
     const markdown = renderToMarkdown(h1);
-    expect(markdown).toBe('# Title');
+    expect(markdown).toBe('# Title\n');
   });
 });
 
@@ -180,25 +180,25 @@ describe('Markdown Renderer - Special Characters', () => {
   it('escapes markdown special characters in text', () => {
     const node = createElement('p', {}, [createTextNode('Text with * and _')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('Text with \\* and \\_');
+    expect(markdown).toBe('Text with \\* and \\_\n');
   });
 
   it('escapes # in text', () => {
     const node = createElement('p', {}, [createTextNode('Not a # heading')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('Not a \\# heading');
+    expect(markdown).toBe('Not a \\# heading\n');
   });
 
   it('escapes brackets in text', () => {
     const node = createElement('p', {}, [createTextNode('[Not a link]')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('\\[Not a link\\]');
+    expect(markdown).toBe('\\[Not a link\\]\n');
   });
 
   it('preserves ampersands', () => {
     const node = createElement('p', {}, [createTextNode('A & B')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('A & B');
+    expect(markdown).toBe('A & B\n');
   });
 });
 
@@ -218,13 +218,13 @@ describe('Markdown Renderer - Edge Cases', () => {
   it('renders element with no children', () => {
     const node = createElement('div', {}, []);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('');
+    expect(markdown).toBe('\n');
   });
 
   it('handles null children', () => {
     const node = createElement('div', {}, [null as any]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('');
+    expect(markdown).toBe('\n');
   });
 
   it('renders complex document structure', () => {
@@ -246,18 +246,18 @@ describe('Markdown Renderer - Whitespace Handling', () => {
   it('trims leading whitespace in text', () => {
     const node = createElement('p', {}, [createTextNode('  Text')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('Text');
+    expect(markdown).toBe('Text\n');
   });
 
   it('trims trailing whitespace in text', () => {
     const node = createElement('p', {}, [createTextNode('Text  ')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('Text');
+    expect(markdown).toBe('Text\n');
   });
 
   it('preserves single spaces between words', () => {
     const node = createElement('p', {}, [createTextNode('Multiple words here')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('Multiple words here');
+    expect(markdown).toBe('Multiple words here\n');
   });
 });

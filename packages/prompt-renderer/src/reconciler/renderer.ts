@@ -20,27 +20,27 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'h1') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `# ${content}` : '#';
+    return content ? `# ${content}\n` : '#';
   }
   if (element.type === 'h2') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `## ${content}` : '##';
+    return content ? `## ${content}\n` : '##';
   }
   if (element.type === 'h3') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `### ${content}` : '###';
+    return content ? `### ${content}\n` : '###';
   }
   if (element.type === 'h4') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `#### ${content}` : '####';
+    return content ? `#### ${content}\n` : '####';
   }
   if (element.type === 'h5') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `##### ${content}` : '#####';
+    return content ? `##### ${content}\n` : '#####';
   }
   if (element.type === 'h6') {
     const content = element.children.map(getTextContent).join('');
-    return content ? `###### ${content}` : '######';
+    return content ? `###### ${content}\n` : '######';
   }
 
   if (element.type === 'ul') {
@@ -72,7 +72,7 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'p') {
     const content = element.children.map(getTextContent).join('').trim();
-    return escapeMarkdown(content);
+    return escapeMarkdown(content) + `\n`;
   }
 
   if (element.type === 'div') {
@@ -81,7 +81,7 @@ export function renderToMarkdown(node: VNode): string {
       .map(child => renderToMarkdown(child))
       .filter(content => content.length > 0);
 
-    return children.join('\n\n');
+    return children.join('') + '\n';
   }
 
   if (element.type === 'span') {
