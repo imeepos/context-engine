@@ -1,24 +1,22 @@
 import { NavigateTool } from '../tools/NavigateTool'
-import { DynamicToolExecutorService } from '../tools/DynamicToolExecutorService'
 import { StateManager } from './state-manager'
 import { AGENTS, CURRENT_AGENT_ID, MESSAGES, MESSAGE_SUBSCRIBER, NAVIGATE } from '../tokens'
 import { RENDER_DEBOUNCE_MS } from '../config/constants'
+import { Page } from '@sker/prompt-renderer'
+import { RenderResult } from '@sker/prompt-renderer/dist/browser/browser'
 
 export class UIRenderer {
   private browser: any
-  private currentPage: any
-  private renderResult: any = null
+  private currentPage: Page | null = null;
+  private renderResult: RenderResult | null = null
   private renderTimer: NodeJS.Timeout | null = null
-  private dynamicToolExecutor: DynamicToolExecutorService
   private stateManager: StateManager
 
   constructor(
     browser: any,
-    dynamicToolExecutor: DynamicToolExecutorService,
     stateManager: StateManager
   ) {
     this.browser = browser
-    this.dynamicToolExecutor = dynamicToolExecutor
     this.stateManager = stateManager
   }
 
@@ -43,17 +41,10 @@ export class UIRenderer {
 
   render(): void {
     this.currentPage = this.browser.open(NavigateTool.getCurrentUrl(), this.getStateProviders())
-    this.renderResult = this.currentPage.render()
-
-    // 注册动态工具
-    this.dynamicToolExecutor.clear()
-    this.renderResult.executors.forEach((executor: () => void | Promise<void>, id: string) => {
-      this.dynamicToolExecutor.register(id, executor)
-    })
-
+    this.renderResult = this.currentPage?.render() || null;
     // 清屏并重新渲染
     console.clear()
-    console.log(this.renderResult.prompt)
+    console.log(this.renderResult?.prompt)
   }
 
   debouncedRender(): void {

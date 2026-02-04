@@ -4,7 +4,7 @@ import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { Command } from 'commander'
 import { createPlatform } from '@sker/core'
-import { LLMService, LLM_ANTHROPIC_CONFIG } from '@sker/compiler'
+import { LLM_ANTHROPIC_CONFIG } from '@sker/compiler'
 import { CliModule } from './cli.module'
 import { JsonFileStorage } from './storage/json-file-storage'
 import { AgentRegistryService } from './services/agent-registry.service'
@@ -103,9 +103,6 @@ async function main() {
           console.warn('⚠ 远程 MCP 服务器连接失败，仅使用本地工具')
         }
       }
-
-      // 从注入器获取服务
-      const _llmService = app.injector.get(LLMService)
 
       // 加载历史消息
       const onlineAgents = await agentRegistry.getOnlineAgents()

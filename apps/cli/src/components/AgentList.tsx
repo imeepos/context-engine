@@ -30,19 +30,16 @@ export function AgentListComponent({ injector }: AgentListProps) {
 
         const latestMessage = messagesWithAgent[0]
 
+        const info = [
+          agent.id,
+          agent.id === currentAgentId ? '(你)' : null,
+          agent.id !== currentAgentId && unreadCount > 0 ? `[${unreadCount}未读]` : null,
+          latestMessage ? `${latestMessage.content.substring(0, 15)}${latestMessage.content.length > 15 ? '...' : ''}` : null
+        ].filter(Boolean).join(' ')
+
         return (
           <div key={agent.id}>
-            - {agent.id}{agent.id === currentAgentId ? ' (你)' : ''} [在线]
-            {agent.id !== currentAgentId && ` [${unreadCount}条未读]`}
-            {latestMessage && ` - ${latestMessage.content.substring(0, 20)}${latestMessage.content.length > 20 ? '...' : ''}`}
-            {' '}
-            <Tool
-              use={NavigateTool}
-              params={{ path: `/chat/${agent.id}` }}
-              key={`navigate-${agent.id}`}
-            >
-              查看
-            </Tool>
+            {info} <Tool use={NavigateTool} params={{ path: `/chat/${agent.id}` }} description={`查看与${agent.id}的聊天记录`} key={`navigate-${agent.id}`}>查看</Tool>
           </div>
         )
       })}

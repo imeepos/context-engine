@@ -6,7 +6,6 @@ import { MessageBrokerService } from '../services/message-broker.service'
 import { StateManager } from '../ui/state-manager'
 import { UIRenderer } from '../ui/renderer'
 import { InputHandler } from '../handlers/input-handler'
-import { DynamicToolExecutorService } from '../tools/DynamicToolExecutorService'
 import { createRouter } from '../router'
 
 export interface ChatSessionConfig {
@@ -18,7 +17,6 @@ export interface ChatSessionConfig {
 
 export class ChatSession {
   private llmService: LLMService
-  private dynamicToolExecutor: DynamicToolExecutorService
   private agentRegistry: AgentRegistryService
   private messageBroker: MessageBrokerService
   private stateManager: StateManager
@@ -28,13 +26,12 @@ export class ChatSession {
 
   constructor(config: ChatSessionConfig) {
     this.llmService = config.llmInjector.get(LLMService)
-    this.dynamicToolExecutor = config.llmInjector.get(DynamicToolExecutorService)
     this.agentRegistry = config.agentRegistry
     this.messageBroker = config.messageBroker
     this.stateManager = config.stateManager
 
     const browser = createRouter(config.llmInjector)
-    this.renderer = new UIRenderer(browser, this.dynamicToolExecutor, this.stateManager)
+    this.renderer = new UIRenderer(browser, this.stateManager)
     this.inputHandler = new InputHandler(this.llmService, this.stateManager, this.renderer)
   }
 
