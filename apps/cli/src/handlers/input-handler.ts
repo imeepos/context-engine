@@ -23,7 +23,6 @@ export class InputHandler {
 
     try {
       const renderResult = this.renderer.getRenderResult()
-      console.log(JSON.stringify({ renderResult }))
       const request = new UnifiedRequestBuilder()
         .model(DEFAULT_MODEL)
         .system(renderResult.prompt)

@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
 import { CURRENT_AGENT_ID } from '../tokens'
-import { ToolUse } from '@sker/prompt-renderer'
-import { ListTasksTool } from '../tools/ListTasksTool'
-import { CreateTaskTool } from '../tools/CreateTaskTool'
-import { BatchCreateTasksTool } from '../tools/BatchCreateTasksTool'
+import { Tool } from '@sker/prompt-renderer'
 import { TaskManagerService } from '../services/task-manager.service'
 import { Task, TaskStatus } from '../types/task'
+import z from 'zod'
 
 interface TaskListPageProps {
   injector: Injector
@@ -42,19 +40,18 @@ export function TaskListPageComponent({ injector }: TaskListPageProps) {
       <h2>可用操作</h2>
       <ul>
         <li>
-          <ToolUse use={ListTasksTool} propertyKey={'execute'}>
-            查看所有任务
-          </ToolUse>
-        </li>
-        <li>
-          <ToolUse use={CreateTaskTool} propertyKey={'execute'}>
+          <Tool name='create_task' description='创建任务' params={{
+            title: z.string().min(1).describe('Task title'),
+            description: z.string().min(1).describe('Task description'),
+            parentId: z.string().optional().describe('Parent task ID'),
+            dependencies: z.array(z.string()).optional().describe('Dependency task IDs'),
+            metadata: z.record(z.string(), z.any()).optional().describe('Task metadata')
+          }} execute={async (params: any, injector) => {
+            const taskManager = injector.get(TaskManagerService)
+            await taskManager.createTask(params)
+          }}>
             创建新任务
-          </ToolUse>
-        </li>
-        <li>
-          <ToolUse use={BatchCreateTasksTool} propertyKey={'execute'}>
-            批量创建任务
-          </ToolUse>
+          </Tool>
         </li>
       </ul>
 

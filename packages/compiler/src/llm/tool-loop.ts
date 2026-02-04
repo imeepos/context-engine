@@ -24,7 +24,6 @@ export class ToolCallLoop {
     const maxIterations = options.maxIterations ?? 100;
     let currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), request);
     let iteration = 0;
-    console.log(`共${tools.length}个工具`, currentRequest)
     while (iteration < maxIterations) {
       const response = await adapter.chat(currentRequest);
 

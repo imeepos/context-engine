@@ -30,7 +30,6 @@ export class AnthropicAdapter implements LLMProviderAdapter {
 
     const transformer = new UnifiedToAnthropicTransformer();
     const anthropicRequest = transformer.transform(request);
-    console.log(`[anthropicRequest]`, JSON.stringify(anthropicRequest, null, 2))
     const response = await this.client.messages.create(anthropicRequest as any);
 
     const responseTransformer = new AnthropicToUnifiedTransformer();

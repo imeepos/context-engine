@@ -23,7 +23,6 @@ export class UnifiedToolExecutor {
           isError: true
         };
       }
-      console.log(`use tool: ${toolUse.name}`);
       const result = await tool.execute(toolUse.input, this.injector);
 
       return {

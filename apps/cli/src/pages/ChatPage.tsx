@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
-import { MessageBrokerService } from '../services/message-broker.service'
 import { InterAgentMessage } from '../types/message'
 import { CURRENT_ROUTE, ToolUse } from '@sker/prompt-renderer'
-import { MESSAGES, MESSAGE_SUBSCRIBER, NAVIGATE, CURRENT_AGENT_ID, AGENTS } from '../tokens'
+import { MESSAGES, MESSAGE_SUBSCRIBER, CURRENT_AGENT_ID, AGENTS } from '../tokens'
 import { NavigateTool } from '../tools/NavigateTool'
 import { SendMessageTool } from '../tools/SendMessageTool'
 
