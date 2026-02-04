@@ -1,5 +1,6 @@
-import { Injectable, Injector, ToolMetadataKey, ToolMetadata, root, Inject } from '@sker/core';
-import { UnifiedToolUseContent } from '../ast';
+import { Injectable } from '@sker/core';
+import { UnifiedToolUseContent, UnifiedTool } from '../ast';
+import { buildUnifiedTools } from '../unified/tool-builder';
 
 export interface UnifiedToolResult {
   toolUseId: string;
@@ -10,14 +11,18 @@ export interface UnifiedToolResult {
 
 @Injectable()
 export class UnifiedToolExecutor {
-  constructor(@Inject(Injector) private injector: Injector) {}
+  private toolMap: Map<string, UnifiedTool>;
+
+  constructor() {
+    const tools = buildUnifiedTools();
+    this.toolMap = new Map(tools.map(t => [t.name, t]));
+  }
 
   async execute(toolUse: UnifiedToolUseContent): Promise<UnifiedToolResult> {
     try {
-      const toolMetadatas = root.get(ToolMetadataKey) ?? [];
-      const toolMeta = toolMetadatas.find((m: ToolMetadata) => m.name === toolUse.name);
+      const tool = this.toolMap.get(toolUse.name);
 
-      if (!toolMeta) {
+      if (!tool) {
         return {
           toolUseId: toolUse.id,
           toolName: toolUse.name,
@@ -26,20 +31,7 @@ export class UnifiedToolExecutor {
         };
       }
 
-      const instance = this.injector.get(toolMeta.target);
-      const args = toolMeta.parameters;
-
-      const callArgs: any[] = [];
-      for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
-        const paramName = arg.paramName ?? `param${arg.parameterIndex}`;
-        const value = toolUse.input[paramName];
-        // zod校验
-        const zodValue = arg.zod.parse(value);
-        callArgs.push(zodValue);
-      }
-
-      const method = (instance as any)[toolMeta.propertyKey];
-      const result = await method.call(instance, ...callArgs);
+      const result = await tool.execute(toolUse.input);
 
       return {
         toolUseId: toolUse.id,

@@ -37,7 +37,7 @@ describe('UnifiedToolExecutor', () => {
   beforeEach(() => {
     injector = EnvironmentInjector.createWithAutoProviders([{ provide: TestTools, useClass: TestTools }]);
     root.set([{ provide: TestTools, useClass: TestTools }]);
-    executor = new UnifiedToolExecutor(injector);
+    executor = new UnifiedToolExecutor();
   });
 
   it('should execute simple tool with string parameter', async () => {
@@ -142,7 +142,7 @@ describe('UnifiedToolExecutor', () => {
 
     const objInjector = EnvironmentInjector.createWithAutoProviders([{ provide: ObjectTools, useClass: ObjectTools }]);
     root.set([{ provide: ObjectTools, useClass: ObjectTools }]);
-    const objExecutor = new UnifiedToolExecutor(objInjector);
+    const objExecutor = new UnifiedToolExecutor();
 
     const result = await objExecutor.execute({
       type: 'tool_use',

@@ -61,7 +61,7 @@ describe('ToolCallLoop', () => {
   beforeEach(() => {
     injector = EnvironmentInjector.createWithAutoProviders([{ provide: MockTools, useClass: MockTools }]);
     root.set([{ provide: MockTools, useClass: MockTools }]);
-    executor = new UnifiedToolExecutor(injector);
+    executor = new UnifiedToolExecutor();
     loop = new ToolCallLoop(executor);
     adapter = new MockAdapter();
   });
