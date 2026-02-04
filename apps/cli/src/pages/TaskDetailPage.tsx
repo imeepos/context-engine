@@ -110,7 +110,7 @@ export async function TaskDetailPageComponent({ injector, taskId }: TaskDetailPa
             const taskManager = injector.get(TaskManagerService)
             const agentId = injector.get(CURRENT_AGENT_ID)
             const success = await taskManager.claimTask(taskId, agentId)
-            return success ? `任务已认领: ${taskId}` : `认领失败: ${taskId}`
+            return success ? `任务已认领: ${taskId}` : `认领失败: 您已有正在进行的任务，请先完成或取消当前任务`
           }}>
             认领任务
           </Tool>

@@ -51,6 +51,13 @@ export class TaskManagerService {
   }
 
   async claimTask(taskId: string, agentId: string): Promise<boolean> {
+    const agentTasks = await this.getTasksByAgent(agentId)
+    const hasInProgressTask = agentTasks.some(t => t.status === TaskStatus.IN_PROGRESS)
+
+    if (hasInProgressTask) {
+      return false
+    }
+
     for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
       const registry = await this.getRegistry()
       const task = registry.tasks[taskId]
