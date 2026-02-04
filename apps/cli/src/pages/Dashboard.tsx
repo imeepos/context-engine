@@ -2,6 +2,7 @@ import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
 import { AgentListComponent } from '../components/AgentList'
+import { TaskListComponent } from '../components/TaskList'
 
 interface DashboardProps {
   injector: Injector
@@ -9,12 +10,14 @@ interface DashboardProps {
 
 export async function DashboardComponent({ injector }: DashboardProps) {
   const agentList = await AgentListComponent({ injector })
+  const taskList = await TaskListComponent({ injector })
 
   return (
     <Layout injector={injector}>
       <h1>团队Agent列表</h1>
       {agentList}
       <h1>正在进行的任务</h1>
+      {taskList}
     </Layout>
   )
 }

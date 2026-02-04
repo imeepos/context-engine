@@ -104,18 +104,16 @@ export async function TaskDetailPageComponent({ injector, taskId }: TaskDetailPa
       )}
 
       <h2>操作</h2>
-      <ul>
+      <div>
         {task.status === TaskStatus.PENDING && !task.assignedTo && (
-          <li>
-            <Tool name="claim_task" description="认领任务" execute={async (params, injector) => {
-              const taskManager = injector.get(TaskManagerService)
-              const agentId = injector.get(CURRENT_AGENT_ID)
-              const success = await taskManager.claimTask(taskId, agentId)
-              return success ? `任务已认领: ${taskId}` : `认领失败: ${taskId}`
-            }}>
-              认领任务
-            </Tool>
-          </li>
+          <Tool name="claim_task" description="认领任务" execute={async (params, injector) => {
+            const taskManager = injector.get(TaskManagerService)
+            const agentId = injector.get(CURRENT_AGENT_ID)
+            const success = await taskManager.claimTask(taskId, agentId)
+            return success ? `任务已认领: ${taskId}` : `认领失败: ${taskId}`
+          }}>
+            认领任务
+          </Tool>
         )}
 
         {task.status === TaskStatus.IN_PROGRESS && task.assignedTo === currentAgentId && (
@@ -131,70 +129,62 @@ export async function TaskDetailPageComponent({ injector, taskId }: TaskDetailPa
         )}
 
         {task.status === TaskStatus.IN_PROGRESS && task.assignedTo === currentAgentId && (
-          <li>
-            <Tool name="cancel_task" description="取消任务" execute={async (params, injector) => {
-              const taskManager = injector.get(TaskManagerService)
-              const success = await taskManager.cancelTask(taskId)
-              return success ? `任务已取消: ${taskId}` : `取消失败: ${taskId}`
-            }}>
-              取消任务
-            </Tool>
-          </li>
+          <Tool name="cancel_task" description="取消任务" execute={async (params, injector) => {
+            const taskManager = injector.get(TaskManagerService)
+            const success = await taskManager.cancelTask(taskId)
+            return success ? `任务已取消: ${taskId}` : `取消失败: ${taskId}`
+          }}>
+            取消任务
+          </Tool>
         )}
 
         {task.createdBy === currentAgentId && (
-          <li>
-            <Tool name="edit_task" description="编辑任务" params={{
-              title: z.string().optional().describe('新标题'),
-              description: z.string().optional().describe('新描述'),
-              status: z.enum(['pending', 'blocked', 'in_progress', 'completed', 'failed', 'cancelled']).optional().describe('新状态')
-            }} execute={async (params: any, injector) => {
-              const taskManager = injector.get(TaskManagerService)
-              const success = await taskManager.updateTask(taskId, params)
-              return success ? `任务已更新: ${taskId}` : `更新失败: ${taskId}`
-            }}>
-              编辑任务
-            </Tool>
-          </li>
+          <Tool name="edit_task" description="编辑任务" params={{
+            title: z.string().optional().describe('新标题'),
+            description: z.string().optional().describe('新描述'),
+            status: z.enum(['pending', 'blocked', 'in_progress', 'completed', 'failed', 'cancelled']).optional().describe('新状态')
+          }} execute={async (params: any, injector) => {
+            const taskManager = injector.get(TaskManagerService)
+            const success = await taskManager.updateTask(taskId, params)
+            return success ? `任务已更新: ${taskId}` : `更新失败: ${taskId}`
+          }}>
+            编辑任务
+          </Tool>
         )}
 
         {task.createdBy === currentAgentId && (
-          <li>
-            <Tool name="delete_task" description="删除任务" execute={async (params, injector) => {
-              const taskManager = injector.get(TaskManagerService)
-              const success = await taskManager.deleteTask(taskId)
-              if (success) {
-                const navigate = injector.get(NAVIGATE)
-                await navigate('prompt:///tasks')
-                return `任务已删除: ${taskId}，已返回任务列表`
-              }
-              return `删除失败: ${taskId}`
-            }}>
-              删除任务
-            </Tool>
-          </li>
+          <Tool name="delete_task" description="删除任务" execute={async (params, injector) => {
+            const taskManager = injector.get(TaskManagerService)
+            const success = await taskManager.deleteTask(taskId)
+            if (success) {
+              const navigate = injector.get(NAVIGATE)
+              await navigate('prompt:///tasks')
+              return `任务已删除: ${taskId}，已返回任务列表`
+            }
+            return `删除失败: ${taskId}`
+          }}>
+            删除任务
+          </Tool>
         )}
 
         {task.createdBy === currentAgentId && (
-          <li>
-            <Tool name="add_subtask" description="添加子任务" params={{
-              title: z.string().min(1).describe('子任务标题'),
-              description: z.string().min(1).describe('子任务描述')
-            }} execute={async (params: any, injector) => {
-              const taskManager = injector.get(TaskManagerService)
-              const agentId = injector.get(CURRENT_AGENT_ID)
-              await taskManager.createTask({
-                ...params,
-                createdBy: agentId,
-                parentId: taskId
-              })
-              return `子任务已创建: ${params.title}`
-            }}>
-              添加子任务
-            </Tool>
-          </li>
+          <Tool name="add_subtask" description="添加子任务" params={{
+            title: z.string().min(1).describe('子任务标题'),
+            description: z.string().min(1).describe('子任务描述')
+          }} execute={async (params: any, injector) => {
+            const taskManager = injector.get(TaskManagerService)
+            const agentId = injector.get(CURRENT_AGENT_ID)
+            await taskManager.createTask({
+              ...params,
+              createdBy: agentId,
+              parentId: taskId
+            })
+            return `子任务已创建: ${params.title}`
+          }}>
+            添加子任务
+          </Tool>
         )}
-      </ul>
+      </div>
 
       <p>
         <Tool name="back_to_list" description="返回任务列表" execute={async () => {
