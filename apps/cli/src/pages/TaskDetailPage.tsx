@@ -15,6 +15,7 @@ interface TaskDetailPageProps {
 export async function TaskDetailPageComponent({ injector, taskId }: TaskDetailPageProps) {
   const taskManager = injector.get(TaskManagerService)
   const navigate = injector.get(NAVIGATE)
+  const currentAgentId = injector.get(CURRENT_AGENT_ID)
 
   const task = await taskManager.getTask(taskId)
 
@@ -117,7 +118,7 @@ export async function TaskDetailPageComponent({ injector, taskId }: TaskDetailPa
           </li>
         )}
 
-        {task.status === TaskStatus.IN_PROGRESS && (
+        {task.status === TaskStatus.IN_PROGRESS && task.assignedTo === currentAgentId && (
           <li>
             <Tool name="complete_task" description="完成任务" execute={async (params, injector) => {
               const taskManager = injector.get(TaskManagerService)
@@ -129,60 +130,70 @@ export async function TaskDetailPageComponent({ injector, taskId }: TaskDetailPa
           </li>
         )}
 
-        <li>
-          <Tool name="cancel_task" description="取消任务" execute={async (params, injector) => {
-            const taskManager = injector.get(TaskManagerService)
-            const success = await taskManager.cancelTask(taskId)
-            return success ? `任务已取消: ${taskId}` : `取消失败: ${taskId}`
-          }}>
-            取消任务
-          </Tool>
-        </li>
+        {task.status === TaskStatus.IN_PROGRESS && task.assignedTo === currentAgentId && (
+          <li>
+            <Tool name="cancel_task" description="取消任务" execute={async (params, injector) => {
+              const taskManager = injector.get(TaskManagerService)
+              const success = await taskManager.cancelTask(taskId)
+              return success ? `任务已取消: ${taskId}` : `取消失败: ${taskId}`
+            }}>
+              取消任务
+            </Tool>
+          </li>
+        )}
 
-        <li>
-          <Tool name="edit_task" description="编辑任务" params={{
-            title: z.string().optional().describe('新标题'),
-            description: z.string().optional().describe('新描述'),
-            status: z.enum(['pending', 'blocked', 'in_progress', 'completed', 'failed', 'cancelled']).optional().describe('新状态')
-          }} execute={async (params: any, injector) => {
-            const taskManager = injector.get(TaskManagerService)
-            const success = await taskManager.updateTask(taskId, params)
-            return success ? `任务已更新: ${taskId}` : `更新失败: ${taskId}`
-          }}>
-            编辑任务
-          </Tool>
-        </li>
+        {task.createdBy === currentAgentId && (
+          <li>
+            <Tool name="edit_task" description="编辑任务" params={{
+              title: z.string().optional().describe('新标题'),
+              description: z.string().optional().describe('新描述'),
+              status: z.enum(['pending', 'blocked', 'in_progress', 'completed', 'failed', 'cancelled']).optional().describe('新状态')
+            }} execute={async (params: any, injector) => {
+              const taskManager = injector.get(TaskManagerService)
+              const success = await taskManager.updateTask(taskId, params)
+              return success ? `任务已更新: ${taskId}` : `更新失败: ${taskId}`
+            }}>
+              编辑任务
+            </Tool>
+          </li>
+        )}
 
-        <li>
-          <Tool name="delete_task" description="删除任务" execute={async (params, injector) => {
-            const taskManager = injector.get(TaskManagerService)
-            const success = await taskManager.deleteTask(taskId)
-            if (success) {
-              const navigate = injector.get(NAVIGATE)
-              await navigate('prompt:///tasks')
-              return `任务已删除: ${taskId}，已返回任务列表`
-            }
-            return `删除失败: ${taskId}`
-          }}>
-            删除任务
-          </Tool>
-        </li>
+        {task.createdBy === currentAgentId && (
+          <li>
+            <Tool name="delete_task" description="删除任务" execute={async (params, injector) => {
+              const taskManager = injector.get(TaskManagerService)
+              const success = await taskManager.deleteTask(taskId)
+              if (success) {
+                const navigate = injector.get(NAVIGATE)
+                await navigate('prompt:///tasks')
+                return `任务已删除: ${taskId}，已返回任务列表`
+              }
+              return `删除失败: ${taskId}`
+            }}>
+              删除任务
+            </Tool>
+          </li>
+        )}
 
-        <li>
-          <Tool name="add_subtask" description="添加子任务" params={{
-            title: z.string().min(1).describe('子任务标题'),
-            description: z.string().min(1).describe('子任务描述')
-          }} execute={async (params: any, injector) => {
-            const taskManager = injector.get(TaskManagerService)
-            await taskManager.createTask({
-              ...params,
-              parentId: taskId
-            })
-            return `子任务已创建: ${params.title}`
-          }}>
-            添加子任务
-          </Tool>
-        </li>
+        {task.createdBy === currentAgentId && (
+          <li>
+            <Tool name="add_subtask" description="添加子任务" params={{
+              title: z.string().min(1).describe('子任务标题'),
+              description: z.string().min(1).describe('子任务描述')
+            }} execute={async (params: any, injector) => {
+              const taskManager = injector.get(TaskManagerService)
+              const agentId = injector.get(CURRENT_AGENT_ID)
+              await taskManager.createTask({
+                ...params,
+                createdBy: agentId,
+                parentId: taskId
+              })
+              return `子任务已创建: ${params.title}`
+            }}>
+              添加子任务
+            </Tool>
+          </li>
+        )}
       </ul>
 
       <p>

@@ -63,44 +63,19 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
         statusTasks.length > 0 && (
           <div key={status}>
             <h3>{status.toUpperCase()} ({statusTasks.length})</h3>
-            <ul>
-              {statusTasks.map(task => (
-                <li key={task.id}>
-                  <strong>{task.title}</strong> - {task.description}
-                  {task.assignedTo && ` [分配给: ${task.assignedTo}]`}
+            {statusTasks.map((task, index) => (
+              <div>
+                <strong>{index + 1}. {task.title}</strong> - {task.description}
+                {task.assignedTo && ` [分配给: ${task.assignedTo}]`}
 
-                  <Tool name={`view_task_${task.id}`} description='查看任务详情' execute={async () => {
-                    await navigate(`prompt:///tasks/${task.id}`)
-                    return `已跳转到任务详情页面: ${task.id}`
-                  }}>
-                    查看详情
-                  </Tool>
-                  <li>
-                    <Tool name={`edit_task_${task.id}`} description='编辑任务' params={{
-                      title: z.string().optional().describe('New task title'),
-                      description: z.string().optional().describe('New task description'),
-                      status: z.enum(['pending', 'blocked', 'in_progress', 'completed', 'failed', 'cancelled']).optional().describe('New task status')
-                    }} execute={async (params: any, injector) => {
-                      const taskManager = injector.get(TaskManagerService)
-                      const { ...updates } = params
-                      const success = await taskManager.updateTask(task.id, updates)
-                      return success ? `Task updated: ${task.id}` : `Task not found: ${task.id}`
-                    }}>
-                      编辑任务
-                    </Tool>
-                  </li>
-                  <li>
-                    <Tool name={`delete_task_${task.id}`} description='删除任务' execute={async (params: any, injector) => {
-                      const taskManager = injector.get(TaskManagerService)
-                      const success = await taskManager.deleteTask(task.id)
-                      return success ? `Task deleted: ${task.id}` : `Task not found: ${task.id}`
-                    }}>
-                      删除任务
-                    </Tool>
-                  </li>
-                </li>
-              ))}
-            </ul>
+                <Tool name={`view_task_${task.id}`} description='查看任务详情' execute={async () => {
+                  await navigate(`prompt:///tasks/${task.id}`)
+                  return `已跳转到任务详情页面: ${task.id}`
+                }}>
+                  查看详情
+                </Tool>
+              </div>
+            ))}
           </div>
         )
       ))}

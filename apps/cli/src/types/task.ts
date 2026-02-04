@@ -14,6 +14,7 @@ export interface Task {
   description: string
   status: TaskStatus
   assignedTo: string | null
+  createdBy: string
   createdAt: number
   updatedAt: number
   claimedAt: number | null

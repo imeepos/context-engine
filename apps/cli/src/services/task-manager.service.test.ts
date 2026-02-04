@@ -27,7 +27,8 @@ describe('TaskManagerService', () => {
     it('should create task with PENDING status when no dependencies', async () => {
       const task = await service.createTask({
         title: 'Test Task',
-        description: 'Test Description'
+        description: 'Test Description',
+        createdBy: 'test-agent'
       })
 
       expect(task.id).toBeDefined()
@@ -40,6 +41,7 @@ describe('TaskManagerService', () => {
       const task = await service.createTask({
         title: 'Test Task',
         description: 'Test Description',
+        createdBy: 'test-agent',
         dependencies: ['dep1', 'dep2']
       })
 
@@ -52,7 +54,8 @@ describe('TaskManagerService', () => {
     it('should successfully claim a PENDING task', async () => {
       const task = await service.createTask({
         title: 'Test Task',
-        description: 'Test Description'
+        description: 'Test Description',
+        createdBy: 'test-agent'
       })
 
       const claimed = await service.claimTask(task.id, 'agent1')
@@ -68,6 +71,7 @@ describe('TaskManagerService', () => {
       const task = await service.createTask({
         title: 'Test Task',
         description: 'Test Description',
+        createdBy: 'test-agent',
         dependencies: ['dep1']
       })
 
@@ -78,7 +82,8 @@ describe('TaskManagerService', () => {
     it('should handle concurrent claims correctly', async () => {
       const task = await service.createTask({
         title: 'Test Task',
-        description: 'Test Description'
+        description: 'Test Description',
+        createdBy: 'test-agent'
       })
 
       const [claim1, claim2, claim3] = await Promise.all([
@@ -100,7 +105,8 @@ describe('TaskManagerService', () => {
     it('should mark task as COMPLETED', async () => {
       const task = await service.createTask({
         title: 'Test Task',
-        description: 'Test Description'
+        description: 'Test Description',
+        createdBy: 'test-agent'
       })
 
       await service.completeTask(task.id)
@@ -113,9 +119,9 @@ describe('TaskManagerService', () => {
 
   describe('getTasksByStatus', () => {
     it('should return tasks filtered by status', async () => {
-      await service.createTask({ title: 'Task 1', description: 'Desc 1' })
-      await service.createTask({ title: 'Task 2', description: 'Desc 2', dependencies: ['dep1'] })
-      await service.createTask({ title: 'Task 3', description: 'Desc 3' })
+      await service.createTask({ title: 'Task 1', description: 'Desc 1', createdBy: 'test-agent' })
+      await service.createTask({ title: 'Task 2', description: 'Desc 2', createdBy: 'test-agent', dependencies: ['dep1'] })
+      await service.createTask({ title: 'Task 3', description: 'Desc 3', createdBy: 'test-agent' })
 
       const pending = await service.getTasksByStatus(TaskStatus.PENDING)
       const blocked = await service.getTasksByStatus(TaskStatus.BLOCKED)
@@ -127,8 +133,8 @@ describe('TaskManagerService', () => {
 
   describe('getTasksByAgent', () => {
     it('should return tasks assigned to specific agent', async () => {
-      const task1 = await service.createTask({ title: 'Task 1', description: 'Desc 1' })
-      const task2 = await service.createTask({ title: 'Task 2', description: 'Desc 2' })
+      const task1 = await service.createTask({ title: 'Task 1', description: 'Desc 1', createdBy: 'test-agent' })
+      const task2 = await service.createTask({ title: 'Task 2', description: 'Desc 2', createdBy: 'test-agent' })
 
       await service.claimTask(task1.id, 'agent1')
       await service.claimTask(task2.id, 'agent2')
@@ -141,7 +147,7 @@ describe('TaskManagerService', () => {
 
   describe('updateTask', () => {
     it('should update task fields', async () => {
-      const task = await service.createTask({ title: 'Old Title', description: 'Old Desc' })
+      const task = await service.createTask({ title: 'Old Title', description: 'Old Desc', createdBy: 'test-agent' })
 
       const success = await service.updateTask(task.id, {
         title: 'New Title',
@@ -162,7 +168,7 @@ describe('TaskManagerService', () => {
 
   describe('deleteTask', () => {
     it('should delete task', async () => {
-      const task = await service.createTask({ title: 'Task to Delete', description: 'Desc' })
+      const task = await service.createTask({ title: 'Task to Delete', description: 'Desc', createdBy: 'test-agent' })
 
       const success = await service.deleteTask(task.id)
       expect(success).toBe(true)

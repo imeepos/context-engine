@@ -30,12 +30,14 @@ describe('TaskDependencyResolverService', () => {
     it('should transition BLOCKED to PENDING when dependencies complete', async () => {
       const task1 = await taskManager.createTask({
         title: 'Task 1',
-        description: 'First task'
+        description: 'First task',
+        createdBy: 'test-agent'
       })
 
       const task2 = await taskManager.createTask({
         title: 'Task 2',
         description: 'Second task',
+        createdBy: 'test-agent',
         dependencies: [task1.id]
       })
 
@@ -51,17 +53,20 @@ describe('TaskDependencyResolverService', () => {
     it('should handle multiple dependencies', async () => {
       const task1 = await taskManager.createTask({
         title: 'Task 1',
-        description: 'First task'
+        description: 'First task',
+        createdBy: 'test-agent'
       })
 
       const task2 = await taskManager.createTask({
         title: 'Task 2',
-        description: 'Second task'
+        description: 'Second task',
+        createdBy: 'test-agent'
       })
 
       const task3 = await taskManager.createTask({
         title: 'Task 3',
         description: 'Third task',
+        createdBy: 'test-agent',
         dependencies: [task1.id, task2.id]
       })
 
@@ -86,12 +91,14 @@ describe('TaskDependencyResolverService', () => {
       const task1 = await taskManager.createTask({
         title: 'Task 1',
         description: 'First task',
+        createdBy: 'test-agent',
         dependencies: []
       })
 
       const task2 = await taskManager.createTask({
         title: 'Task 2',
         description: 'Second task',
+        createdBy: 'test-agent',
         dependencies: [task1.id]
       })
 
@@ -109,18 +116,21 @@ describe('TaskDependencyResolverService', () => {
     it('should pass validation for valid dependency graph', async () => {
       const task1 = await taskManager.createTask({
         title: 'Task 1',
-        description: 'First task'
+        description: 'First task',
+        createdBy: 'test-agent'
       })
 
       const task2 = await taskManager.createTask({
         title: 'Task 2',
         description: 'Second task',
+        createdBy: 'test-agent',
         dependencies: [task1.id]
       })
 
       const task3 = await taskManager.createTask({
         title: 'Task 3',
         description: 'Third task',
+        createdBy: 'test-agent',
         dependencies: [task2.id]
       })
 
@@ -133,9 +143,9 @@ describe('TaskDependencyResolverService', () => {
 
   describe('getReadyTasks', () => {
     it('should return only PENDING tasks', async () => {
-      await taskManager.createTask({ title: 'Task 1', description: 'Desc 1' })
-      await taskManager.createTask({ title: 'Task 2', description: 'Desc 2', dependencies: ['dep1'] })
-      await taskManager.createTask({ title: 'Task 3', description: 'Desc 3' })
+      await taskManager.createTask({ title: 'Task 1', description: 'Desc 1', createdBy: 'test-agent' })
+      await taskManager.createTask({ title: 'Task 2', description: 'Desc 2', createdBy: 'test-agent', dependencies: ['dep1'] })
+      await taskManager.createTask({ title: 'Task 3', description: 'Desc 3', createdBy: 'test-agent' })
 
       const ready = await resolver.getReadyTasks()
 

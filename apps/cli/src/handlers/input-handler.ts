@@ -33,6 +33,7 @@ export class InputHandler {
           maxIterations: MAX_ITERATIONS,
           async onToolAfter(_params, _result) {
             // console.log({ params, result })
+            console.log(`调用工具: ${_params.name} 结果：${_result.content}`)
           },
           refreshPrompt: async () => {
             return this.renderer.getRenderResult()

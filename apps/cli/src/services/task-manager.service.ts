@@ -21,6 +21,7 @@ export class TaskManagerService {
   async createTask(params: {
     title: string
     description: string
+    createdBy: string
     parentId?: string | null
     dependencies?: string[]
     metadata?: Record<string, any>
@@ -32,6 +33,7 @@ export class TaskManagerService {
       description: params.description,
       status: params.dependencies?.length ? TaskStatus.BLOCKED : TaskStatus.PENDING,
       assignedTo: null,
+      createdBy: params.createdBy,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       claimedAt: null,
