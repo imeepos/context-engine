@@ -69,14 +69,12 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
                   <strong>{task.title}</strong> - {task.description}
                   {task.assignedTo && ` [分配给: ${task.assignedTo}]`}
 
-                  <li>
-                    <Tool name={`view_task_${task.id}`} description='查看任务详情' execute={async () => {
-                      await navigate(`prompt:///tasks/${task.id}`)
-                      return `已跳转到任务详情页面: ${task.id}`
-                    }}>
-                      查看详情
-                    </Tool>
-                  </li>
+                  <Tool name={`view_task_${task.id}`} description='查看任务详情' execute={async () => {
+                    await navigate(`prompt:///tasks/${task.id}`)
+                    return `已跳转到任务详情页面: ${task.id}`
+                  }}>
+                    查看详情
+                  </Tool>
                   <li>
                     <Tool name={`edit_task_${task.id}`} description='编辑任务' params={{
                       title: z.string().optional().describe('New task title'),

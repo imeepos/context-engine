@@ -12,8 +12,9 @@ export async function DashboardComponent({ injector }: DashboardProps) {
 
   return (
     <Layout injector={injector}>
-      <h1>多Agent通信系统</h1>
+      <h1>团队Agent列表</h1>
       {agentList}
+      <h1>正在进行的任务</h1>
     </Layout>
   )
 }

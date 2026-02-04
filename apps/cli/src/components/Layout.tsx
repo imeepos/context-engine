@@ -13,25 +13,25 @@ export function Layout({ children, injector }: LayoutProps) {
 
   return (
     <div>
-      <h1>导航</h1>
+      <h1>你可以进行一下操作：</h1>
       <ul>
         <li>
-          <Tool name='navigate_note' description='首页' execute={async () => {
+          <Tool name='navigate_note' description='查看正在进行的任务' execute={async () => {
             await navigate('prompt:///')
-            return '已成功导航到首页'
-          }} >首页</Tool>
+            return '已成功正在进行的任务'
+          }} >1. 查看正在进行的任务</Tool>
         </li>
         <li>
-          <Tool name='navigate_tasks' description='任务列表' execute={async () => {
+          <Tool name='navigate_tasks' description='查看待办任务' execute={async () => {
             await navigate('prompt:///tasks')
-            return '已成功导航到任务大厅'
-          }} >任务大厅</Tool>
+            return '已成功导航到待办任务'
+          }} >2. 查看待办任务</Tool>
         </li>
         <li>
-          <Tool name='navigate_baseinfo' description='系统基础信息' execute={async () => {
+          <Tool name='navigate_baseinfo' description='查看系统基础信息' execute={async () => {
             await navigate('prompt:///base-info')
             return '已成功导航到系统基础信息'
-          }} >系统信息</Tool>
+          }} >3. 查看系统基础信息</Tool>
         </li>
       </ul>
       {children}

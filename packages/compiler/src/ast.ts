@@ -429,8 +429,26 @@ export interface UnifiedImageContent {
     type: 'image';
     source: { type: 'base64' | 'url'; mediaType?: string; data?: string; url?: string };
 }
-
 export type UnifiedContent = UnifiedTextContent | UnifiedThinkingContent | UnifiedToolUseContent | UnifiedToolResultContent | UnifiedImageContent;
+export function isUnifiedTextContent(val: UnifiedContent): val is UnifiedTextContent {
+    return val.type === 'text';
+}
+
+export function isUnifiedThinkingContent(val: UnifiedContent): val is UnifiedThinkingContent {
+    return val.type === 'thinking';
+}
+
+export function isUnifiedToolUseContent(val: UnifiedContent): val is UnifiedToolUseContent {
+    return val.type === 'tool_use';
+}
+
+export function isUnifiedToolResultContent(val: UnifiedContent): val is UnifiedToolResultContent {
+    return val.type === 'tool_result';
+}
+
+export function isUnifiedImageContent(val: UnifiedContent): val is UnifiedImageContent {
+    return val.type === 'image';
+}
 
 export type UnifiedStopReason = 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'content_filter' | 'error';
 
