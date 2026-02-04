@@ -19,12 +19,11 @@ export function TaskListPageComponent({ injector }: TaskListPageProps) {
   const [tasks, setTasks] = useState<Task[]>([])
 
   useEffect(() => {
-    taskManager.init().then(() => {
-      const registry = taskManager['getRegistry']()
-      registry.then(reg => {
-        setTasks(Object.values(reg.tasks))
-      })
-    })
+    const loadTasks = async () => {
+      const registry = await taskManager['getRegistry']()
+      setTasks(Object.values(registry.tasks))
+    }
+    loadTasks()
   }, [taskManager])
 
   const tasksByStatus = {
