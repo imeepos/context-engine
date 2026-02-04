@@ -17,6 +17,6 @@ export { extractTools } from './reconciler/extractor';
 export type { VNode, TextNode, ElementNode, Tool as ToolDefinition } from './reconciler/types';
 
 // Components
-export { Tool } from './components/Tool';
-export type { ToolProps } from './components/Tool';
+export { Tool, ToolUse } from './components/Tool';
+export type { ToolProps, ToolUseProps } from './components/Tool';
 export * from './module';

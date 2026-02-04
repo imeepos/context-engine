@@ -84,11 +84,7 @@ export function unifiedToolsToAnthropic(tools: UnifiedTool[]): AnthropicTool[] {
         return {
             name: tool.name,
             description: tool.description,
-            input_schema: {
-                type: 'object',
-                properties: tool.parameters.properties,
-                required: tool.parameters.required
-            }
+            input_schema: tool.parameters
         }
     })
 }
@@ -105,11 +101,7 @@ export function unifiedToolsToOpenAI(tools: UnifiedTool[]): OpenAITool[] {
             function: {
                 name: tool.name,
                 description: tool.description,
-                parameters: {
-                    type: 'object',
-                    properties: tool.parameters.properties,
-                    required: tool.parameters.required
-                }
+                parameters: tool.parameters
             }
         }
     })
@@ -125,11 +117,7 @@ export function unifiedToolsToGoogle(tools: UnifiedTool[]): GoogleTool {
         return {
             name: tool.name,
             description: tool.description,
-            parameters: {
-                type: 'object',
-                properties: tool.parameters.properties,
-                required: tool.parameters.required
-            }
+            parameters: tool.parameters
         }
     })
 

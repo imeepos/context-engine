@@ -26,7 +26,22 @@ export function zodToJsonSchema(zodSchema: z.ZodTypeAny): any {
     }
     return schema
 }
+export function zodToParams(params: Record<string, z.ZodTypeAny> = {}): any {
+    const properties: Record<string, any> = {}
+    const required: string[] = []
 
+    for (const [key, value] of Object.entries(params)) {
+        properties[key] = zodToJsonSchema(value)
+        if (!isOptionalParam(value)) {
+            required.push(key)
+        }
+    }
+    return {
+        type: 'object',
+        properties,
+        required: required
+    }
+}
 /**
  * Zod schema 转换为 JSON Schema（带 description）
  */

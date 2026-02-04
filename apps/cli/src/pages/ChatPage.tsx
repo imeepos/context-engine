@@ -3,7 +3,7 @@ import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
 import { MessageBrokerService } from '../services/message-broker.service'
 import { InterAgentMessage } from '../types/message'
-import { CURRENT_ROUTE, Tool } from '@sker/prompt-renderer'
+import { CURRENT_ROUTE, ToolUse } from '@sker/prompt-renderer'
 import { MESSAGES, MESSAGE_SUBSCRIBER, NAVIGATE, CURRENT_AGENT_ID, AGENTS } from '../tokens'
 import { NavigateTool } from '../tools/NavigateTool'
 import { SendMessageTool } from '../tools/SendMessageTool'
@@ -39,7 +39,7 @@ export function ChatPageComponent({ injector }: ChatPageProps) {
 
   return (
     <Layout injector={injector}>
-      <Tool use={NavigateTool}>返回</Tool>
+      <ToolUse use={NavigateTool} propertyKey={`execute`}>返回</ToolUse>
       <h2>在线Agent</h2>
       {agents.map(agent => (
         <div key={agent.id} onClick={() => setSelectedAgent(agent.id)}>
@@ -57,9 +57,9 @@ export function ChatPageComponent({ injector }: ChatPageProps) {
               [{msg.from}] {msg.content}
             </div>
           ))}
-          <Tool use={SendMessageTool}>
+          <ToolUse use={SendMessageTool} propertyKey={'execute'}>
             发送消息
-          </Tool>
+          </ToolUse>
         </div>
       )}
     </Layout>

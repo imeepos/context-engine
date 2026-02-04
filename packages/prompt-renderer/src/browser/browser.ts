@@ -22,6 +22,7 @@ export const CURRENT_URL = new InjectionToken<URL>(`CURRENT_URL`);
 export const CURRENT_ROUTE = new InjectionToken<RouteMatch>(`CURRENT_ROUTE`);
 export const CURRENT_PAGE = new InjectionToken<Page>(`CURRENT_PAGE`);
 export const COMPONENT = new InjectionToken<React.FunctionComponent>(`COMPONENT`);
+export const INPUT = new InjectionToken<string>(`INPUT`);
 
 @Injectable({ providedIn: 'auto' })
 export class Browser {
@@ -151,7 +152,6 @@ export class Page {
     const vnode = container.children[0] || container;
     const prompt = renderToMarkdown(vnode);
     const tools = extractTools(vnode);
-
     return { prompt, tools };
   }
   navigate(url: string): Page {

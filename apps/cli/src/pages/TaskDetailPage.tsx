@@ -1,7 +1,7 @@
 import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
-import { Tool } from '@sker/prompt-renderer'
+import { ToolUse } from '@sker/prompt-renderer'
 import { GetTaskTool } from '../tools/GetTaskTool'
 import { ClaimTaskTool } from '../tools/ClaimTaskTool'
 import { CompleteTaskTool } from '../tools/CompleteTaskTool'
@@ -25,41 +25,41 @@ export function TaskDetailPageComponent({ injector, taskId }: TaskDetailPageProp
       <h2>可用操作</h2>
       <ul>
         <li>
-          <Tool use={GetTaskTool}>
+          <ToolUse use={GetTaskTool} propertyKey="execute">
             查看任务详情
-          </Tool>
+          </ToolUse>
         </li>
         <li>
-          <Tool use={ClaimTaskTool}>
+          <ToolUse use={ClaimTaskTool} propertyKey="execute">
             认领任务
-          </Tool>
+          </ToolUse>
         </li>
         <li>
-          <Tool use={CompleteTaskTool}>
+          <ToolUse use={CompleteTaskTool} propertyKey="execute">
             完成任务
-          </Tool>
+          </ToolUse>
         </li>
         <li>
-          <Tool use={CancelTaskTool}>
+          <ToolUse use={CancelTaskTool} propertyKey="execute">
             取消任务
-          </Tool>
+          </ToolUse>
         </li>
         <li>
-          <Tool use={UpdateTaskTool}>
+          <ToolUse use={UpdateTaskTool} propertyKey="execute">
             更新任务
-          </Tool>
+          </ToolUse>
         </li>
         <li>
-          <Tool use={CreateTaskTool}>
+          <ToolUse use={CreateTaskTool} propertyKey="execute">
             添加子任务
-          </Tool>
+          </ToolUse>
         </li>
       </ul>
 
       <p>
-        <Tool use={NavigateTool}>
+        <ToolUse use={NavigateTool} propertyKey="execute">
           返回任务列表
-        </Tool>
+        </ToolUse>
       </p>
     </Layout>
   )

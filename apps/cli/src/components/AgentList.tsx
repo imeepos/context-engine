@@ -39,7 +39,9 @@ export function AgentListComponent({ injector }: AgentListProps) {
 
         return (
           <div key={agent.id}>
-            {info} <Tool use={NavigateTool} params={{ path: `/chat/${agent.id}` }} description={`查看与${agent.id}的聊天记录`} key={`navigate-${agent.id}`}>查看</Tool>
+            {info} <Tool name={`view_${agent.id}`} description={`查看与${agent.id}的对话`} execute={async (params, injector) => {
+              await injector.get(NavigateTool).execute(`/chat/${agent.id}`)
+            }} >查看</Tool>
           </div>
         )
       })}

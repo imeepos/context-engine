@@ -1,4 +1,4 @@
-import { Injectable } from '@sker/core';
+import { Inject, Injectable, Injector } from '@sker/core';
 import { UnifiedToolUseContent, UnifiedTool } from '../ast';
 
 export interface UnifiedToolResult {
@@ -10,7 +10,7 @@ export interface UnifiedToolResult {
 
 @Injectable()
 export class UnifiedToolExecutor {
-
+  constructor(@Inject(Injector) private injector: Injector) { }
 
   async execute(toolUse: UnifiedToolUseContent, tools: UnifiedTool[]): Promise<UnifiedToolResult> {
     try {
@@ -23,8 +23,8 @@ export class UnifiedToolExecutor {
           isError: true
         };
       }
-
-      const result = await tool.execute(toolUse.input);
+      console.log(`use tool: ${toolUse.name}`);
+      const result = await tool.execute(toolUse.input, this.injector);
 
       return {
         toolUseId: toolUse.id,

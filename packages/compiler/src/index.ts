@@ -19,8 +19,7 @@ export * from './unified'
 export * from './llm'
 export * from './mcp'
 export * as google from './google/index'
-export { zodToJsonSchema, isOptionalParam, zodToJsonSchemaWithDescription } from './utils/zod-to-json-schema'
-
+export { zodToJsonSchema, isOptionalParam, zodToJsonSchemaWithDescription, zodToParams } from './utils/zod-to-json-schema'
 // Compiler 模块
 @Module({
   providers: [

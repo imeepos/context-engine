@@ -3,17 +3,18 @@ import { StateManager } from './state-manager'
 import { AGENTS, CURRENT_AGENT_ID, MESSAGES, MESSAGE_SUBSCRIBER, NAVIGATE } from '../tokens'
 import { RENDER_DEBOUNCE_MS } from '../config/constants'
 import { Page } from '@sker/prompt-renderer'
-import { RenderResult } from '@sker/prompt-renderer/dist/browser/browser'
+import { Browser, RenderResult } from '@sker/prompt-renderer/dist/browser/browser'
+import { Provider } from '@sker/core'
 
 export class UIRenderer {
-  private browser: any
+  private browser: Browser;
   private currentPage: Page | null = null;
   private renderResult: RenderResult | null = null
   private renderTimer: NodeJS.Timeout | null = null
   private stateManager: StateManager
 
   constructor(
-    browser: any,
+    browser: Browser,
     stateManager: StateManager
   ) {
     this.browser = browser
@@ -39,11 +40,10 @@ export class UIRenderer {
     ]
   }
 
-  render(): void {
+  render(providers: Provider[] = []): void {
     this.currentPage = this.browser.open(NavigateTool.getCurrentUrl(), this.getStateProviders())
-    this.renderResult = this.currentPage?.render() || null;
+    this.renderResult = this.currentPage?.render(providers) || null;
     // 清屏并重新渲染
-    console.clear()
     console.log(this.renderResult?.prompt)
   }
 

@@ -1,3 +1,4 @@
+import { Injector } from "@sker/core";
 
 
 export abstract class Ast {
@@ -493,7 +494,7 @@ export class UnifiedStreamEventAst extends Ast {
 // 工具定义类型
 export interface UnifiedToolParameters {
     type: 'object';
-    properties: Record<string, { type: string; description?: string; enum?: string[]; items?: any }>;
+    properties: Record<string, any>;
     required?: string[];
 }
 
@@ -501,7 +502,7 @@ export interface UnifiedTool {
     name: string;
     description: string;
     parameters: UnifiedToolParameters;
-    execute: (params: Record<string, any>) => Promise<any>;
+    execute: (params: Record<string, any>, injector: Injector) => Promise<any>;
 }
 
 // ==================== MCP Request/Response Types ====================

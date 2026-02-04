@@ -2,7 +2,7 @@ import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
 import { CURRENT_AGENT_ID } from '../tokens'
-import { Tool } from '@sker/prompt-renderer'
+import { ToolUse } from '@sker/prompt-renderer'
 import { ListTasksTool } from '../tools/ListTasksTool'
 import { CreateTaskTool } from '../tools/CreateTaskTool'
 import { BatchCreateTasksTool } from '../tools/BatchCreateTasksTool'
@@ -21,29 +21,29 @@ export function TaskListPageComponent({ injector }: TaskListPageProps) {
       <h2>可用操作</h2>
       <ul>
         <li>
-          <Tool use={ListTasksTool}>
+          <ToolUse use={ListTasksTool} propertyKey={'execute'}>
             查看所有任务
-          </Tool>
+          </ToolUse>
         </li>
         <li>
-          <Tool use={ListTasksTool}>
+          <ToolUse use={ListTasksTool} propertyKey={'execute'}>
             查看待处理任务
-          </Tool>
+          </ToolUse>
         </li>
         <li>
-          <Tool use={ListTasksTool}>
+          <ToolUse use={ListTasksTool} propertyKey={'execute'}>
             查看我的任务
-          </Tool>
+          </ToolUse>
         </li>
         <li>
-          <Tool use={CreateTaskTool}>
+          <ToolUse use={CreateTaskTool} propertyKey={'execute'}>
             创建新任务
-          </Tool>
+          </ToolUse>
         </li>
         <li>
-          <Tool use={BatchCreateTasksTool}>
+          <ToolUse use={BatchCreateTasksTool} propertyKey={'execute'}>
             批量创建任务
-          </Tool>
+          </ToolUse>
         </li>
       </ul>
 
