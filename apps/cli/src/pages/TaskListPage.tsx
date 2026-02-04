@@ -1,7 +1,7 @@
 import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
-import { CURRENT_AGENT_ID } from '../tokens'
+import { CURRENT_AGENT_ID, NAVIGATE } from '../tokens'
 import { Tool } from '@sker/prompt-renderer'
 import { TaskManagerService } from '../services/task-manager.service'
 import { TaskStatus } from '../types/task'
@@ -13,6 +13,7 @@ interface TaskListPageProps {
 
 export async function TaskListPageComponent({ injector }: TaskListPageProps) {
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
+  const navigate = injector.get(NAVIGATE)
   const taskManager = injector.get(TaskManagerService)
   const registry = await taskManager.getRegistry()
   const tasks = Object.values(registry.tasks)
@@ -54,32 +55,7 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
             创建新任务
           </Tool>
         </li>
-        <li>
-          <Tool name='edit_task' description='编辑任务' params={{
-            taskId: z.string().min(1).describe('Task ID'),
-            title: z.string().optional().describe('New task title'),
-            description: z.string().optional().describe('New task description'),
-            status: z.enum(['pending', 'blocked', 'in_progress', 'completed', 'failed', 'cancelled']).optional().describe('New task status')
-          }} execute={async (params: any, injector) => {
-            const taskManager = injector.get(TaskManagerService)
-            const { taskId, ...updates } = params
-            const success = await taskManager.updateTask(taskId, updates)
-            return success ? `Task updated: ${taskId}` : `Task not found: ${taskId}`
-          }}>
-            编辑任务
-          </Tool>
-        </li>
-        <li>
-          <Tool name='delete_task' description='删除任务' params={{
-            taskId: z.string().min(1).describe('Task ID to delete')
-          }} execute={async (params: any, injector) => {
-            const taskManager = injector.get(TaskManagerService)
-            const success = await taskManager.deleteTask(params.taskId)
-            return success ? `Task deleted: ${params.taskId}` : `Task not found: ${params.taskId}`
-          }}>
-            删除任务
-          </Tool>
-        </li>
+
       </ul>
 
       <h2>任务列表 (共 {tasks.length} 个)</h2>
@@ -92,6 +68,38 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
                 <li key={task.id}>
                   <strong>{task.title}</strong> - {task.description}
                   {task.assignedTo && ` [分配给: ${task.assignedTo}]`}
+
+                  <li>
+                    <Tool name={`view_task_${task.id}`} description='查看任务详情' execute={async () => {
+                      await navigate(`prompt:///tasks/${task.id}`)
+                      return `已跳转到任务详情页面: ${task.id}`
+                    }}>
+                      查看详情
+                    </Tool>
+                  </li>
+                  <li>
+                    <Tool name={`edit_task_${task.id}`} description='编辑任务' params={{
+                      title: z.string().optional().describe('New task title'),
+                      description: z.string().optional().describe('New task description'),
+                      status: z.enum(['pending', 'blocked', 'in_progress', 'completed', 'failed', 'cancelled']).optional().describe('New task status')
+                    }} execute={async (params: any, injector) => {
+                      const taskManager = injector.get(TaskManagerService)
+                      const { ...updates } = params
+                      const success = await taskManager.updateTask(task.id, updates)
+                      return success ? `Task updated: ${task.id}` : `Task not found: ${task.id}`
+                    }}>
+                      编辑任务
+                    </Tool>
+                  </li>
+                  <li>
+                    <Tool name={`delete_task_${task.id}`} description='删除任务' execute={async (params: any, injector) => {
+                      const taskManager = injector.get(TaskManagerService)
+                      const success = await taskManager.deleteTask(task.id)
+                      return success ? `Task deleted: ${task.id}` : `Task not found: ${task.id}`
+                    }}>
+                      删除任务
+                    </Tool>
+                  </li>
                 </li>
               ))}
             </ul>
