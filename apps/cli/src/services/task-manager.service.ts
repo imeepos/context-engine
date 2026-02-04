@@ -106,7 +106,10 @@ export class TaskManagerService {
   }
 
   async cancelTask(taskId: string): Promise<boolean> {
-    return this.updateTaskStatus(taskId, TaskStatus.CANCELLED)
+    return this.updateTaskStatus(taskId, TaskStatus.PENDING, {
+      assignedTo: null,
+      claimedAt: null
+    })
   }
 
   async getTask(taskId: string): Promise<Task | null> {
