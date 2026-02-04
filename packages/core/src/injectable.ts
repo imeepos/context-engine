@@ -59,7 +59,7 @@ export function Injectable(options: InjectableOptions = {}): ClassDecorator {
   return function <T extends Function>(target: T): T {
     // 存储 Injectable 元数据
     Reflect.defineMetadata(INJECTABLE_METADATA_KEY, options, target);
-    const providedIn = options.providedIn || 'root'
+    const providedIn = options.providedIn ?? 'auto'
     if (providedIn === 'root') {
       if (options.useFactory) {
         root.set([{ provide: target, useFactory: options.useFactory, deps: options.deps || [] }])
