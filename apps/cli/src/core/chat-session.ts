@@ -35,7 +35,7 @@ export class ChatSession {
 
   async start(): Promise<void> {
     // 初始渲染
-    this.renderer.render()
+    await this.renderer.render()
     // 创建 readline 接口
     this.rl = readline.createInterface({
       input: process.stdin,

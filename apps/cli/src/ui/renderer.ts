@@ -27,9 +27,9 @@ export class UIRenderer {
     ]
   }
 
-  render(providers: Provider[] = []): void {
+  async render(providers: Provider[] = []): Promise<void> {
     this.currentPage = this.browser.open(NavigateTool.getCurrentUrl(), this.getStateProviders())
-    this.renderResult = this.currentPage?.render(providers) || null;
+    this.renderResult = await this.currentPage?.render(providers) || null;
     // 清屏并重新渲染
     console.log(this.renderResult?.prompt)
   }
