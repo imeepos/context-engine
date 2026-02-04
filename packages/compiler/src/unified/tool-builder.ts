@@ -8,11 +8,15 @@ import { root, ToolMetadataKey, Type } from '@sker/core'
 import { ToolMetadata } from '@sker/core'
 import { AnthropicTool, OpenAITool, GoogleTool, GoogleToolFunctionDeclaration, UnifiedTool } from '../ast'
 import { zodToJsonSchema, isOptionalParam } from '../utils/zod-to-json-schema'
+import 'reflect-metadata';
+
+// Tool 元数据存储 key（与 mcp.ts 中的定义保持一致）
+const TOOL_METADATA_KEY = Symbol.for('tool_metadata');
 
 // ==================== 核心构建函数 ====================
 export function buildUnifiedTool(tool: Type<any>, propertyKey: string | symbol): UnifiedTool {
-    const metadatas = root.get(ToolMetadataKey) ?? []
-    const toolMetadata = metadatas.find((m: ToolMetadata) => m.target === tool && m.propertyKey === propertyKey)
+    // 直接从类上读取元数据，O(1) 查找
+    const toolMetadata: ToolMetadata | undefined = Reflect.getMetadata(TOOL_METADATA_KEY, tool, propertyKey);
 
     if (!toolMetadata) {
         throw new Error(`Tool metadata not found for ${tool.name}.${String(propertyKey)}`)

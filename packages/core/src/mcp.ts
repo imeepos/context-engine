@@ -3,7 +3,10 @@ import { InjectionToken } from "./injection-token";
 import 'reflect-metadata';
 
 // 临时存储 key，用于在装饰器执行期间传递参数信息
-const TEMP_TOOL_ARGS_KEY = Symbol('temp_tool_args');
+export const TEMP_TOOL_ARGS_KEY = Symbol.for('temp_tool_args');
+
+// Tool 元数据存储 key，用于直接在类上存储完整的 Tool 元数据（使用全局 Symbol 确保跨模块一致）
+export const TOOL_METADATA_KEY = Symbol.for('tool_metadata');
 
 export interface ToolOptions {
     name: string;
@@ -27,16 +30,21 @@ export const Tool = (options: ToolOptions): MethodDecorator => {
         // 清理临时存储
         Reflect.deleteMetadata(TEMP_TOOL_ARGS_KEY, target, propertyKey);
 
-        // 存储完整的元数据（包含参数信息）
+        const metadata: ToolMetadata = {
+            target: target.constructor,
+            propertyKey,
+            parameters: parameters.sort((a, b) => a.parameterIndex - b.parameterIndex),
+            ...options
+        };
+
+        // 直接在类上存储元数据，支持 O(1) 查找
+        Reflect.defineMetadata(TOOL_METADATA_KEY, metadata, target.constructor, propertyKey);
+
+        // 同时存储到全局数组（向后兼容）
         root.set([
             {
                 provide: ToolMetadataKey,
-                useValue: {
-                    target: target.constructor,
-                    propertyKey,
-                    parameters: parameters.sort((a, b) => a.parameterIndex - b.parameterIndex),
-                    ...options
-                },
+                useValue: metadata,
                 multi: true
             }
         ])
