@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { Injectable, Tool, ToolArg, root } from '@sker/core'
+import { Injectable, Tool, ToolArg } from '@sker/core'
 import { z } from 'zod'
 import {
   buildUnifiedTools,
@@ -85,7 +85,7 @@ describe('unified-tool-builder', () => {
             },
             required: ['str']
           },
-          execute: async () => {}
+          execute: async () => { }
         }
       ]
 
@@ -121,7 +121,7 @@ describe('unified-tool-builder', () => {
             },
             required: ['str']
           },
-          execute: async () => {}
+          execute: async () => { }
         }
       ]
 
@@ -160,7 +160,7 @@ describe('unified-tool-builder', () => {
             },
             required: ['str']
           },
-          execute: async () => {}
+          execute: async () => { }
         }
       ]
 
@@ -193,7 +193,7 @@ describe('unified-tool-builder', () => {
             },
             required: ['arg1']
           },
-          execute: async () => {}
+          execute: async () => { }
         },
         {
           name: 'tool2',
@@ -205,7 +205,7 @@ describe('unified-tool-builder', () => {
             },
             required: ['arg2']
           },
-          execute: async () => {}
+          execute: async () => { }
         }
       ]
 

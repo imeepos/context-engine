@@ -3,13 +3,11 @@
  * @description 基于装饰器元数据构建 UnifiedTool，并转换为各厂商格式
  * @version 2.0
  */
-
-import { root, ToolMetadataKey, Type, ToolArgMetadataKey } from '@sker/core'
+import 'reflect-metadata';
+import { root, ToolMetadataKey, Type } from '@sker/core'
 import { ToolMetadata, TOOL_METADATA_KEY } from '@sker/core'
 import { AnthropicTool, OpenAITool, GoogleTool, GoogleToolFunctionDeclaration, UnifiedTool } from '../ast'
 import { zodToJsonSchema, isOptionalParam } from '../utils/zod-to-json-schema'
-import { buildToolArgsMap } from '../utils/tool-args-map'
-import 'reflect-metadata';
 
 // ==================== 核心构建函数 ====================
 export function buildUnifiedTool(tool: Type<any>, propertyKey: string | symbol): UnifiedTool {
@@ -40,15 +38,15 @@ export function buildUnifiedTool(tool: Type<any>, propertyKey: string | symbol):
         },
         execute: async (params: Record<string, any>) => {
             const instance = root.get(tool)
-            const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
-            const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
-            const key = `${tool.name}-${String(propertyKey)}`
             const args = toolMetadata.parameters
 
             const callArgs: any[] = []
             for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
                 const paramName = arg.paramName ?? `param${arg.parameterIndex}`
-                callArgs.push(params[paramName])
+                const value = params[paramName]
+                // zod校验
+                const zodValue = arg.zod.parse(value)
+                callArgs.push(zodValue)
             }
 
             const method = (instance as any)[propertyKey]
@@ -69,44 +67,8 @@ export function buildUnifiedTools(filterTools?: Type<any>[]): UnifiedTool[] {
         toolMetadatas = toolMetadatas.filter((m: ToolMetadata) => filterNames.has(m.target.name))
     }
 
-    // 直接使用 ToolMetadata 中的 parameters，无需再次遍历和构建映射
     return toolMetadatas.map((toolMeta: ToolMetadata): UnifiedTool => {
-        const properties: Record<string, any> = {}
-        const required: string[] = []
-
-        // 参数已经在装饰器中排序好了
-        for (const param of toolMeta.parameters) {
-            properties[param.paramName] = zodToJsonSchema(param.zod)
-            if (!isOptionalParam(param.zod)) {
-                required.push(param.paramName)
-            }
-        }
-
-        return {
-            name: toolMeta.name,
-            description: toolMeta.description,
-            parameters: {
-                type: 'object',
-                properties,
-                required: required.length > 0 ? required : undefined
-            },
-            execute: async (params: Record<string, any>) => {
-                const instance = root.get(toolMeta.target)
-                const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
-                const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
-                const key = `${toolMeta.target.name}-${String(toolMeta.propertyKey)}`
-                const args = toolArgsMap.get(key) ?? []
-
-                const callArgs: any[] = []
-                for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
-                    const paramName = arg.paramName ?? `param${arg.parameterIndex}`
-                    callArgs.push(params[paramName])
-                }
-
-                const method = (instance as any)[toolMeta.propertyKey]
-                return await method.call(instance, ...callArgs)
-            }
-        }
+        return buildUnifiedTool(toolMeta.target, toolMeta.propertyKey)
     })
 }
 

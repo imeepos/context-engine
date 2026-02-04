@@ -20,7 +20,6 @@ export * from './llm'
 export * from './mcp'
 export * as google from './google/index'
 export { zodToJsonSchema, isOptionalParam, zodToJsonSchemaWithDescription } from './utils/zod-to-json-schema'
-export { buildToolArgsMap } from './utils/tool-args-map'
 
 // Compiler 模块
 @Module({
@@ -42,4 +41,4 @@ export { buildToolArgsMap } from './utils/tool-args-map'
     LLM_PROVIDER_ADAPTER
   ]
 })
-export class CompilerModule {}
+export class CompilerModule { }

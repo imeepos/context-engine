@@ -4,10 +4,9 @@
  * @version 1.0
  */
 
-import { root, ToolMetadataKey, ToolArgMetadataKey, ToolMetadata } from '@sker/core'
+import { root, ToolMetadataKey, ToolMetadata } from '@sker/core'
 import { Ast, Visitor, MCPRequestAst, MCPResponseAst } from '../ast'
 import { isOptionalParam } from '../utils/zod-to-json-schema'
-import { buildToolArgsMap } from '../utils/tool-args-map'
 import { MCPErrorCode } from './types'
 
 export class MCPToolExecutorVisitor implements Visitor {
@@ -52,10 +51,7 @@ export class MCPToolExecutorVisitor implements Visitor {
             }
 
             const instance: any = root.get(toolMeta.target)
-            const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
-            const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
-            const key = `${toolMeta.target.name}-${String(toolMeta.propertyKey)}`
-            const args = toolArgsMap.get(key) ?? []
+            const args = toolMeta.parameters
 
             const callArgs: any[] = []
             for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
@@ -72,7 +68,9 @@ export class MCPToolExecutorVisitor implements Visitor {
                     return response
                 }
 
-                callArgs.push(value)
+                // zod校验
+                const zodValue = arg.zod.parse(value)
+                callArgs.push(zodValue)
             }
 
             const rawResult = instance[toolMeta.propertyKey](...callArgs)

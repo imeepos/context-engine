@@ -1,6 +1,5 @@
-import { Injectable, Injector, ToolMetadataKey, ToolArgMetadataKey, ToolMetadata, root, Inject } from '@sker/core';
+import { Injectable, Injector, ToolMetadataKey, ToolMetadata, root, Inject } from '@sker/core';
 import { UnifiedToolUseContent } from '../ast';
-import { buildToolArgsMap } from '../utils/tool-args-map';
 
 export interface UnifiedToolResult {
   toolUseId: string;
@@ -28,17 +27,15 @@ export class UnifiedToolExecutor {
       }
 
       const instance = this.injector.get(toolMeta.target);
-
-      const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? [];
-      const toolArgsMap = buildToolArgsMap(toolArgMetadatas);
-      const key = `${toolMeta.target.name}-${String(toolMeta.propertyKey)}`;
-      const args = toolArgsMap.get(key) ?? [];
+      const args = toolMeta.parameters;
 
       const callArgs: any[] = [];
       for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
-        const paramName = arg.paramName ?? `param${arg.paramName}`;
+        const paramName = arg.paramName ?? `param${arg.parameterIndex}`;
         const value = toolUse.input[paramName];
-        callArgs.push(value);
+        // zod校验
+        const zodValue = arg.zod.parse(value);
+        callArgs.push(zodValue);
       }
 
       const method = (instance as any)[toolMeta.propertyKey];

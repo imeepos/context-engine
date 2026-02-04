@@ -1,7 +1,6 @@
-import { root, ToolMetadataKey, ToolArgMetadataKey, ToolMetadata } from '@sker/core'
+import { root, ToolMetadataKey, ToolMetadata } from '@sker/core'
 import { AnthropicContentBlockDeltaAst, AnthropicContentBlockStartAst, AnthropicContentBlockStopAst, AnthropicMessageDeltaAst, AnthropicMessageStartAst, AnthropicMessageStopAst, AnthropicRequestAst, AnthropicResponseAst, Ast, GoogleRequestAst, GoogleResponseAst, OpenAIRequestAst, OpenAiResponseAst, Visitor, AnthropicToolUseBlock } from "./ast";
 import { isOptionalParam } from './utils/zod-to-json-schema'
-import { buildToolArgsMap } from './utils/tool-args-map'
 
 export interface ToolResult {
     tool_use_id: string
@@ -23,9 +22,6 @@ export class ToolExecutorVisitor implements Visitor {
         throw new Error("Method not implemented.");
     }
     visitOpenAiResponseAst(ast: OpenAiResponseAst, _ctx: any): ToolResult[] {
-        const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
-        const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
-
         const instanceMap = new Map<string, any>()
         const results: ToolResult[] = []
 
@@ -50,9 +46,7 @@ export class ToolExecutorVisitor implements Visitor {
                             instanceMap.set(toolMeta.target.name, instance)
                         }
 
-                        const key = `${toolMeta.target.name}-${String(toolMeta.propertyKey)}`
-                        const args = toolArgsMap.get(key) ?? []
-
+                        const args = toolMeta.parameters
                         const parsedArgs = toolCall.function?.arguments ? JSON.parse(toolCall.function.arguments) : {}
                         const callArgs: any[] = []
 
@@ -64,7 +58,9 @@ export class ToolExecutorVisitor implements Visitor {
                                 throw new Error(`Required parameter '${paramName}' is missing or undefined`)
                             }
 
-                            callArgs.push(value)
+                            // zod校验
+                            const zodValue = arg.zod.parse(value)
+                            callArgs.push(zodValue)
                         }
 
                         const result = instance[toolMeta.propertyKey](...callArgs)
@@ -86,9 +82,6 @@ export class ToolExecutorVisitor implements Visitor {
         return results
     }
     visitGoogleResponseAst(ast: GoogleResponseAst, _ctx: any): ToolResult[] {
-        const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
-        const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
-
         const instanceMap = new Map<string, any>()
         const results: ToolResult[] = []
         let toolCallIndex = 0
@@ -116,9 +109,7 @@ export class ToolExecutorVisitor implements Visitor {
                             instanceMap.set(toolMeta.target.name, instance)
                         }
 
-                        const key = `${toolMeta.target.name}-${String(toolMeta.propertyKey)}`
-                        const args = toolArgsMap.get(key) ?? []
-
+                        const args = toolMeta.parameters
                         const callArgs: any[] = []
                         for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
                             const paramName = arg.paramName ?? `param${arg.parameterIndex}`
@@ -128,7 +119,9 @@ export class ToolExecutorVisitor implements Visitor {
                                 throw new Error(`Required parameter '${paramName}' is missing or undefined`)
                             }
 
-                            callArgs.push(value)
+                            // zod校验
+                            const zodValue = arg.zod.parse(value)
+                            callArgs.push(zodValue)
                         }
 
                         const result = instance[toolMeta.propertyKey](...callArgs)
@@ -155,9 +148,6 @@ export class ToolExecutorVisitor implements Visitor {
         const toolUses = ast.content.filter((block): block is AnthropicToolUseBlock => block.type === 'tool_use');
 
         const toolMetadatas = root.get(ToolMetadataKey) ?? []
-        const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
-        const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
-
         const instanceMap = new Map<string, any>()
         const results: ToolResult[] = []
 
@@ -179,8 +169,7 @@ export class ToolExecutorVisitor implements Visitor {
                     instanceMap.set(toolMeta.target.name, instance)
                 }
 
-                const key = `${toolMeta.target.name}-${String(toolMeta.propertyKey)}`
-                const args = toolArgsMap.get(key) ?? []
+                const args = toolMeta.parameters
                 const sortedArgs = args.sort((a, b) => a.parameterIndex - b.parameterIndex)
 
                 const callArgs: any[] = []
@@ -192,7 +181,9 @@ export class ToolExecutorVisitor implements Visitor {
                         throw new Error(`Required parameter '${paramName}' is missing or undefined`)
                     }
 
-                    callArgs.push(value)
+                    // zod校验
+                    const zodValue = arg.zod.parse(value)
+                    callArgs.push(zodValue)
                 }
 
                 const rawResult = instance[toolMeta.propertyKey](...callArgs)
