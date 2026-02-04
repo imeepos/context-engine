@@ -2,7 +2,7 @@ import { Injectable, OnInit, OnDestroy, Inject } from '@sker/core'
 import { McpClient } from '../mcp/client'
 import { McpConnectionState } from '../mcp/types'
 
-@Injectable()
+@Injectable({ providedIn: 'auto' })
 export class McpClientService implements OnInit, OnDestroy {
   constructor(@Inject(McpClient) private mcpClient: McpClient) { }
 

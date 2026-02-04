@@ -4,14 +4,14 @@ import { InterAgentMessage, MessageQueue } from '../types/message'
 import { AgentRegistryService } from './agent-registry.service'
 import { v4 as uuidv4 } from 'uuid'
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: 'auto' })
 export class MessageBrokerService {
   private messageReceivedCallbacks: Array<(message: InterAgentMessage) => void> = []
 
   constructor(
     private storage: Storage,
     private agentRegistry: AgentRegistryService
-  ) {}
+  ) { }
 
   async init(): Promise<void> {
     const currentAgent = this.agentRegistry.getCurrentAgent()

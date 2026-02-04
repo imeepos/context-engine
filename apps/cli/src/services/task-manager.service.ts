@@ -3,7 +3,7 @@ import { JsonFileStorage } from '../storage/json-file-storage'
 import { Task, TaskRegistry, TaskStatus } from '../types/task'
 import { v4 as uuidv4 } from 'uuid'
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class TaskManagerService {
   private readonly STORAGE_KEY = 'tasks'
   private readonly MAX_RETRIES = 3

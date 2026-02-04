@@ -2,13 +2,13 @@ import { Injectable } from '@sker/core'
 import type { Storage } from '../storage/storage.interface'
 import { Agent, AgentRegistry } from '../types/agent'
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: 'auto' })
 export class AgentRegistryService {
   private currentAgent: Agent | null = null
   private heartbeatInterval: NodeJS.Timeout | null = null
   private agentListChangeCallbacks: Array<(agents: Agent[]) => void> = []
 
-  constructor(private storage: Storage) {}
+  constructor(private storage: Storage) { }
 
   async register(customId?: string): Promise<Agent> {
     const registry = await this.getRegistry()
