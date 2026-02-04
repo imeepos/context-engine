@@ -31,7 +31,7 @@ export class InputHandler {
         renderResult.tools,
         {
           maxIterations: MAX_ITERATIONS,
-          async onToolAfter(params, result) {
+          async onToolAfter(_params, _result) {
             // console.log({ params, result })
           },
           refreshPrompt: async () => {

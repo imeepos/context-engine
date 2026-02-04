@@ -4,7 +4,7 @@ import { Layout } from '../components/Layout'
 import { CURRENT_AGENT_ID } from '../tokens'
 import { Tool } from '@sker/prompt-renderer'
 import { TaskManagerService } from '../services/task-manager.service'
-import { Task, TaskStatus } from '../types/task'
+import { TaskStatus } from '../types/task'
 import z from 'zod'
 
 interface TaskListPageProps {

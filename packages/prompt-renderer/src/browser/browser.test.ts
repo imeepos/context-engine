@@ -55,7 +55,7 @@ describe('Page.render() with async rendering', () => {
   });
 
   it('should render async component with data fetching', async () => {
-    const AsyncComponent = async ({ injector }: any) => {
+    const AsyncComponent = async ({ injector: _injector }: any) => {
       // 模拟异步数据获取
       await new Promise(resolve => setTimeout(resolve, 10));
       const data = 'Async Data';

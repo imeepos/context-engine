@@ -22,9 +22,15 @@ export class ToolCallLoop {
     adapter: LLMProviderAdapter,
     request: UnifiedRequestAst,
     tools: UnifiedTool[],
-    options: ToolLoopOptions = {}
+    options: ToolLoopOptions = {},
+    iteration: number = 0
   ): Promise<UnifiedResponseAst> {
     const maxIterations = options.maxIterations ?? 100;
+
+    if (iteration >= maxIterations) {
+      throw new Error(`Tool loop exceeded max iterations (${maxIterations})`);
+    }
+
     let currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), request);
     const response = await adapter.chat(currentRequest);
 
@@ -37,14 +43,14 @@ export class ToolCallLoop {
       return response;
     }
 
-    // 调用工具 单轮结束
+    // 调用工具
     const results = await this.toolExecutor.executeAll(toolUses, tools, options);
 
     const updatedMessages = this.appendToolResults(currentRequest, response, results);
-    // 工具执行后重新渲染提示词
+
+    // 工具执行后重新渲染提示词（环境）
     if (options.refreshPrompt) {
       const newSystemPrompt = await options.refreshPrompt();
-      console.log(JSON.stringify(updatedMessages, null, 2))
       currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), currentRequest, {
         messages: [
           ...updatedMessages,
@@ -52,10 +58,14 @@ export class ToolCallLoop {
         ],
         tools: newSystemPrompt.tools
       });
-      return this.execute(adapter, currentRequest, newSystemPrompt.tools, options);
+      return this.execute(adapter, currentRequest, newSystemPrompt.tools, options, iteration + 1);
     }
 
-    throw new Error(`Tool loop exceeded max iterations (${maxIterations})`);
+    // 没有 refreshPrompt 时，使用传统的工具循环
+    currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), currentRequest, {
+      messages: updatedMessages
+    });
+    return this.execute(adapter, currentRequest, tools, options, iteration + 1);
   }
 
   private extractToolUses(response: UnifiedResponseAst): UnifiedToolUseContent[] {

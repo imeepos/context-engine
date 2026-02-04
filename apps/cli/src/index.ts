@@ -12,7 +12,7 @@ import { MessageBrokerService } from './services/message-broker.service'
 import { TaskManagerService } from './services/task-manager.service'
 import { StateManager } from './ui/state-manager'
 import { ChatSession } from './core/chat-session'
-import { MCP_CLIENT_CONFIG } from './tokens'
+import { MCP_CLIENT_CONFIG, CURRENT_AGENT_ID } from './tokens'
 import { McpClientService } from './services/mcp-client.service'
 
 // Load .env file from the CLI package directory (ES module compatible)
@@ -73,7 +73,8 @@ async function main() {
         { provide: JsonFileStorage, useValue: storage },
         { provide: AgentRegistryService, useValue: agentRegistry },
         { provide: MessageBrokerService, useValue: messageBroker },
-        { provide: TaskManagerService, useValue: taskManager }
+        { provide: TaskManagerService, useValue: taskManager },
+        { provide: CURRENT_AGENT_ID, useValue: currentAgent.id }
       ]
 
       // 添加 MCP 配置（如果启用）

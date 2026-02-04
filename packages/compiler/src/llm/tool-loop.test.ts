@@ -235,21 +235,26 @@ describe('ToolCallLoop', () => {
 
     adapter.setResponses([toolUseResponse, finalResponse]);
 
-    const onToolCall = vi.fn();
-    const onToolResult = vi.fn();
+    const onToolBefore = vi.fn();
+    const onToolAfter = vi.fn();
 
-    await loop.execute(adapter, request, tools, { onToolCall, onToolResult });
+    await loop.execute(adapter, request, tools, { onToolBefore, onToolAfter });
 
-    expect(onToolCall).toHaveBeenCalledTimes(1);
-    expect(onToolCall).toHaveBeenCalledWith({
+    expect(onToolBefore).toHaveBeenCalledTimes(1);
+    expect(onToolBefore).toHaveBeenCalledWith({
       type: 'tool_use',
       id: 'tool_1',
       name: 'get_weather',
       input: { city: 'Tokyo' }
     });
 
-    expect(onToolResult).toHaveBeenCalledTimes(1);
-    expect(onToolResult).toHaveBeenCalledWith({
+    expect(onToolAfter).toHaveBeenCalledTimes(1);
+    expect(onToolAfter).toHaveBeenCalledWith({
+      type: 'tool_use',
+      id: 'tool_1',
+      name: 'get_weather',
+      input: { city: 'Tokyo' }
+    }, {
       toolUseId: 'tool_1',
       toolName: 'get_weather',
       content: 'Weather in Tokyo: Sunny',

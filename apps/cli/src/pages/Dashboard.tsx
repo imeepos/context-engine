@@ -8,10 +8,12 @@ interface DashboardProps {
 }
 
 export async function DashboardComponent({ injector }: DashboardProps) {
+  const agentList = await AgentListComponent({ injector })
+
   return (
     <Layout injector={injector}>
       <h1>多Agent通信系统</h1>
-      <AgentListComponent injector={injector} />
+      {agentList}
     </Layout>
   )
 }

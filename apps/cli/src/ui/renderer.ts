@@ -20,18 +20,20 @@ export class UIRenderer {
   private getStateProviders() {
     return [
       {
-        provide: NAVIGATE, useValue: (url: string) => {
+        provide: NAVIGATE, useValue: async (url: string) => {
           NavigateTool.setCurrentUrl(url)
+          await this.render()
         }
       }
     ]
   }
 
-  async render(providers: Provider[] = []): Promise<void> {
+  async render(providers: Provider[] = []): Promise<RenderResult> {
     this.currentPage = this.browser.open(NavigateTool.getCurrentUrl(), this.getStateProviders())
     this.renderResult = await this.currentPage?.render(providers) || null;
     // 清屏并重新渲染
     console.log(this.renderResult?.prompt)
+    return this.renderResult;
   }
 
   debouncedRender(): void {

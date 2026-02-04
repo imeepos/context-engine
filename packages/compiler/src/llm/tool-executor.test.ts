@@ -128,7 +128,7 @@ describe('UnifiedToolExecutor', () => {
         name: 'calculate',
         input: { a: 10, b: 20 }
       }
-    ], tools);
+    ], tools, {});
 
     expect(results).toHaveLength(2);
     expect(results[0]?.content).toBe('Weather in Tokyo: Sunny, 25°C');

@@ -1,11 +1,12 @@
 import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
-import { InterAgentMessage } from '../types/message'
 import { CURRENT_ROUTE, ToolUse } from '@sker/prompt-renderer'
-import { MESSAGES, CURRENT_AGENT_ID, AGENTS } from '../tokens'
+import { CURRENT_AGENT_ID } from '../tokens'
 import { NavigateTool } from '../tools/NavigateTool'
 import { SendMessageTool } from '../tools/SendMessageTool'
+import { AgentRegistryService } from '../services/agent-registry.service'
+import { MessageBrokerService } from '../services/message-broker.service'
 
 interface ChatPageProps {
   injector: Injector
@@ -14,20 +15,18 @@ interface ChatPageProps {
 export async function ChatPageComponent({ injector }: ChatPageProps) {
   const routeMatch = injector.get(CURRENT_ROUTE)
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
-  const agents = injector.get(AGENTS)
-  const allMessages = injector.get(MESSAGES)
   const agentId = routeMatch?.params?.agentId || ''
 
-  // 过滤出与 agentId 的对话
-  const messages = allMessages.filter(m =>
-    (m.from === currentAgentId && m.to === agentId) ||
-    (m.from === agentId && m.to === currentAgentId)
-  ).sort((a, b) => a.timestamp - b.timestamp)
+  const agentRegistryService = injector.get(AgentRegistryService)
+  const messageBrokerService = injector.get(MessageBrokerService)
+
+  const agents = await agentRegistryService.getOnlineAgents()
+  const messages = agentId ? await messageBrokerService.getMessageHistory(agentId) : []
 
   return (
     <Layout injector={injector}>
       <ToolUse use={NavigateTool} propertyKey={`execute`}>返回</ToolUse>
-      <h2>在线Agent</h2>
+      <h2>所有在线的AGENT有：</h2>
       {agents.map(agent => (
         <div key={agent.id}>
           {agent.id === agentId ? '> ' : '- '}
@@ -38,7 +37,7 @@ export async function ChatPageComponent({ injector }: ChatPageProps) {
 
       {agentId && (
         <div>
-          <h2>与 {agentId} 的对话</h2>
+          <h2>与 {agentId} 的对话记录</h2>
           {messages.map((msg) => (
             <div key={msg.id}>
               [{msg.from}] {msg.content}

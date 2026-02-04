@@ -1,17 +1,27 @@
 import React from 'react'
 import { Injector } from '@sker/core'
 import { Tool } from '@sker/prompt-renderer'
-import { AGENTS, CURRENT_AGENT_ID, MESSAGES } from '../tokens'
+import { CURRENT_AGENT_ID } from '../tokens'
 import { NavigateTool } from '../tools/NavigateTool'
+import { AgentRegistryService } from '../services/agent-registry.service'
+import { MessageBrokerService } from '../services/message-broker.service'
 
 interface AgentListProps {
   injector: Injector
 }
 
-export function AgentListComponent({ injector }: AgentListProps) {
-  const agents = injector.get(AGENTS)
+export async function AgentListComponent({ injector }: AgentListProps) {
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
-  const allMessages = injector.get(MESSAGES)
+  const agentRegistryService = injector.get(AgentRegistryService)
+  const messageBrokerService = injector.get(MessageBrokerService)
+
+  const agents = await agentRegistryService.getOnlineAgents()
+
+  const allMessagesPromises = agents.map(agent =>
+    messageBrokerService.getMessageHistory(agent.id)
+  )
+  const allMessagesArrays = await Promise.all(allMessagesPromises)
+  const allMessages = allMessagesArrays.flat()
 
   return (
     <div>

@@ -142,7 +142,10 @@ export class Page {
       ...providers,
     ], this.parent);
 
-    const element = React.createElement(component, { injector });
+    // 直接调用组件函数而不是使用 React.createElement
+    // 这样可以支持异步组件
+    const result = component({ injector });
+    const element = result instanceof Promise ? await result : result;
     const vnode = await directRenderAsync(element);
 
     if (!vnode) {

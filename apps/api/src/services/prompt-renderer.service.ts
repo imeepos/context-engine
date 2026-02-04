@@ -14,10 +14,10 @@ export class PromptRendererService {
     ]);
   }
 
-  render(path: string): string {
+  async render(path: string): Promise<string> {
     const url = `prompt://${path}`;
     const page = this.browser.open(url);
-    const result = page.render();
+    const result = await page.render();
     return result.prompt;
   }
 }
