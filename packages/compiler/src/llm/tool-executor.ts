@@ -1,6 +1,5 @@
 import { Injectable } from '@sker/core';
 import { UnifiedToolUseContent, UnifiedTool } from '../ast';
-import { buildUnifiedTools } from '../unified/tool-builder';
 
 export interface UnifiedToolResult {
   toolUseId: string;
@@ -11,17 +10,11 @@ export interface UnifiedToolResult {
 
 @Injectable()
 export class UnifiedToolExecutor {
-  private toolMap: Map<string, UnifiedTool>;
 
-  constructor() {
-    const tools = buildUnifiedTools();
-    this.toolMap = new Map(tools.map(t => [t.name, t]));
-  }
 
-  async execute(toolUse: UnifiedToolUseContent): Promise<UnifiedToolResult> {
+  async execute(toolUse: UnifiedToolUseContent, tools: UnifiedTool[]): Promise<UnifiedToolResult> {
     try {
-      const tool = this.toolMap.get(toolUse.name);
-
+      const tool = tools.find(t => t.name === toolUse.name);
       if (!tool) {
         return {
           toolUseId: toolUse.id,
@@ -49,7 +42,7 @@ export class UnifiedToolExecutor {
     }
   }
 
-  async executeAll(toolUses: UnifiedToolUseContent[]): Promise<UnifiedToolResult[]> {
-    return Promise.all(toolUses.map(tu => this.execute(tu)));
+  async executeAll(toolUses: UnifiedToolUseContent[], tools: UnifiedTool[]): Promise<UnifiedToolResult[]> {
+    return Promise.all(toolUses.map(tu => this.execute(tu, tools)));
   }
 }

@@ -121,6 +121,7 @@ describe('LLMService', () => {
           messages: [{ role: 'user', content: 'Hello' }],
           tools: []
         }),
+        [],
         {}
       );
       expect(response.content[0]).toEqual({ type: 'text', text: 'Tool result' });
@@ -139,6 +140,7 @@ describe('LLMService', () => {
       expect(mockToolLoop.execute).toHaveBeenCalledWith(
         mockAdapter,
         expect.any(Object),
+        [],
         options
       );
     });
@@ -154,6 +156,7 @@ describe('LLMService', () => {
       expect(mockToolLoop.execute).toHaveBeenCalledWith(
         mockAdapter,
         expect.any(Object),
+        [],
         expect.objectContaining({ provider: 'anthropic' })
       );
     });

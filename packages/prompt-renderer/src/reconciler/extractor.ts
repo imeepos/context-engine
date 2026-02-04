@@ -67,7 +67,7 @@ function extractToolFromClass(toolClass: Type<any>): {
   }
 }
 
-function transformToUnifiedTool(tool: Tool): UnifiedTool {
+function transformToUnifiedTool(tool: Tool, executors: Map<string, (params: Record<string, any>) => void | Promise<void>>): UnifiedTool {
   const properties: Record<string, any> = {};
   const required: string[] = [];
 
@@ -106,6 +106,9 @@ function transformToUnifiedTool(tool: Tool): UnifiedTool {
       type: 'object',
       properties,
       required: required.length > 0 ? required : undefined
+    },
+    execute: async (params: Record<string, any>) => {
+      return executors.get(tool.name)?.(params);
     }
   };
 }
@@ -231,11 +234,8 @@ function extractToolsInternal(
   return tools;
 }
 
-export function extractTools(node: VNode): ExtractResult {
+export function extractTools(node: VNode): UnifiedTool[] {
   const executors = new Map<string, () => void | Promise<void>>();
   const tools = extractToolsInternal(node, executors);
-  return {
-    tools: tools.map(transformToUnifiedTool),
-    executors
-  };
+  return tools.map(tool => transformToUnifiedTool(tool, executors));
 }

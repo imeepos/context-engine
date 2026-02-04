@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@sker/core';
 import { UnifiedToolExecutor, UnifiedToolResult } from './tool-executor';
 import { UnifiedMessageBuilder } from './message-builder';
 import { LLMProviderAdapter } from './adapter';
-import { UnifiedRequestAst, UnifiedResponseAst, UnifiedToolUseContent, UnifiedMessage } from '../ast';
+import { UnifiedRequestAst, UnifiedResponseAst, UnifiedToolUseContent, UnifiedMessage, UnifiedTool } from '../ast';
 
 export interface ToolLoopOptions {
   maxIterations?: number;
@@ -18,6 +18,7 @@ export class ToolCallLoop {
   async execute(
     adapter: LLMProviderAdapter,
     request: UnifiedRequestAst,
+    tools: UnifiedTool[],
     options: ToolLoopOptions = {}
   ): Promise<UnifiedResponseAst> {
     const maxIterations = options.maxIterations ?? 100;
@@ -36,7 +37,7 @@ export class ToolCallLoop {
         return response;
       }
 
-      const results = await this.toolExecutor.executeAll(toolUses);
+      const results = await this.toolExecutor.executeAll(toolUses, tools);
 
       toolUses.forEach(tu => options.onToolCall?.(tu));
       results.forEach(r => options.onToolResult?.(r));

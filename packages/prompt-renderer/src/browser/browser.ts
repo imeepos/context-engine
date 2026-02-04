@@ -119,7 +119,6 @@ export interface PromptURL {
 export interface RenderResult {
   prompt: string;
   tools: UnifiedTool[];
-  executors: Map<string, () => void | Promise<void>>;
 }
 
 export interface ToolCall {
@@ -151,9 +150,9 @@ export class Page {
 
     const vnode = container.children[0] || container;
     const prompt = renderToMarkdown(vnode);
-    const { tools, executors } = extractTools(vnode);
+    const tools = extractTools(vnode);
 
-    return { prompt, tools, executors };
+    return { prompt, tools };
   }
   navigate(url: string): Page {
     const browser = this.parent.get(Browser);

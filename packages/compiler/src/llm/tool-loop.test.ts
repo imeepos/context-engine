@@ -6,7 +6,8 @@ import { Observable } from 'rxjs';
 import { ToolCallLoop } from './tool-loop';
 import { UnifiedToolExecutor } from './tool-executor';
 import { LLMProviderAdapter } from './adapter';
-import { UnifiedRequestAst, UnifiedResponseAst, UnifiedStreamEventAst, UnifiedProvider } from '../ast';
+import { UnifiedRequestAst, UnifiedResponseAst, UnifiedStreamEventAst, UnifiedProvider, UnifiedTool } from '../ast';
+import { buildUnifiedTools } from '../unified/tool-builder';
 
 @Injectable()
 class MockTools {
@@ -57,6 +58,7 @@ describe('ToolCallLoop', () => {
   let executor: UnifiedToolExecutor;
   let loop: ToolCallLoop;
   let adapter: MockAdapter;
+  let tools: UnifiedTool[];
 
   beforeEach(() => {
     injector = EnvironmentInjector.createWithAutoProviders([{ provide: MockTools, useClass: MockTools }]);
@@ -64,6 +66,7 @@ describe('ToolCallLoop', () => {
     executor = new UnifiedToolExecutor();
     loop = new ToolCallLoop(executor);
     adapter = new MockAdapter();
+    tools = buildUnifiedTools();
   });
 
   it('should return response immediately if no tool use', async () => {
@@ -82,7 +85,7 @@ describe('ToolCallLoop', () => {
 
     adapter.setResponses([response]);
 
-    const result = await loop.execute(adapter, request);
+    const result = await loop.execute(adapter, request, tools);
 
     expect(result).toBe(response);
     expect(result.stopReason).toBe('end_turn');
@@ -114,7 +117,7 @@ describe('ToolCallLoop', () => {
 
     adapter.setResponses([toolUseResponse, finalResponse]);
 
-    const result = await loop.execute(adapter, request);
+    const result = await loop.execute(adapter, request, tools);
 
     expect(result).toBe(finalResponse);
     expect(result.stopReason).toBe('end_turn');
@@ -150,7 +153,7 @@ describe('ToolCallLoop', () => {
 
     adapter.setResponses([firstToolResponse, secondToolResponse, finalResponse]);
 
-    const result = await loop.execute(adapter, request);
+    const result = await loop.execute(adapter, request, tools);
 
     expect(result).toBe(finalResponse);
     expect(result.stopReason).toBe('end_turn');
@@ -182,7 +185,7 @@ describe('ToolCallLoop', () => {
 
     adapter.setResponses([toolUseResponse, finalResponse]);
 
-    const result = await loop.execute(adapter, request);
+    const result = await loop.execute(adapter, request, tools);
 
     expect(result).toBe(finalResponse);
     expect(result.stopReason).toBe('end_turn');
@@ -205,7 +208,7 @@ describe('ToolCallLoop', () => {
     adapter.setResponses(Array(15).fill(toolUseResponse));
 
     await expect(
-      loop.execute(adapter, request, { maxIterations: 3 })
+      loop.execute(adapter, request, tools, { maxIterations: 3 })
     ).rejects.toThrow('Tool loop exceeded max iterations (3)');
   });
 
@@ -235,7 +238,7 @@ describe('ToolCallLoop', () => {
     const onToolCall = vi.fn();
     const onToolResult = vi.fn();
 
-    await loop.execute(adapter, request, { onToolCall, onToolResult });
+    await loop.execute(adapter, request, tools, { onToolCall, onToolResult });
 
     expect(onToolCall).toHaveBeenCalledTimes(1);
     expect(onToolCall).toHaveBeenCalledWith({
@@ -270,7 +273,7 @@ describe('ToolCallLoop', () => {
 
     adapter.setResponses([response]);
 
-    const result = await loop.execute(adapter, request);
+    const result = await loop.execute(adapter, request, tools);
 
     expect(result).toBe(response);
   });
@@ -298,7 +301,7 @@ describe('ToolCallLoop', () => {
 
     adapter.setResponses([toolUseResponse, finalResponse]);
 
-    const result = await loop.execute(adapter, request);
+    const result = await loop.execute(adapter, request, tools);
 
     expect(result.stopReason).toBe('end_turn');
   });

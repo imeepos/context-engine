@@ -37,7 +37,9 @@ export class LLMService {
 
     const requestWithTools = Object.assign(Object.create(Object.getPrototypeOf(request)), request, { tools });
 
-    return this.toolLoop.execute(adapter, requestWithTools, options);
+    return this.toolLoop.execute(adapter, requestWithTools, tools, {
+      ...options
+    });
   }
 
   stream(
