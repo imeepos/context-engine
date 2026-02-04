@@ -19,3 +19,4 @@ export type { VNode, TextNode, ElementNode, Tool as ToolDefinition } from './rec
 // Components
 export { Tool } from './components/Tool';
 export type { ToolProps } from './components/Tool';
+export * from './module';

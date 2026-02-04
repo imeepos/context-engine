@@ -501,6 +501,7 @@ export interface UnifiedTool {
     name: string;
     description: string;
     parameters: UnifiedToolParameters;
+    execute: (params: Record<string, any>) => Promise<any>;
 }
 
 // ==================== MCP Request/Response Types ====================

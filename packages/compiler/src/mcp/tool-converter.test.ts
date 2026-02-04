@@ -20,7 +20,8 @@ describe('MCP Tool Converter', () => {
                             param1: { type: 'string', description: 'First parameter' }
                         },
                         required: ['param1']
-                    }
+                    },
+                    execute: async () => {}
                 }
             ]
 
@@ -44,7 +45,8 @@ describe('MCP Tool Converter', () => {
                         properties: {
                             param1: { type: 'string' }
                         }
-                    }
+                    },
+                    execute: async () => {}
                 }
             ]
 

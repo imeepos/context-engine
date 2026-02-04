@@ -274,7 +274,8 @@ describe('统一抽象层测试套件', () => {
               city: { type: 'string', description: '城市名称' }
             },
             required: ['city']
-          }
+          },
+          execute: async () => {}
         }
       ]
     })

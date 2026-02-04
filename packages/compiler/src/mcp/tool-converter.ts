@@ -40,6 +40,9 @@ export function mcpToolsToUnified(tools: MCPTool[]): UnifiedTool[] {
                 type: 'object',
                 properties: tool.inputSchema.properties,
                 required: tool.inputSchema.required
+            },
+            execute: async () => {
+                throw new Error('Execute not implemented for MCP-converted tools')
             }
         }
     })

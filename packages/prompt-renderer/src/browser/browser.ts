@@ -22,14 +22,8 @@ export const CURRENT_URL = new InjectionToken<URL>(`CURRENT_URL`);
 export const CURRENT_ROUTE = new InjectionToken<RouteMatch>(`CURRENT_ROUTE`);
 export const CURRENT_PAGE = new InjectionToken<Page>(`CURRENT_PAGE`);
 export const COMPONENT = new InjectionToken<React.FunctionComponent>(`COMPONENT`);
-export const TOOLS = new InjectionToken<RouteTool[]>(`TOOLS`);
-export interface RouteTool {
-  name: string;
-  handler: (params?: any) => Promise<any>;
-  description?: string;
-  parameters?: any;
-}
-@Injectable()
+
+@Injectable({ providedIn: 'auto' })
 export class Browser {
   constructor(@Inject(Injector) private parent: Injector) { }
   open(url: string, providers: Provider[] = []): Page {
@@ -42,16 +36,15 @@ export class Browser {
 
     const pageInjector = createInjector([
       { provide: CURRENT_URL, useFactory: () => parsePromptURL(url) },
-      { provide: CURRENT_ROUTE, useFactory: (...deps: unknown[]) => {
-        const parsedUrl = deps[0] as URL;
-        const pageInjector = deps[1] as Injector;
-        return matchRoute(parsedUrl.pathname, pageInjector);
-      }, deps: [CURRENT_URL, Injector] },
-      { provide: CURRENT_PAGE, useClass: Page },
+      {
+        provide: CURRENT_ROUTE, useFactory: (parsedUrl: URL, pageInjector: Injector) => {
+          return matchRoute(parsedUrl.pathname, pageInjector);
+        }, deps: [CURRENT_URL, Injector]
+      },
       ...providers
     ], this.parent)
 
-    return pageInjector.get(CURRENT_PAGE);
+    return pageInjector.get(Page);
   }
 }
 
@@ -152,35 +145,15 @@ export class Page {
 
     const element = React.createElement(component, { injector });
     const container = createElement('root', {}, []);
-    const root = reconciler.createContainer(container, 0, null, false, null, '', () => {}, null);
+    const root = reconciler.createContainer(container, 0, null, false, null, '', () => { }, null);
 
-    reconciler.updateContainer(element, root, null, () => {});
+    reconciler.updateContainer(element, root, null, () => { });
 
     const vnode = container.children[0] || container;
     const prompt = renderToMarkdown(vnode);
     const { tools, executors } = extractTools(vnode);
 
     return { prompt, tools, executors };
-  }
-  async execute(toolName: string, params?: any): Promise<any> {
-    if (!toolName) {
-      throw new Error('Tool name is required');
-    }
-    const tools = this.parent.get(TOOLS, []);
-    const tool = tools?.find(t => t.name === toolName);
-    if (!tool) {
-      throw new Error(`Tool not found: ${toolName}`);
-    }
-
-    return await tool.handler(params);
-  }
-  async executes(calls: ToolCall[]): Promise<any[]> {
-    const results: any[] = [];
-    for (const call of calls) {
-      const result = await this.execute(call.name, call.params);
-      results.push(result);
-    }
-    return results;
   }
   navigate(url: string): Page {
     const browser = this.parent.get(Browser);

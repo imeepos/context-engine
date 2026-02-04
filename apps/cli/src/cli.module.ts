@@ -22,9 +22,13 @@ import { McpClient } from './mcp/client'
 import { McpClientService } from './services/mcp-client.service'
 import { RemoteToolProxy } from './tools/RemoteToolProxy'
 import { MCP_CLIENT } from './tokens'
+import { PromptRendererModule } from '@sker/prompt-renderer'
 
 @Module({
-  imports: [CompilerModule],
+  imports: [
+    CompilerModule,
+    PromptRendererModule.forRoot([])
+  ],
   providers: [
     { provide: AgentRegistryService, useClass: AgentRegistryService },
     { provide: MessageBrokerService, useClass: MessageBrokerService },

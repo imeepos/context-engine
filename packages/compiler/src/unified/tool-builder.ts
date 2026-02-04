@@ -4,14 +4,12 @@
  * @version 2.0
  */
 
-import { root, ToolMetadataKey, Type } from '@sker/core'
-import { ToolMetadata } from '@sker/core'
+import { root, ToolMetadataKey, Type, ToolArgMetadataKey } from '@sker/core'
+import { ToolMetadata, TOOL_METADATA_KEY } from '@sker/core'
 import { AnthropicTool, OpenAITool, GoogleTool, GoogleToolFunctionDeclaration, UnifiedTool } from '../ast'
 import { zodToJsonSchema, isOptionalParam } from '../utils/zod-to-json-schema'
+import { buildToolArgsMap } from '../utils/tool-args-map'
 import 'reflect-metadata';
-
-// Tool 元数据存储 key（与 mcp.ts 中的定义保持一致）
-const TOOL_METADATA_KEY = Symbol.for('tool_metadata');
 
 // ==================== 核心构建函数 ====================
 export function buildUnifiedTool(tool: Type<any>, propertyKey: string | symbol): UnifiedTool {
@@ -39,6 +37,22 @@ export function buildUnifiedTool(tool: Type<any>, propertyKey: string | symbol):
             type: 'object',
             properties,
             required: required.length > 0 ? required : undefined
+        },
+        execute: async (params: Record<string, any>) => {
+            const instance = root.get(tool)
+            const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
+            const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
+            const key = `${tool.name}-${String(propertyKey)}`
+            const args = toolMetadata.parameters
+
+            const callArgs: any[] = []
+            for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
+                const paramName = arg.paramName ?? `param${arg.parameterIndex}`
+                callArgs.push(params[paramName])
+            }
+
+            const method = (instance as any)[propertyKey]
+            return await method.call(instance, ...callArgs)
         }
     }
 }
@@ -75,6 +89,22 @@ export function buildUnifiedTools(filterTools?: Type<any>[]): UnifiedTool[] {
                 type: 'object',
                 properties,
                 required: required.length > 0 ? required : undefined
+            },
+            execute: async (params: Record<string, any>) => {
+                const instance = root.get(toolMeta.target)
+                const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
+                const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
+                const key = `${toolMeta.target.name}-${String(toolMeta.propertyKey)}`
+                const args = toolArgsMap.get(key) ?? []
+
+                const callArgs: any[] = []
+                for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
+                    const paramName = arg.paramName ?? `param${arg.parameterIndex}`
+                    callArgs.push(params[paramName])
+                }
+
+                const method = (instance as any)[toolMeta.propertyKey]
+                return await method.call(instance, ...callArgs)
             }
         }
     })

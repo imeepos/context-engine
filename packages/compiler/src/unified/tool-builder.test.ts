@@ -84,7 +84,8 @@ describe('unified-tool-builder', () => {
               num: { type: 'number' }
             },
             required: ['str']
-          }
+          },
+          execute: async () => {}
         }
       ]
 
@@ -119,7 +120,8 @@ describe('unified-tool-builder', () => {
               num: { type: 'number' }
             },
             required: ['str']
-          }
+          },
+          execute: async () => {}
         }
       ]
 
@@ -157,7 +159,8 @@ describe('unified-tool-builder', () => {
               num: { type: 'number' }
             },
             required: ['str']
-          }
+          },
+          execute: async () => {}
         }
       ]
 
@@ -189,7 +192,8 @@ describe('unified-tool-builder', () => {
               arg1: { type: 'string' }
             },
             required: ['arg1']
-          }
+          },
+          execute: async () => {}
         },
         {
           name: 'tool2',
@@ -200,7 +204,8 @@ describe('unified-tool-builder', () => {
               arg2: { type: 'number' }
             },
             required: ['arg2']
-          }
+          },
+          execute: async () => {}
         }
       ]
 
