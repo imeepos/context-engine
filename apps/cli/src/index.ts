@@ -3,10 +3,11 @@ import * as dotenv from 'dotenv'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { Command } from 'commander'
-import { createPlatform } from '@sker/core'
+import { createPlatform, Provider } from '@sker/core'
 import { LLM_ANTHROPIC_CONFIG } from '@sker/compiler'
 import { CliModule } from './cli.module'
 import { JsonFileStorage } from './storage/json-file-storage'
+import { STORAGE_TOKEN } from './storage/storage.interface'
 import { AgentRegistryService } from './services/agent-registry.service'
 import { MessageBrokerService } from './services/message-broker.service'
 import { TaskManagerService } from './services/task-manager.service'
@@ -68,8 +69,9 @@ async function main() {
       // 创建 platform 和 application
       const platform = createPlatform()
 
-      const providers: any[] = [
+      const providers: Provider[] = [
         { provide: LLM_ANTHROPIC_CONFIG, useValue: { apiKey, baseUrl } },
+        { provide: STORAGE_TOKEN, useValue: storage },
         { provide: JsonFileStorage, useValue: storage },
         { provide: AgentRegistryService, useValue: agentRegistry },
         { provide: MessageBrokerService, useValue: messageBroker },

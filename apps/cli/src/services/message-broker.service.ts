@@ -1,5 +1,5 @@
-import { Injectable } from '@sker/core'
-import type { Storage } from '../storage/storage.interface'
+import { Inject, Injectable } from '@sker/core'
+import { STORAGE_TOKEN, type Storage } from '../storage/storage.interface'
 import { InterAgentMessage, MessageQueue } from '../types/message'
 import { AgentRegistryService } from './agent-registry.service'
 import { v4 as uuidv4 } from 'uuid'
@@ -9,8 +9,8 @@ export class MessageBrokerService {
   private messageReceivedCallbacks: Array<(message: InterAgentMessage) => void> = []
 
   constructor(
-    private storage: Storage,
-    private agentRegistry: AgentRegistryService
+    @Inject(STORAGE_TOKEN) private storage: Storage,
+    @Inject(AgentRegistryService) private agentRegistry: AgentRegistryService
   ) { }
 
   async init(): Promise<void> {

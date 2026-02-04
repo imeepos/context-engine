@@ -2,13 +2,14 @@ import { Inject, Injectable } from '@sker/core'
 import { JsonFileStorage } from '../storage/json-file-storage'
 import { Task, TaskRegistry, TaskStatus } from '../types/task'
 import { v4 as uuidv4 } from 'uuid'
+import { STORAGE_TOKEN } from '../storage/storage.interface'
 
 @Injectable({ providedIn: 'auto' })
 export class TaskManagerService {
   private readonly STORAGE_KEY = 'tasks'
   private readonly MAX_RETRIES = 3
 
-  constructor(@Inject(JsonFileStorage) private storage: JsonFileStorage) { }
+  constructor(@Inject(STORAGE_TOKEN) private storage: JsonFileStorage) { }
 
   async init(): Promise<void> {
     const registry = await this.storage.read<TaskRegistry>(this.STORAGE_KEY)
