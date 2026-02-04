@@ -2,9 +2,9 @@ import { Injectable } from '@sker/core'
 import { TaskManagerService } from './task-manager.service'
 import { Task, TaskStatus } from '../types/task'
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: 'auto' })
 export class TaskDependencyResolverService {
-  constructor(private taskManager: TaskManagerService) {}
+  constructor(private taskManager: TaskManagerService) { }
 
   async updateTaskStatuses(): Promise<void> {
     const blockedTasks = await this.taskManager.getTasksByStatus(TaskStatus.BLOCKED)
