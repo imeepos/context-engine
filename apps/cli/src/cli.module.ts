@@ -1,5 +1,6 @@
 import { Module } from '@sker/core'
 import { CompilerModule } from '@sker/compiler'
+import { JsonFileStorage } from './storage/json-file-storage'
 import { AgentRegistryService } from './services/agent-registry.service'
 import { MessageBrokerService } from './services/message-broker.service'
 import { TaskManagerService } from './services/task-manager.service'
@@ -30,6 +31,7 @@ import { PromptRendererModule } from '@sker/prompt-renderer'
     PromptRendererModule.forRoot([])
   ],
   providers: [
+    { provide: JsonFileStorage, useClass: JsonFileStorage },
     { provide: AgentRegistryService, useClass: AgentRegistryService },
     { provide: MessageBrokerService, useClass: MessageBrokerService },
     { provide: TaskManagerService, useClass: TaskManagerService },
