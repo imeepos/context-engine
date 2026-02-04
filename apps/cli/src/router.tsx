@@ -4,9 +4,11 @@ import { DashboardComponent } from './pages/Dashboard'
 import { TaskListPageComponent } from './pages/TaskListPage'
 import { TaskDetailPageComponent } from './pages/TaskDetailPage'
 import { Injector } from '@sker/core'
+import { BaseInfo } from './pages/BaseInfo'
 
 export const routes: Route[] = [
   { path: '/', component: DashboardComponent, params: {} },
+  { path: '/base-info', component: BaseInfo, params: {} },
   { path: '/chat/:agentId', component: ChatPageComponent, params: {} },
   { path: '/tasks', component: TaskListPageComponent, params: {} },
   { path: '/tasks/:taskId', component: TaskDetailPageComponent, params: {} }

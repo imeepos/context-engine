@@ -1,28 +1,35 @@
 import React from 'react'
 import { Injector } from '@sker/core'
-import { cpus, homedir, platform, tmpdir, totalmem, freemem } from 'os'
+import { Tool } from '@sker/prompt-renderer'
+import { NAVIGATE } from '../tokens'
 interface LayoutProps {
   injector: Injector
   children: React.ReactNode
 }
 
-export function Layout({ children }: LayoutProps) {
-  const cwd = process.cwd()
-  const cpu = cpus()[0]
-  const totalMem = (totalmem() / 1024 / 1024 / 1024).toFixed(2)
-  const freeMem = (freemem() / 1024 / 1024 / 1024).toFixed(2)
+export function Layout({ children, injector }: LayoutProps) {
+
+  const navigate = injector.get(NAVIGATE)
 
   return (
     <div>
+      <h1>导航</h1>
       <ul>
-        <li>当前目录：{cwd}</li>
-        <li>操作系统：{platform()}</li>
-        <li>主目录：{homedir()}</li>
-        <li>临时目录：{tmpdir()}</li>
-        <li>CPU：{cpu.model} ({cpus().length} 核)</li>
-        <li>内存：{freeMem}GB / {totalMem}GB</li>
-        <li>Node 版本：{process.version}</li>
-        <li>Node 进程：{process.pid}</li>
+        <li>
+          <Tool name='navigate_note' description='首页' execute={async () => {
+            navigate('prompt:///')
+          }} >首页</Tool>
+        </li>
+        <li>
+          <Tool name='navigate_tasks' description='任务列表' execute={async () => {
+            navigate('prompt:///tasks')
+          }} >任务大厅</Tool>
+        </li>
+        <li>
+          <Tool name='navigate_baseinfo' description='系统基础信息' execute={async () => {
+            navigate('prompt:///base-info')
+          }} >系统信息</Tool>
+        </li>
       </ul>
       {children}
     </div>

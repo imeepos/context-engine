@@ -13,9 +13,7 @@ interface ChatPageProps {
 }
 
 export function ChatPageComponent({ injector }: ChatPageProps) {
-  const _messageBroker = injector.get(MessageBrokerService)
   const routeMatch = injector.get(CURRENT_ROUTE)
-  const _navigate = injector.get(NAVIGATE)
   const messageSubscriber = injector.get(MESSAGE_SUBSCRIBER)
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
   const agents = injector.get(AGENTS)

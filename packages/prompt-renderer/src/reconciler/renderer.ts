@@ -46,13 +46,13 @@ export function renderToMarkdown(node: VNode): string {
   if (element.type === 'ul') {
     return element.children
       .map(child => `- ${getTextContent(child)}`)
-      .join('\n');
+      .join('\n') + '\n';
   }
 
   if (element.type === 'ol') {
     return element.children
       .map((child, i) => `${i + 1}. ${getTextContent(child)}`)
-      .join('\n');
+      .join('\n') + '\n';
   }
 
   if (element.type === 'button') {
