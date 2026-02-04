@@ -1,5 +1,6 @@
 import { Inject, Injectable, Injector } from '@sker/core';
 import { UnifiedToolUseContent, UnifiedTool } from '../ast';
+import { ToolLoopOptions } from './tool-loop';
 
 export interface UnifiedToolResult {
   toolUseId: string;
@@ -41,7 +42,16 @@ export class UnifiedToolExecutor {
     }
   }
 
-  async executeAll(toolUses: UnifiedToolUseContent[], tools: UnifiedTool[]): Promise<UnifiedToolResult[]> {
-    return Promise.all(toolUses.map(tu => this.execute(tu, tools)));
+  async executeAll(toolUses: UnifiedToolUseContent[], tools: UnifiedTool[], options: ToolLoopOptions): Promise<UnifiedToolResult[]> {
+    return Promise.all(toolUses.map(async tu => {
+      if (options.onToolBefore) {
+        await options.onToolBefore(tu)
+      }
+      const result = await this.execute(tu, tools)
+      if (options.onToolAfter) {
+        await options.onToolAfter(tu, result)
+      }
+      return result;
+    }));
   }
 }

@@ -3,8 +3,7 @@ import { UnifiedTool } from '@sker/compiler'
 import React from 'react';
 import { renderToMarkdown } from '../reconciler/renderer';
 import { extractTools } from '../reconciler/extractor';
-import { createElement } from '../reconciler/dom';
-import { reconciler } from '../reconciler/host-config';
+import { directRenderAsync } from '../reconciler/direct-render-async';
 
 export interface Route<T = any> {
   path: string;
@@ -130,7 +129,7 @@ export interface ToolCall {
 @Injectable({ providedIn: 'auto' })
 export class Page {
   constructor(@Inject(Injector) private parent: Injector) { }
-  render(providers: Provider[] = []): RenderResult {
+  async render(providers: Provider[] = []): Promise<RenderResult> {
     const currentRoute = this.parent.get(CURRENT_ROUTE);
     if (!currentRoute) {
       const url = this.parent.get(CURRENT_URL);
@@ -144,12 +143,12 @@ export class Page {
     ], this.parent);
 
     const element = React.createElement(component, { injector });
-    const container = createElement('root', {}, []);
-    const root = reconciler.createContainer(container, 0, null, false, null, '', () => { }, null);
+    const vnode = await directRenderAsync(element);
 
-    reconciler.updateContainer(element, root, null, () => { });
+    if (!vnode) {
+      return { prompt: '', tools: [] };
+    }
 
-    const vnode = container.children[0] || container;
     const prompt = renderToMarkdown(vnode);
     const tools = extractTools(vnode);
     return { prompt, tools };

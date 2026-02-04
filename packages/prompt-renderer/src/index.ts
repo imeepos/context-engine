@@ -14,6 +14,8 @@ export type { NavigationHistory, NavigationAction as HistoryAction } from './rou
 export { createTextNode, createElement } from './reconciler/dom';
 export { renderToMarkdown } from './reconciler/renderer';
 export { extractTools } from './reconciler/extractor';
+export { directRender } from './reconciler/direct-render';
+export { directRenderAsync } from './reconciler/direct-render-async';
 export type { VNode, TextNode, ElementNode, Tool as ToolDefinition } from './reconciler/types';
 
 // Components

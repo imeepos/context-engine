@@ -141,7 +141,7 @@ export class TaskManagerService {
     return true
   }
 
-  private async getRegistry(): Promise<TaskRegistry> {
+  async getRegistry(): Promise<TaskRegistry> {
     const registry = await this.storage.read<TaskRegistry>(this.STORAGE_KEY)
     return registry || { tasks: {}, version: 0 }
   }

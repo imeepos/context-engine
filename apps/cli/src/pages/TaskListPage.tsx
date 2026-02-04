@@ -13,16 +13,15 @@ interface TaskListPageProps {
 
 export function TaskListPageComponent({ injector }: TaskListPageProps) {
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
-  const taskManager = injector.get(TaskManagerService)
   const [tasks, setTasks] = useState<Task[]>([])
-
+  const loadTasks = async () => {
+    const taskManager = injector.get(TaskManagerService)
+    const registry = await taskManager.getRegistry()
+    setTasks(Object.values(registry.tasks))
+  }
   useEffect(() => {
-    const loadTasks = async () => {
-      const registry = await taskManager['getRegistry']()
-      setTasks(Object.values(registry.tasks))
-    }
     loadTasks()
-  }, [taskManager])
+  }, [])
 
   const tasksByStatus = {
     [TaskStatus.PENDING]: tasks.filter(t => t.status === TaskStatus.PENDING),
@@ -40,6 +39,12 @@ export function TaskListPageComponent({ injector }: TaskListPageProps) {
       <h2>可用操作</h2>
       <ul>
         <li>
+          <Tool name='refresh_task' description='刷新任务列表' execute={async () => {
+            await loadTasks()
+            return `任务列表刷新成功`
+          }}></Tool>
+        </li>
+        <li>
           <Tool name='create_task' description='创建任务' params={{
             title: z.string().min(1).describe('Task title'),
             description: z.string().min(1).describe('Task description'),
@@ -49,6 +54,7 @@ export function TaskListPageComponent({ injector }: TaskListPageProps) {
           }} execute={async (params: any, injector) => {
             const taskManager = injector.get(TaskManagerService)
             await taskManager.createTask(params)
+            return `Task created success: ${params.title}`
           }}>
             创建新任务
           </Tool>

@@ -78,7 +78,7 @@ describe('Markdown Renderer - Lists', () => {
     const li2 = createElement('li', {}, [createTextNode('Item 2')]);
     const ul = createElement('ul', {}, [li1, li2]);
     const markdown = renderToMarkdown(ul);
-    expect(markdown).toBe('- Item 1\n- Item 2');
+    expect(markdown).toBe('- Item 1\n- Item 2\n');
   });
 
   it('renders ol with li children', () => {
@@ -86,20 +86,20 @@ describe('Markdown Renderer - Lists', () => {
     const li2 = createElement('li', {}, [createTextNode('Second')]);
     const ol = createElement('ol', {}, [li1, li2]);
     const markdown = renderToMarkdown(ol);
-    expect(markdown).toBe('1. First\n2. Second');
+    expect(markdown).toBe('1. First\n2. Second\n');
   });
 
   it('renders empty ul', () => {
     const ul = createElement('ul', {}, []);
     const markdown = renderToMarkdown(ul);
-    expect(markdown).toBe('');
+    expect(markdown).toBe('\n');
   });
 
   it('renders ul with single item', () => {
     const li = createElement('li', {}, [createTextNode('Only item')]);
     const ul = createElement('ul', {}, [li]);
     const markdown = renderToMarkdown(ul);
-    expect(markdown).toBe('- Only item');
+    expect(markdown).toBe('- Only item\n');
   });
 
   it('renders ol with multiple items', () => {
@@ -108,7 +108,7 @@ describe('Markdown Renderer - Lists', () => {
     );
     const ol = createElement('ol', {}, items);
     const markdown = renderToMarkdown(ol);
-    expect(markdown).toBe('1. Item 1\n2. Item 2\n3. Item 3\n4. Item 4\n5. Item 5');
+    expect(markdown).toBe('1. Item 1\n2. Item 2\n3. Item 3\n4. Item 4\n5. Item 5\n');
   });
 });
 

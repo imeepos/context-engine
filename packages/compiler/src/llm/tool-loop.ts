@@ -3,12 +3,15 @@ import { UnifiedToolExecutor, UnifiedToolResult } from './tool-executor';
 import { UnifiedMessageBuilder } from './message-builder';
 import { LLMProviderAdapter } from './adapter';
 import { UnifiedRequestAst, UnifiedResponseAst, UnifiedToolUseContent, UnifiedMessage, UnifiedTool } from '../ast';
-
+export interface RenderResult {
+  prompt: string;
+  tools: UnifiedTool[];
+}
 export interface ToolLoopOptions {
   maxIterations?: number;
-  onToolCall?: (toolUse: UnifiedToolUseContent) => void;
-  onToolResult?: (result: UnifiedToolResult) => void;
-  onAfterToolExecution?: () => Promise<string>;
+  onToolBefore?: (toolUse: UnifiedToolUseContent) => Promise<void>;
+  onToolAfter?: (params: UnifiedToolUseContent, result: UnifiedToolResult) => Promise<void>;
+  refreshPrompt?: () => Promise<RenderResult>;
 }
 
 @Injectable()
@@ -23,38 +26,33 @@ export class ToolCallLoop {
   ): Promise<UnifiedResponseAst> {
     const maxIterations = options.maxIterations ?? 100;
     let currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), request);
-    let iteration = 0;
-    while (iteration < maxIterations) {
-      const response = await adapter.chat(currentRequest);
+    const response = await adapter.chat(currentRequest);
 
-      if (response.stopReason !== 'tool_use') {
-        return response;
-      }
+    if (response.stopReason !== 'tool_use') {
+      return response;
+    }
 
-      const toolUses = this.extractToolUses(response);
-      if (toolUses.length === 0) {
-        return response;
-      }
+    const toolUses = this.extractToolUses(response);
+    if (toolUses.length === 0) {
+      return response;
+    }
 
-      const results = await this.toolExecutor.executeAll(toolUses, tools);
-      toolUses.forEach(tu => options.onToolCall?.(tu));
-      results.forEach(r => options.onToolResult?.(r));
+    // 调用工具 单轮结束
+    const results = await this.toolExecutor.executeAll(toolUses, tools, options);
 
-      const updatedMessages = this.appendToolResults(currentRequest, response, results);
-
-      // 工具执行后重新渲染提示词
-      if (options.onAfterToolExecution) {
-        const newSystemPrompt = await options.onAfterToolExecution();
-        currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), currentRequest, {
-          messages: updatedMessages,
-          system: newSystemPrompt
-        });
-      } else {
-        currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), currentRequest, {
-          messages: updatedMessages
-        });
-      }
-      iteration++;
+    const updatedMessages = this.appendToolResults(currentRequest, response, results);
+    // 工具执行后重新渲染提示词
+    if (options.refreshPrompt) {
+      const newSystemPrompt = await options.refreshPrompt();
+      console.log(JSON.stringify(updatedMessages, null, 2))
+      currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), currentRequest, {
+        messages: [
+          ...updatedMessages,
+          { role: 'user', content: newSystemPrompt.prompt }
+        ],
+        tools: newSystemPrompt.tools
+      });
+      return this.execute(adapter, currentRequest, newSystemPrompt.tools, options);
     }
 
     throw new Error(`Tool loop exceeded max iterations (${maxIterations})`);

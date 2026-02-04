@@ -19,7 +19,6 @@ export class ChatSession {
   private llmService: LLMService
   private agentRegistry: AgentRegistryService
   private messageBroker: MessageBrokerService
-  private stateManager: StateManager
   private renderer: UIRenderer
   private inputHandler: InputHandler
   private rl: readline.Interface | null = null
@@ -28,27 +27,15 @@ export class ChatSession {
     this.llmService = config.llmInjector.get(LLMService)
     this.agentRegistry = config.agentRegistry
     this.messageBroker = config.messageBroker
-    this.stateManager = config.stateManager
 
     const browser = createRouter(config.llmInjector)
-    this.renderer = new UIRenderer(browser, this.stateManager)
-    this.inputHandler = new InputHandler(this.llmService, this.stateManager, this.renderer)
+    this.renderer = new UIRenderer(browser)
+    this.inputHandler = new InputHandler(this.llmService, this.renderer)
   }
 
   async start(): Promise<void> {
     // 初始渲染
     this.renderer.render()
-
-    // 订阅状态变化，自动重新渲染
-    this.stateManager.subscribe(() => {
-      this.renderer.debouncedRender()
-    })
-
-    // 订阅消息接收
-    this.messageBroker.onMessageReceived(async (message) => {
-      await this.stateManager.addMessage(message)
-    })
-
     // 创建 readline 接口
     this.rl = readline.createInterface({
       input: process.stdin,

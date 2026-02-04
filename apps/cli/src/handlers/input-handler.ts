@@ -1,16 +1,13 @@
 import { LLMService, UnifiedRequestBuilder } from '@sker/compiler'
-import { StateManager } from '../ui/state-manager'
 import { UIRenderer } from '../ui/renderer'
 import { DEFAULT_MODEL, MAX_ITERATIONS } from '../config/constants'
 
 export class InputHandler {
   private llmService: LLMService
-  private stateManager: StateManager
   private renderer: UIRenderer
 
-  constructor(llmService: LLMService, stateManager: StateManager, renderer: UIRenderer) {
+  constructor(llmService: LLMService, renderer: UIRenderer) {
     this.llmService = llmService
-    this.stateManager = stateManager
     this.renderer = renderer
   }
 
@@ -34,9 +31,11 @@ export class InputHandler {
         renderResult.tools,
         {
           maxIterations: MAX_ITERATIONS,
-          onAfterToolExecution: async () => {
-            await this.stateManager.updateState({})
-            return this.renderer.getRenderResult().prompt
+          async onToolAfter(params, result) {
+            // console.log({ params, result })
+          },
+          refreshPrompt: async () => {
+            return this.renderer.getRenderResult()
           }
         }
       )

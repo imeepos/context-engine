@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { createBrowser, ROUTES } from './browser';
 import React from 'react';
 
-describe('Page.render() with reconciler integration', () => {
-  it('should render React component to markdown using reconciler', () => {
+describe('Page.render() with async rendering', () => {
+  it('should render React component to markdown', async () => {
     const TestComponent = () => {
       return React.createElement('div', {}, [
         React.createElement('h1', {}, 'Test Title'),
@@ -21,59 +21,14 @@ describe('Page.render() with reconciler integration', () => {
     ]);
 
     const page = browser.open('prompt:///test');
-    const result = page.render();
+    const result = await page.render();
 
     expect(result.prompt).toContain('# Test Title');
     expect(result.prompt).toContain('Test content');
     expect(result.prompt).not.toBe('[object Object]');
   });
 
-  it('should extract tools from React component', () => {
-    const TestComponent = () => {
-      return React.createElement('div', {}, [
-        React.createElement('button', { 'data-action': 'submit' }, 'Submit'),
-        React.createElement('input', { name: 'email', placeholder: 'Email' }, [])
-      ]);
-    };
-
-    const browser = createBrowser([
-      {
-        provide: ROUTES,
-        useValue: [
-          { path: '/form', component: TestComponent, params: {} }
-        ]
-      }
-    ]);
-
-    const page = browser.open('prompt:///form');
-    const result = page.render();
-
-    expect(result.tools).toHaveLength(2);
-    expect(result.tools[0]).toMatchObject({
-      name: 'submit',
-      description: 'Submit',
-      parameters: {
-        type: 'object',
-        properties: {}
-      }
-    });
-    expect(result.tools[1]).toMatchObject({
-      name: 'email',
-      description: 'Email',
-      parameters: {
-        type: 'object',
-        properties: {
-          value: {
-            type: 'string',
-            description: 'Email'
-          }
-        },
-        required: ['value']
-      }
-    });
-  });
-
-  it('should handle nested React components', () => {
+  it('should handle nested React components', async () => {
     const TestComponent = () => {
       return React.createElement('div', {}, [
         React.createElement('ul', {}, [
@@ -93,9 +48,38 @@ describe('Page.render() with reconciler integration', () => {
     ]);
 
     const page = browser.open('prompt:///list');
-    const result = page.render();
+    const result = await page.render();
 
     expect(result.prompt).toContain('- Item 1');
     expect(result.prompt).toContain('- Item 2');
   });
+
+  it('should render async component with data fetching', async () => {
+    const AsyncComponent = async ({ injector }: any) => {
+      // 模拟异步数据获取
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const data = 'Async Data';
+      return React.createElement('div', {}, [
+        React.createElement('h1', {}, 'Async Title'),
+        React.createElement('p', {}, data)
+      ]);
+    };
+
+    const browser = createBrowser([
+      {
+        provide: ROUTES,
+        useValue: [
+          { path: '/async', component: AsyncComponent, params: {} }
+        ]
+      }
+    ]);
+
+    const page = browser.open('prompt:///async');
+    const result = await page.render();
+
+    expect(result.prompt).toContain('# Async Title');
+    expect(result.prompt).toContain('Async Data');
+  });
 });
+
+

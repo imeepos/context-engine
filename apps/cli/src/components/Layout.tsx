@@ -18,16 +18,19 @@ export function Layout({ children, injector }: LayoutProps) {
         <li>
           <Tool name='navigate_note' description='首页' execute={async () => {
             navigate('prompt:///')
+            return '已成功导航到首页'
           }} >首页</Tool>
         </li>
         <li>
           <Tool name='navigate_tasks' description='任务列表' execute={async () => {
             navigate('prompt:///tasks')
+            return '已成功导航到任务大厅'
           }} >任务大厅</Tool>
         </li>
         <li>
           <Tool name='navigate_baseinfo' description='系统基础信息' execute={async () => {
             navigate('prompt:///base-info')
+            return '已成功导航到系统基础信息'
           }} >系统信息</Tool>
         </li>
       </ul>
