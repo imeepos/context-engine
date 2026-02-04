@@ -7,7 +7,7 @@ import { directRenderAsync } from '../reconciler/direct-render-async';
 
 export interface Route<T = any> {
   path: string;
-  component: React.FunctionComponent<T & { injector: Injector }>;
+  component: React.FunctionComponent<T & { injector: Injector }> | ((props: T & { injector: Injector }) => Promise<React.ReactElement>);
   params: T;
 }
 

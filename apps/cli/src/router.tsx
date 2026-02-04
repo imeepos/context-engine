@@ -7,11 +7,11 @@ import { Injector } from '@sker/core'
 import { BaseInfo } from './pages/BaseInfo'
 
 export const routes: Route[] = [
-  { path: '/', component: DashboardComponent, params: {} },
-  { path: '/base-info', component: BaseInfo, params: {} },
-  { path: '/chat/:agentId', component: ChatPageComponent, params: {} },
-  { path: '/tasks', component: TaskListPageComponent, params: {} },
-  { path: '/tasks/:taskId', component: TaskDetailPageComponent, params: {} }
+  { path: '/', component: DashboardComponent as any, params: {} },
+  { path: '/base-info', component: BaseInfo as any, params: {} },
+  { path: '/chat/:agentId', component: ChatPageComponent as any, params: {} },
+  { path: '/tasks', component: TaskListPageComponent as any, params: {} },
+  { path: '/tasks/:taskId', component: TaskDetailPageComponent as any, params: {} }
 ]
 
 export function createRouter(injector: Injector) {

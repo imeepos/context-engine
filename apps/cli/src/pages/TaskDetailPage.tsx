@@ -15,7 +15,7 @@ interface TaskDetailPageProps {
   taskId: string
 }
 
-export function TaskDetailPageComponent({ injector, taskId }: TaskDetailPageProps) {
+export async function TaskDetailPageComponent({ injector, taskId }: TaskDetailPageProps) {
   return (
     <Layout injector={injector}>
       <h1>任务详情</h1>

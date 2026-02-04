@@ -7,7 +7,7 @@ interface DashboardProps {
   injector: Injector
 }
 
-export function DashboardComponent({ injector }: DashboardProps) {
+export async function DashboardComponent({ injector }: DashboardProps) {
   return (
     <Layout injector={injector}>
       <h1>多Agent通信系统</h1>

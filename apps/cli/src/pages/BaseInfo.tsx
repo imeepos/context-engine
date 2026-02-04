@@ -3,7 +3,7 @@ import { Injector } from "@sker/core";
 import { Layout } from '../components/Layout'
 import { cpus, homedir, platform, tmpdir, totalmem, freemem } from 'os'
 
-export const BaseInfo: React.FC<{ injector: Injector }> = ({ injector }) => {
+export const BaseInfo = async ({ injector }: { injector: Injector }) => {
     const cwd = process.cwd()
     const cpu = cpus()[0]
     const totalMem = (totalmem() / 1024 / 1024 / 1024).toFixed(2)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
 import { CURRENT_AGENT_ID } from '../tokens'
@@ -11,17 +11,11 @@ interface TaskListPageProps {
   injector: Injector
 }
 
-export function TaskListPageComponent({ injector }: TaskListPageProps) {
+export async function TaskListPageComponent({ injector }: TaskListPageProps) {
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
-  const [tasks, setTasks] = useState<Task[]>([])
-  const loadTasks = async () => {
-    const taskManager = injector.get(TaskManagerService)
-    const registry = await taskManager.getRegistry()
-    setTasks(Object.values(registry.tasks))
-  }
-  useEffect(() => {
-    loadTasks()
-  }, [])
+  const taskManager = injector.get(TaskManagerService)
+  const registry = await taskManager.getRegistry()
+  const tasks = Object.values(registry.tasks)
 
   const tasksByStatus = {
     [TaskStatus.PENDING]: tasks.filter(t => t.status === TaskStatus.PENDING),
@@ -39,9 +33,10 @@ export function TaskListPageComponent({ injector }: TaskListPageProps) {
       <h2>可用操作</h2>
       <ul>
         <li>
-          <Tool name='refresh_task' description='刷新任务列表' execute={async () => {
-            await loadTasks()
-            return `任务列表刷新成功`
+          <Tool name='refresh_task' description='刷新任务列表' execute={async (params, injector) => {
+            const taskManager = injector.get(TaskManagerService)
+            await taskManager.getRegistry()
+            return `任务列表刷新成功，请重新渲染页面查看最新数据`
           }}></Tool>
         </li>
         <li>
