@@ -24,27 +24,27 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'h1') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `# ${content}\n` : '#';
+    return content ? `# ${content}\n\n` : '#';
   }
   if (element.type === 'h2') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `## ${content}\n` : '##';
+    return content ? `## ${content}\n\n` : '##';
   }
   if (element.type === 'h3') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `### ${content}\n` : '###';
+    return content ? `### ${content}\n\n` : '###';
   }
   if (element.type === 'h4') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `#### ${content}\n` : '####';
+    return content ? `#### ${content}\n\n` : '####';
   }
   if (element.type === 'h5') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `##### ${content}\n` : '#####';
+    return content ? `##### ${content}\n\n` : '#####';
   }
   if (element.type === 'h6') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `###### ${content}\n` : '######';
+    return content ? `###### ${content}\n\n` : '######';
   }
 
   if (element.type === 'ul') {

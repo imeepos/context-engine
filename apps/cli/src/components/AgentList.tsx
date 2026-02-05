@@ -25,13 +25,11 @@ export async function AgentListComponent({ injector }: AgentListProps) {
 
   return (
     <div>
-      <h2>在线Agent列表</h2>
+      <h2>Agent</h2>
       {agents.map(agent => {
-        // 计算与该agent的未读消息数和最新消息
         const messagesWithAgent = allMessages.filter(m =>
-          (m.from === agent.id && m.to === currentAgentId && !m.read) ||
-          (m.from === currentAgentId && m.to === agent.id) ||
-          (m.from === agent.id && m.to === currentAgentId && m.read)
+          (m.from === agent.id && m.to === currentAgentId) ||
+          (m.from === currentAgentId && m.to === agent.id)
         ).sort((a, b) => b.timestamp - a.timestamp)
 
         const unreadCount = allMessages.filter(m =>
@@ -40,18 +38,19 @@ export async function AgentListComponent({ injector }: AgentListProps) {
 
         const latestMessage = messagesWithAgent[0]
 
-        const info = [
-          agent.id,
-          agent.id === currentAgentId ? '(你)' : null,
-          agent.id !== currentAgentId && unreadCount > 0 ? `[${unreadCount}未读]` : null,
-          latestMessage ? `${latestMessage.content.substring(0, 15)}${latestMessage.content.length > 15 ? '...' : ''}` : null
-        ].filter(Boolean).join(' ')
+        const isSelf = agent.id === currentAgentId
+        const badge = isSelf ? '●' : unreadCount > 0 ? `(${unreadCount})` : ''
+        const direction = latestMessage ? (latestMessage.from === currentAgentId ? '→' : '←') : ''
+        const preview = latestMessage ? `${direction} ${latestMessage.content.substring(0, 20)}${latestMessage.content.length > 20 ? '...' : ''}` : ''
 
         return (
           <div key={agent.id}>
-            {info} <Tool name={`view_${agent.id}`} description={`查看与${agent.id}的对话`} execute={async (params, injector) => {
+            <Tool name={`view_${agent.id}`} description={`查看${agent.id}`} execute={async (params, injector) => {
               await injector.get(NavigateTool).execute(`/chat/${agent.id}`)
-            }} >查看</Tool>
+            }}>
+              {agent.id} {badge}
+            </Tool>
+            {preview && <div>  {preview}</div>}
           </div>
         )
       })}

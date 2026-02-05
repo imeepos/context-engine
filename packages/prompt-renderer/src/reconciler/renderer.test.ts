@@ -6,37 +6,37 @@ describe('Markdown Renderer - Headings', () => {
   it('renders h1 to markdown', () => {
     const node = createElement('h1', {}, [createTextNode('Title')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('# Title\n');
+    expect(markdown).toBe('# Title\n\n');
   });
 
   it('renders h2 to markdown', () => {
     const node = createElement('h2', {}, [createTextNode('Subtitle')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('## Subtitle\n');
+    expect(markdown).toBe('## Subtitle\n\n');
   });
 
   it('renders h3 to markdown', () => {
     const node = createElement('h3', {}, [createTextNode('Section')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('### Section\n');
+    expect(markdown).toBe('### Section\n\n');
   });
 
   it('renders h4 to markdown', () => {
     const node = createElement('h4', {}, [createTextNode('Subsection')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('#### Subsection\n');
+    expect(markdown).toBe('#### Subsection\n\n');
   });
 
   it('renders h5 to markdown', () => {
     const node = createElement('h5', {}, [createTextNode('Minor heading')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('##### Minor heading\n');
+    expect(markdown).toBe('##### Minor heading\n\n');
   });
 
   it('renders h6 to markdown', () => {
     const node = createElement('h6', {}, [createTextNode('Smallest heading')]);
     const markdown = renderToMarkdown(node);
-    expect(markdown).toBe('###### Smallest heading\n');
+    expect(markdown).toBe('###### Smallest heading\n\n');
   });
 
   it('renders empty h1', () => {
@@ -172,7 +172,7 @@ describe('Markdown Renderer - Nested Elements', () => {
     const span = createElement('span', {}, [createTextNode('Title')]);
     const h1 = createElement('h1', {}, [span]);
     const markdown = renderToMarkdown(h1);
-    expect(markdown).toBe('# Title\n');
+    expect(markdown).toBe('# Title\n\n');
   });
 });
 
