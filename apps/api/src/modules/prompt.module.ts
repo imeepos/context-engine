@@ -14,7 +14,6 @@ import { PromptRendererService, PROMPT_ROUTES } from '../services/prompt-rendere
       provide: PROMPT_ROUTES,
       useValue: []
     }
-  ],
-  exports: [PromptService, PromptRendererService]
+  ]
 })
-export class PromptModule {}
+export class PromptModule { }

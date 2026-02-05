@@ -15,7 +15,6 @@ import { HomePage, GitDocsPage } from '../www/pages';
         }
       ])
     }
-  ],
-  exports: [Browser, ROUTES]
+  ]
 })
 export class PageModule { }

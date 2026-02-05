@@ -7,7 +7,7 @@ import { Script, createContext } from 'vm'
 export class PluginLoaderService {
   private loadedPlugins = new Map<string, LoadedPlugin>()
 
-  constructor(@Inject(STORAGE_TOKEN) private storage: Storage) {}
+  constructor(@Inject(STORAGE_TOKEN) private storage: Storage) { }
 
   async loadPlugin(pluginId: string): Promise<LoadedPlugin | null> {
     if (this.loadedPlugins.has(pluginId)) {

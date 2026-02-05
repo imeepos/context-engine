@@ -12,7 +12,6 @@ import { HelloPromptService, ApiDocsResourceService, EchoToolService } from '../
     { provide: HelloPromptService, useClass: HelloPromptService },
     { provide: ApiDocsResourceService, useClass: ApiDocsResourceService },
     { provide: EchoToolService, useClass: EchoToolService },
-  ],
-  exports: []
+  ]
 })
 export class McpModule { }

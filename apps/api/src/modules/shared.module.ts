@@ -8,7 +8,6 @@ import { Module, Logger, ErrorHandler } from '@sker/core';
   providers: [
     { provide: Logger, useClass: Logger },
     { provide: ErrorHandler, useClass: ErrorHandler }
-  ],
-  exports: [Logger, ErrorHandler]
+  ]
 })
 export class SharedModule { }

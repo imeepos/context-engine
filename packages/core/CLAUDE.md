@@ -446,7 +446,6 @@ import { Module, createPlatform } from '@sker/core';
 // 1. 定义模块
 @Module({
   providers: [DatabaseService],
-  exports: [DatabaseService]
 })
 class DatabaseModule {}
 

@@ -565,7 +565,6 @@ import { Module, PlatformRef, ApplicationRef, createPlatform } from '@sker/core'
 // 定义共享模块
 @Module({
   providers: [LoggerService, ConfigService],
-  exports: [LoggerService]  // 导出供其他模块使用
 })
 class SharedModule {}
 
