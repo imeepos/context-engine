@@ -2,6 +2,7 @@
   "name": "@sker/prompt-renderer",
   "version": "0.1.0",
   "description": "React-based prompt renderer for AI agents",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -14,9 +15,10 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "^18.3.1",
+    "@sker/compiler": "workspace:*",
     "@sker/core": "workspace:*",
-    "@sker/compiler": "workspace:*"
+    "react": "^18.3.1",
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@sker/eslint-config": "workspace:*",

@@ -24,9 +24,7 @@ export const COMPONENT = new InjectionToken<React.FunctionComponent>(`COMPONENT`
 export const INPUT = new InjectionToken<string>(`INPUT`);
 
 @Injectable({
-  providedIn: 'root',
-  useFactory: (injector: Injector) => new Browser(injector),
-  deps: [Injector]
+  providedIn: 'auto',
 })
 export class Browser {
   private currentUrl: string = 'prompt:///';

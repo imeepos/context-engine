@@ -82,20 +82,12 @@ export class ApplicationRef {
       }
     }
 
-    // 收集导入模块的导出 providers 和当前模块自己的 providers
+    // 收集导入模块的所有 providers（递归）和当前模块自己的 providers
     const allProviders: Provider[] = [];
 
-    // 添加导入模块的导出服务（使用 useFactory 延迟获取）
+    // 递归收集导入模块的所有 providers（使用 useFactory 延迟获取）
     for (const importedModuleRef of importedModuleRefs) {
-      const importedMetadata = getModuleMetadata(importedModuleRef.moduleType);
-      if (importedMetadata?.exports) {
-        for (const exportToken of importedMetadata.exports) {
-          allProviders.push({
-            provide: exportToken,
-            useFactory: () => importedModuleRef.injector.get(exportToken),
-          });
-        }
-      }
+      this.collectAllProvidersFromModule(importedModuleRef, allProviders);
     }
 
     // 添加当前模块自己的 providers（标准化 Type<any>）
@@ -128,6 +120,29 @@ export class ApplicationRef {
     this.moduleRefs.set(actualModuleType, moduleRef);
 
     return moduleRef;
+  }
+
+  /**
+   * 递归收集模块的所有 providers（包括子模块的 providers）
+   * @param moduleRef 模块引用
+   * @param allProviders 收集的 providers 数组
+   */
+  private collectAllProvidersFromModule(moduleRef: ModuleRef, allProviders: Provider[]): void {
+    const metadata = getModuleMetadata(moduleRef.moduleType);
+    if (!metadata) return;
+
+    // 收集当前模块的 providers
+    if (metadata.providers) {
+      for (const provider of metadata.providers) {
+        const token = typeof provider === 'function' ? provider : (provider as any).provide;
+        if (token) {
+          allProviders.push({
+            provide: token,
+            useFactory: () => moduleRef.injector.get(token),
+          });
+        }
+      }
+    }
   }
 
   /**

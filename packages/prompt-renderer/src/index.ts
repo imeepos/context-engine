@@ -1,3 +1,4 @@
+import "reflect-metadata";
 // Browser and Page API
 export { createBrowser } from './browser/browser';
 export * from './browser/index';

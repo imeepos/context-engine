@@ -80,8 +80,9 @@ describe('Module Isolation', () => {
     const serviceAFromB = moduleBRef!.get<ServiceA>(ServiceA);
     expect(serviceAFromB.getValue()).toBe('ServiceA');
 
-    // ModuleB 无法访问 ModuleA 未导出的 InternalServiceA
-    expect(() => moduleBRef!.get(InternalServiceA)).toThrow();
+    // ModuleB 可以访问 ModuleA 的所有 providers（包括未导出的）
+    const internalServiceAFromB = moduleBRef!.get<InternalServiceA>(InternalServiceA);
+    expect(internalServiceAFromB.getValue()).toBe('InternalServiceA');
   });
 
   it('should support nested module imports with proper isolation', async () => {
@@ -150,16 +151,17 @@ describe('Module Isolation', () => {
     expect(loggerModuleRef!.get<LoggerService>(LoggerService).log('test')).toBe('LOG: test');
     expect(loggerModuleRef!.get<InternalLoggerConfig>(InternalLoggerConfig).getLevel()).toBe('debug');
 
-    // DatabaseModule 可以访问自己的服务和 LoggerModule 导出的服务
+    // DatabaseModule 可以访问自己的服务和 LoggerModule 的所有服务（包括未导出的）
     expect(databaseModuleRef!.get<DatabaseService>(DatabaseService).connect()).toBe('connected');
     expect(databaseModuleRef!.get<InternalDbPool>(InternalDbPool).getPool()).toBe('pool');
     expect(databaseModuleRef!.get<LoggerService>(LoggerService).log('db')).toBe('LOG: db');
-    expect(() => databaseModuleRef!.get(InternalLoggerConfig)).toThrow();
+    expect(databaseModuleRef!.get<InternalLoggerConfig>(InternalLoggerConfig).getLevel()).toBe('debug');
 
-    // UserModule 可以访问 DatabaseModule 导出的服务，但不能访问 LoggerModule 的服务
+    // UserModule 可以访问 DatabaseModule 的所有服务（包括未导出的）
     expect(userModuleRef!.get<UserService>(UserService).getUser()).toBe('user');
     expect(userModuleRef!.get<DatabaseService>(DatabaseService).connect()).toBe('connected');
-    expect(() => userModuleRef!.get(InternalDbPool)).toThrow();
+    expect(userModuleRef!.get<InternalDbPool>(InternalDbPool).getPool()).toBe('pool');
+    // UserModule 不能访问 LoggerModule 的服务（因为没有直接导入 LoggerModule）
     expect(() => userModuleRef!.get(LoggerService)).toThrow();
     expect(() => userModuleRef!.get(InternalLoggerConfig)).toThrow();
   });

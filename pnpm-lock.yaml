@@ -328,6 +328,9 @@ importers:
       react:
         specifier: ^18.3.1
         version: 18.3.1
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
     devDependencies:
       '@sker/eslint-config':
         specifier: workspace:*

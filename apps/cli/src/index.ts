@@ -74,17 +74,15 @@ async function main() {
       ]
 
       // 添加 MCP 配置（如果启用）
-      if (options.mcp !== false) {
-        providers.push({
-          provide: MCP_CLIENT_CONFIG,
-          useValue: {
-            baseUrl: options.mcpUrl,
-            timeout: parseInt(process.env.MCP_API_TIMEOUT || '30000'),
-            retryAttempts: 3,
-            retryDelay: 1000
-          }
-        })
-      }
+      providers.push({
+        provide: MCP_CLIENT_CONFIG,
+        useValue: {
+          baseUrl: options.mcpUrl,
+          timeout: parseInt(process.env.MCP_API_TIMEOUT || '30000'),
+          retryAttempts: 3,
+          retryDelay: 1000
+        }
+      })
 
       const app = platform.bootstrapApplication(providers)
 
