@@ -31,13 +31,6 @@ export { zodToJsonSchema, isOptionalParam, zodToJsonSchemaWithDescription, zodTo
     { provide: LLM_PROVIDER_ADAPTER, useClass: OpenAIAdapter, multi: true },
     { provide: LLM_PROVIDER_ADAPTER, useClass: GoogleAdapter, multi: true },
     { provide: LLM_PROVIDER_ADAPTER, useClass: MCPAdapter, multi: true }
-  ],
-  exports: [
-    ParserVisitor,
-    LLMService,
-    ToolCallLoop,
-    UnifiedToolExecutor,
-    LLM_PROVIDER_ADAPTER
   ]
 })
 export class CompilerModule { }

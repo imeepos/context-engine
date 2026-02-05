@@ -766,7 +766,7 @@ export class EnvironmentInjector extends Injector {
         `1. 创建具体的类或接口，如 class MyService {}\n` +
         `2. 使用 InjectionToken，如 new InjectionToken<object>('my-config')\n` +
         `3. 使用字符串令牌，如 'MY_CONFIG'\n` +
-        `4. 使用 Symbol 令牌，如 Symbol('MY_CONFIG')`
+        `4. 使用 Symbol 令牌，如 Symbol('MY_CONFIG')` + JSON.stringify(token, null, 2)
       );
     }
   }

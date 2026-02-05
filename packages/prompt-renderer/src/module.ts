@@ -13,8 +13,7 @@ export class PromptRendererModule {
                 }),
                 { provide: Browser, useClass: Browser },
                 { provide: UIRenderer, useClass: UIRenderer }
-            ],
-            exports: [Browser, UIRenderer]
+            ]
         }
     }
 }

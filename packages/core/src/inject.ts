@@ -147,7 +147,9 @@ export function getInjectMetadata(target: Function): InjectionTokenType<unknown>
     else if (paramTypes && paramTypes[i] !== undefined) {
       result[i] = paramTypes[i]!;
     } else {
-      result[i] = Object as InjectionTokenType<unknown>;
+      // 无法确定令牌时，使用 undefined 而不是 Object
+      // 这样注入器可以正确处理缺失的依赖
+      result[i] = undefined as any;
     }
   }
 

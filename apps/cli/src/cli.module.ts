@@ -54,6 +54,5 @@ import { routes } from './router'
     { provide: GetTaskTool, useClass: GetTaskTool },
     { provide: UpdateTaskTool, useClass: UpdateTaskTool }
   ],
-  exports: [MCP_CLIENT]
 })
 export class CliModule { }
