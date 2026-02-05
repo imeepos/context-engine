@@ -98,8 +98,8 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
                 <div key={task.id}>
                   <strong>{index + 1}. {task.title}</strong>
                   <ul>
-                    <li><strong>描述:</strong> {task.description}</li>
                     <li><strong>任务 ID:</strong> {task.id}</li>
+                    <li><strong>状态:</strong> {task.status}</li>
                     <li><strong>创建者:</strong> {task.createdBy}</li>
                     <li><strong>分配给:</strong> {task.assignedTo || '未分配'}</li>
                     <li><strong>创建时间:</strong> {new Date(task.createdAt).toLocaleString()}</li>
