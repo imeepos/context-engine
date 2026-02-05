@@ -12,7 +12,6 @@ import { AgentRegistryService } from './services/agent-registry.service'
 import { TaskManagerService } from './services/task-manager.service'
 import { ChatSession } from './core/chat-session'
 import { MCP_CLIENT_CONFIG, CURRENT_AGENT_ID } from './tokens'
-import { McpClientService } from './services/mcp-client.service'
 
 // Load .env file from the CLI package directory (ES module compatible)
 const __filename = fileURLToPath(import.meta.url)

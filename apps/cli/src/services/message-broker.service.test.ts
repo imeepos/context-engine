@@ -22,6 +22,7 @@ describe('MessageBrokerService', () => {
   })
 
   afterEach(async () => {
+    broker.destroy()
     await agentRegistry.unregister()
     await fs.rm(testDir, { recursive: true, force: true })
   })

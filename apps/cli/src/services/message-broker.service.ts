@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid'
 @Injectable({ providedIn: 'auto' })
 export class MessageBrokerService {
   private messageReceivedCallbacks: Array<(message: InterAgentMessage) => void> = []
+  private unwatchFn?: () => void
 
   constructor(
     @Inject(STORAGE_TOKEN) private storage: Storage,
@@ -25,7 +26,7 @@ export class MessageBrokerService {
       await this.storage.write(queueKey, { messages: [] })
     }
 
-    this.storage.watch(queueKey, async (queue: MessageQueue) => {
+    this.unwatchFn = this.storage.watch(queueKey, async (queue: MessageQueue) => {
       if (!queue || !queue.messages) return
 
       const unreadMessages = queue.messages.filter(m => !m.read)
@@ -41,6 +42,13 @@ export class MessageBrokerService {
       }
       await this.storage.write(queueKey, updatedQueue)
     })
+  }
+
+  destroy(): void {
+    if (this.unwatchFn) {
+      this.unwatchFn()
+      this.unwatchFn = undefined
+    }
   }
 
   async sendMessage(to: string, content: string): Promise<void> {

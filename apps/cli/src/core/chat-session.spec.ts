@@ -3,7 +3,6 @@ import { createPlatform } from '@sker/core'
 import { CliModule } from '../cli.module'
 import { ChatSession } from './chat-session'
 import { LLM_ANTHROPIC_CONFIG } from '@sker/compiler'
-import { UIRenderer, Browser } from '@sker/prompt-renderer'
 
 describe('ChatSession', () => {
   it('should be able to create ChatSession with app.injector', async () => {
