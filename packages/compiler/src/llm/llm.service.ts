@@ -32,14 +32,22 @@ export class LLMService {
     tools: UnifiedTool[],
     options: ChatWithToolsOptions = {}
   ): Promise<UnifiedResponseAst> {
-    const provider = options.provider ?? request._provider ?? 'anthropic';
-    const adapter = this.getAdapter(provider);
+    try {
+      const provider = options.provider ?? request._provider ?? 'anthropic';
+      const adapter = this.getAdapter(provider);
 
-    const requestWithTools = Object.assign(Object.create(Object.getPrototypeOf(request)), request, { tools });
+      const requestWithTools = Object.assign(Object.create(Object.getPrototypeOf(request)), request, { tools });
 
-    return this.toolLoop.execute(adapter, requestWithTools, tools, {
-      ...options
-    });
+      const response = await this.toolLoop.execute(adapter, requestWithTools, tools, {
+        ...options
+      });
+
+      return response;
+    } catch (e) {
+      console.log(request, tools, options)
+      throw e;
+    }
+
   }
 
   stream(
