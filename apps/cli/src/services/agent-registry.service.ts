@@ -16,9 +16,6 @@ export class AgentRegistryService {
 
     let agentId: string
     if (customId) {
-      if (registry.agents[customId] && registry.agents[customId].status === 'online') {
-        throw new Error(`Agent ID "${customId}" 已被使用`)
-      }
       agentId = customId
     } else {
       agentId = `agent-${registry.nextId}`

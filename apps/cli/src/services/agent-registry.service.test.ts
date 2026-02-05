@@ -41,13 +41,6 @@ describe('AgentRegistryService', () => {
       expect(agent.status).toBe('online')
     })
 
-    it('throws error if custom ID already in use', async () => {
-      await service.register('alice')
-
-      const service2 = new AgentRegistryService(storage)
-      await expect(service2.register('alice')).rejects.toThrow('Agent ID "alice" 已被使用')
-    })
-
     it('increments nextId for auto-generated IDs', async () => {
       const agent1 = await service.register()
       await service.unregister()
