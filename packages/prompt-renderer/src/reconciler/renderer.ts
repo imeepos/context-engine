@@ -24,27 +24,27 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'h1') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `# ${content}\n\n` : '#';
+    return content ? `# ${content}\n` : '#';
   }
   if (element.type === 'h2') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `## ${content}\n\n` : '##';
+    return content ? `## ${content}\n` : '##';
   }
   if (element.type === 'h3') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `### ${content}\n\n` : '###';
+    return content ? `### ${content}\n` : '###';
   }
   if (element.type === 'h4') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `#### ${content}\n\n` : '####';
+    return content ? `#### ${content}\n` : '####';
   }
   if (element.type === 'h5') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `##### ${content}\n\n` : '#####';
+    return content ? `##### ${content}\n` : '#####';
   }
   if (element.type === 'h6') {
     const content = element.children.map(getTextContentDefault).join('');
-    return content ? `###### ${content}\n\n` : '######';
+    return content ? `###### ${content}\n` : '######';
   }
 
   if (element.type === 'ul') {
@@ -90,6 +90,21 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'span') {
     return element.children.map(getTextContentDefault).join('');
+  }
+
+  if (element.type === 'strong' || element.type === 'b') {
+    const content = element.children.map(child => renderToMarkdown(child)).join('');
+    return `**${content}**`;
+  }
+
+  if (element.type === 'em' || element.type === 'i') {
+    const content = element.children.map(child => renderToMarkdown(child)).join('');
+    return `*${content}*`;
+  }
+
+  if (element.type === 'del' || element.type === 's' || element.type === 'strike') {
+    const content = element.children.map(child => renderToMarkdown(child)).join('');
+    return `~~${content}~~`;
   }
 
   if (element.type === 'table') {

@@ -1,4 +1,4 @@
-import { LLMService, UnifiedRequestBuilder } from '@sker/compiler'
+import { isUnifiedTextContent, isUnifiedThinkingContent, LLMService, UnifiedRequestBuilder } from '@sker/compiler'
 import { UIRenderer } from '../ui/renderer'
 import { DEFAULT_MODEL, MAX_ITERATIONS } from '../config/constants'
 
@@ -40,8 +40,16 @@ export class InputHandler {
           }
         }
       )
-
-      console.log(response.content)
+      const contents = response.content.map(item => {
+        if (isUnifiedThinkingContent(item)) {
+          return `<thinking>${item.thinking}</thinking>`
+        }
+        if (isUnifiedTextContent(item)) {
+          return item.text
+        }
+        return ``
+      })
+      console.log(contents.join('\n'))
     } catch (error: any) {
       console.error(`\n错误: ${error.message}\n`)
     }
