@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { Module } from '@sker/core'
+import { DynamicModule, Module } from '@sker/core'
 import { ParserVisitor } from './parser'
 import { LLMService } from './llm/llm.service'
 import { ToolCallLoop } from './llm/tool-loop'
@@ -22,15 +22,22 @@ export * as google from './google/index'
 export { zodToJsonSchema, isOptionalParam, zodToJsonSchemaWithDescription, zodToParams } from './utils/zod-to-json-schema'
 // Compiler 模块
 @Module({
-  providers: [
-    { provide: ParserVisitor, useClass: ParserVisitor },
-    { provide: LLMService, useClass: LLMService },
-    { provide: ToolCallLoop, useClass: ToolCallLoop },
-    { provide: UnifiedToolExecutor, useClass: UnifiedToolExecutor },
-    { provide: LLM_PROVIDER_ADAPTER, useClass: AnthropicAdapter, multi: true },
-    { provide: LLM_PROVIDER_ADAPTER, useClass: OpenAIAdapter, multi: true },
-    { provide: LLM_PROVIDER_ADAPTER, useClass: GoogleAdapter, multi: true },
-    { provide: LLM_PROVIDER_ADAPTER, useClass: MCPAdapter, multi: true }
-  ]
+  providers: []
 })
-export class CompilerModule { }
+export class CompilerModule {
+  static forRoot(): DynamicModule {
+    return {
+      module: CompilerModule,
+      providers: [
+        { provide: ParserVisitor, useClass: ParserVisitor },
+        { provide: LLMService, useClass: LLMService },
+        { provide: ToolCallLoop, useClass: ToolCallLoop },
+        { provide: UnifiedToolExecutor, useClass: UnifiedToolExecutor },
+        { provide: LLM_PROVIDER_ADAPTER, useClass: AnthropicAdapter, multi: true },
+        { provide: LLM_PROVIDER_ADAPTER, useClass: OpenAIAdapter, multi: true },
+        { provide: LLM_PROVIDER_ADAPTER, useClass: GoogleAdapter, multi: true },
+        { provide: LLM_PROVIDER_ADAPTER, useClass: MCPAdapter, multi: true }
+      ]
+    }
+  }
+}

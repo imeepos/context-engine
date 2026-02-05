@@ -1,6 +1,7 @@
-import { DynamicModule, Module } from "@sker/core";
+import { DynamicModule, Injector, Module } from "@sker/core";
 import { Browser, Route, ROUTES } from "./browser";
 import { UIRenderer } from "./browser/renderer";
+import { BROWSER } from "./browser/tokens";
 
 @Module({})
 export class PromptRendererModule {
@@ -11,8 +12,14 @@ export class PromptRendererModule {
                 ...routes.map(route => {
                     return { provide: ROUTES, useValue: route, multi: true }
                 }),
-                { provide: Browser, useClass: Browser },
-                { provide: UIRenderer, useClass: UIRenderer }
+                {
+                    provide: BROWSER, useFactory: (parent: Injector) => {
+                        console.log({ parent })
+                        return new Browser(parent)
+                    }, deps: [Injector]
+                },
+                { provide: Browser, useFactory: (parent: Injector) => new Browser(parent), deps: [Injector] },
+                { provide: UIRenderer, useFactory: (browser: Browser) => new UIRenderer(browser), deps: [BROWSER] }
             ]
         }
     }

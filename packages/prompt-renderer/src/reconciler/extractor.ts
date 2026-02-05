@@ -2,7 +2,7 @@ import { VNode, ElementNode } from './types';
 import { UnifiedTool, buildUnifiedTool, zodToParams } from '@sker/compiler';
 import { Type, ToolMetadataKey, root, ToolMetadata, Injector } from '@sker/core';
 import { ToolProps } from '../components/Tool';
-import { Browser } from '../browser';
+import { BROWSER } from '../browser/tokens';
 
 export interface ExtractResult {
   tools: UnifiedTool[];
@@ -110,8 +110,7 @@ function extractToolsInternal(
         },
         execute: onClick || (async (params: Record<string, any>, injector: Injector) => {
           if (href) {
-            // 从 injector 中获取 Browser 实例并调用 navigate
-            const browser = injector.get(Browser);
+            const browser = injector.get(BROWSER);
             if (browser) {
               browser.open(href);
             } else {

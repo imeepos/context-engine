@@ -1,4 +1,4 @@
-import { Module } from '@sker/core'
+import { Inject, Injector, Module, OnInit } from '@sker/core'
 import { CompilerModule } from '@sker/compiler'
 import { JsonFileStorage } from './storage/json-file-storage'
 import { AgentRegistryService } from './services/agent-registry.service'
@@ -27,7 +27,7 @@ import { routes } from './router'
 
 @Module({
   imports: [
-    CompilerModule,
+    CompilerModule.forRoot(),
     PromptRendererModule.forRoot(routes)
   ],
   providers: [
@@ -55,4 +55,9 @@ import { routes } from './router'
     { provide: UpdateTaskTool, useClass: UpdateTaskTool }
   ],
 })
-export class CliModule { }
+export class CliModule implements OnInit {
+  constructor(@Inject(Injector) private injector: Injector) { }
+  async onInit(): Promise<void> {
+    console.log(this.injector)
+  }
+}

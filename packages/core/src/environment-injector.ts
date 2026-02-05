@@ -1,4 +1,4 @@
-import { Injector, InjectionTokenType, Type, isType } from './injector';
+import { Injector, InjectionTokenType, Type, isType, INJECTOR } from './injector';
 import { NullInjector } from './null-injector';
 import { Provider } from './provider';
 import { getInjectableMetadata, InjectorScope } from './injectable';
@@ -44,7 +44,7 @@ export class EnvironmentInjector extends Injector {
   ) {
     super(parent || new NullInjector());
     this.scope = scope;
-    this.setupProviders([...providers, { provide: Injector, useValue: this }]);
+    this.setupProviders([...providers, { provide: Injector, useValue: this }, { provide: INJECTOR, useValue: this }]);
   }
 
   /**

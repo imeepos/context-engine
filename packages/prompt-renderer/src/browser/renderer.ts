@@ -1,6 +1,7 @@
 import { Page } from './browser'
 import { Browser, RenderResult } from './browser'
 import { Inject, Injectable, Provider } from '@sker/core'
+import { BROWSER } from './tokens';
 /** UI 渲染防抖延迟（毫秒） */
 export const RENDER_DEBOUNCE_MS = 50
 
@@ -14,7 +15,7 @@ export class UIRenderer {
     private renderTimer: any | null = null
 
     constructor(
-        @Inject(Browser) browser: Browser,
+        @Inject(BROWSER) browser: Browser,
     ) {
         this.browser = browser
     }

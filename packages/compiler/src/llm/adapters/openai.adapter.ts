@@ -14,7 +14,8 @@ export class OpenAIAdapter implements LLMProviderAdapter {
   private client: OpenAI | null = null;
 
   constructor(
-    @Optional(LLM_OPENAI_CONFIG) private config?: LLMProviderConfig
+    @Optional(LLM_OPENAI_CONFIG)
+    private config?: LLMProviderConfig
   ) {
     if (this.config?.apiKey) {
       this.client = new OpenAI({ apiKey: this.config.apiKey, baseURL: this.config.baseUrl });

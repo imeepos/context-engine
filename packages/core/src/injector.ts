@@ -54,3 +54,4 @@ export abstract class Injector {
   abstract destroy(): Promise<void>;
   abstract init(): Promise<void>;
 }
+export const INJECTOR = new InjectionToken<Injector>('INJECTOR');
