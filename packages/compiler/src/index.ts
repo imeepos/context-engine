@@ -35,8 +35,7 @@ export class CompilerModule {
         { provide: UnifiedToolExecutor, useClass: UnifiedToolExecutor },
         { provide: LLM_PROVIDER_ADAPTER, useClass: AnthropicAdapter, multi: true },
         { provide: LLM_PROVIDER_ADAPTER, useClass: OpenAIAdapter, multi: true },
-        { provide: LLM_PROVIDER_ADAPTER, useClass: GoogleAdapter, multi: true },
-        { provide: LLM_PROVIDER_ADAPTER, useClass: MCPAdapter, multi: true }
+        { provide: LLM_PROVIDER_ADAPTER, useClass: GoogleAdapter, multi: true }
       ]
     }
   }
