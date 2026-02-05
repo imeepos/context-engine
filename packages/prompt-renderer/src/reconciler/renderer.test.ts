@@ -336,3 +336,68 @@ describe('Markdown Renderer - Code Blocks', () => {
     expect(markdown).toBe('```\n\n```\n');
   });
 });
+
+describe('Markdown Renderer - Special Layout Components', () => {
+  it('renders Br element as newline', () => {
+    const div = createElement('div', {}, [
+      createTextNode('Line 1'),
+      createElement('Br', {}, []),
+      createTextNode('Line 2')
+    ]);
+    const markdown = renderToMarkdown(div);
+    expect(markdown).toBe('Line 1\nLine 2\n');
+  });
+
+  it('renders br element as newline', () => {
+    const div = createElement('div', {}, [
+      createTextNode('Line 1'),
+      createElement('br', {}, []),
+      createTextNode('Line 2')
+    ]);
+    const markdown = renderToMarkdown(div);
+    expect(markdown).toBe('Line 1\nLine 2\n');
+  });
+
+  it('renders Tab element as 4 spaces', () => {
+    const div = createElement('div', {}, [
+      createElement('Tab', {}, []),
+      createTextNode('Indented')
+    ]);
+    const markdown = renderToMarkdown(div);
+    expect(markdown).toBe('    Indented\n');
+  });
+
+  it('renders Space element as single space', () => {
+    const div = createElement('div', {}, [
+      createTextNode('A'),
+      createElement('Space', {}, []),
+      createTextNode('B')
+    ]);
+    const markdown = renderToMarkdown(div);
+    expect(markdown).toBe('A B\n');
+  });
+
+  it('renders Space element with count', () => {
+    const div = createElement('div', {}, [
+      createTextNode('A'),
+      createElement('Space', { count: 5 }, []),
+      createTextNode('B')
+    ]);
+    const markdown = renderToMarkdown(div);
+    expect(markdown).toBe('A     B\n');
+  });
+
+  it('renders complex layout with multiple special components', () => {
+    const div = createElement('div', {}, [
+      createTextNode('Name:'),
+      createElement('Space', { count: 2 }, []),
+      createTextNode('John'),
+      createElement('Br', {}, []),
+      createTextNode('Age:'),
+      createElement('Space', { count: 3 }, []),
+      createTextNode('25')
+    ]);
+    const markdown = renderToMarkdown(div);
+    expect(markdown).toBe('Name:  John\nAge:   25\n');
+  });
+});

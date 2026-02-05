@@ -21,4 +21,6 @@ export type { VNode, TextNode, ElementNode, Tool as ToolDefinition } from './rec
 // Components
 export { Tool, ToolUse } from './components/Tool';
 export type { ToolProps, ToolUseProps } from './components/Tool';
+export { Space, Tab, Br } from './components/Layout';
+export type { SpaceProps, TabProps, BrProps } from './components/Layout';
 export * from './module';

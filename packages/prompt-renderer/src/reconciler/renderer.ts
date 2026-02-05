@@ -115,6 +115,19 @@ export function renderToMarkdown(node: VNode): string {
     return '```' + lang + '\n' + content + '\n```\n';
   }
 
+  if (element.type === 'Br' || element.type === 'br') {
+    return '\n';
+  }
+
+  if (element.type === 'Tab') {
+    return '    ';
+  }
+
+  if (element.type === 'Space') {
+    const count = element.props?.count || 1;
+    return ' '.repeat(count);
+  }
+
   return element.children
     .filter(child => child !== null && child !== undefined)
     .map(child => renderToMarkdown(child))
