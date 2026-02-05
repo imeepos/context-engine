@@ -31,19 +31,21 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
   const registry = await taskManager.getRegistry()
   const tasks = Object.values(registry.tasks)
 
-  const tasksByStatus = {
-    [TaskStatus.PENDING]: tasks.filter(t => t.status === TaskStatus.PENDING),
-    [TaskStatus.BLOCKED]: tasks.filter(t => t.status === TaskStatus.BLOCKED),
-    [TaskStatus.IN_PROGRESS]: tasks.filter(t => t.status === TaskStatus.IN_PROGRESS),
-    [TaskStatus.COMPLETED]: tasks.filter(t => t.status === TaskStatus.COMPLETED),
-    [TaskStatus.FAILED]: tasks.filter(t => t.status === TaskStatus.FAILED),
-    [TaskStatus.CANCELLED]: tasks.filter(t => t.status === TaskStatus.CANCELLED)
-  }
-
   // 统计信息
   const myTasks = tasks.filter(t => t.assignedTo === currentAgentId)
   const myCreatedTasks = tasks.filter(t => t.createdBy === currentAgentId)
+  const othersCreatedTasks = tasks.filter(t => t.createdBy !== currentAgentId)
   const claimableTasks = tasks.filter(t => t.status === TaskStatus.PENDING && !t.assignedTo)
+
+  // 按创建者和状态分组
+  const getTasksByStatus = (taskList: typeof tasks) => ({
+    [TaskStatus.PENDING]: taskList.filter(t => t.status === TaskStatus.PENDING),
+    [TaskStatus.BLOCKED]: taskList.filter(t => t.status === TaskStatus.BLOCKED),
+    [TaskStatus.IN_PROGRESS]: taskList.filter(t => t.status === TaskStatus.IN_PROGRESS),
+    [TaskStatus.COMPLETED]: taskList.filter(t => t.status === TaskStatus.COMPLETED),
+    [TaskStatus.FAILED]: taskList.filter(t => t.status === TaskStatus.FAILED),
+    [TaskStatus.CANCELLED]: taskList.filter(t => t.status === TaskStatus.CANCELLED)
+  })
 
   return (
     <Layout injector={injector}>
@@ -99,13 +101,49 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
         </li>
       </ul>
 
-      <h2>任务列表 (共 {tasks.length} 个)</h2>
-      {tasks.length === 0 ? (
-        <p>暂无任务。您可以使用"创建新任务"操作来创建第一个任务。</p>
+      <h2>其他人创建的任务 (共 {othersCreatedTasks.length} 个)</h2>
+      {othersCreatedTasks.length === 0 ? (
+        <p>暂无其他人创建的任务。</p>
       ) : (
-        Object.entries(tasksByStatus).map(([status, statusTasks]) => (
+        Object.entries(getTasksByStatus(othersCreatedTasks)).map(([status, statusTasks]) => (
           statusTasks.length > 0 && (
             <div key={status}>
+              <h3>{status.toUpperCase()} ({statusTasks.length} 个)</h3>
+              {statusTasks.map((task, index) => (
+                <div key={task.id}>
+                  <strong>{index + 1}. {task.title}</strong>
+                  <ul>
+                    <li><strong>任务 ID:</strong> {task.id}</li>
+                    <li><strong>状态:</strong> {getStatusDescription(task.status)}</li>
+                    <li><strong>创建者:</strong> {task.createdBy}</li>
+                    <li><strong>分配给:</strong> {task.assignedTo || '未分配'}</li>
+                    <li><strong>创建时间:</strong> {new Date(task.createdAt).toLocaleString()}</li>
+                    {task.parentId && <li><strong>父任务 ID:</strong> {task.parentId}</li>}
+                    {task.dependencies.length > 0 && (
+                      <li><strong>依赖任务:</strong> {task.dependencies.join(', ')}</li>
+                    )}
+                  </ul>
+
+                  <Tool name={`view_task_${task.id}`} description={`查看任务 [${task.id}]${task.title} 的详细信息，包括完整的操作选项`} execute={async () => {
+                    await navigate(`prompt:///tasks/${task.id}`)
+                    return `已跳转到任务详情页面: ${task.id}`
+                  }}>
+                    查看详情
+                  </Tool>
+                </div>
+              ))}
+            </div>
+          )
+        ))
+      )}
+
+      <h2>我创建的任务 (共 {myCreatedTasks.length} 个)</h2>
+      {myCreatedTasks.length === 0 ? (
+        <p>暂无我创建的任务。您可以使用"创建新任务"操作来创建第一个任务。</p>
+      ) : (
+        Object.entries(getTasksByStatus(myCreatedTasks)).map(([status, statusTasks]) => (
+          statusTasks.length > 0 && (
+            <div key={`my-${status}`}>
               <h3>{status.toUpperCase()} ({statusTasks.length} 个)</h3>
               {statusTasks.map((task, index) => (
                 <div key={task.id}>
