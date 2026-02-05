@@ -11,6 +11,19 @@ interface TaskListPageProps {
   injector: Injector
 }
 
+// 辅助函数：获取状态描述
+function getStatusDescription(status: TaskStatus): string {
+  const descriptions: Record<TaskStatus, string> = {
+    [TaskStatus.PENDING]: '待处理',
+    [TaskStatus.IN_PROGRESS]: '进行中',
+    [TaskStatus.COMPLETED]: '已完成',
+    [TaskStatus.FAILED]: '失败',
+    [TaskStatus.CANCELLED]: '已取消',
+    [TaskStatus.BLOCKED]: '阻塞中'
+  }
+  return descriptions[status] || status
+}
+
 export async function TaskListPageComponent({ injector }: TaskListPageProps) {
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
   const navigate = injector.get(NAVIGATE)
@@ -99,7 +112,7 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
                   <strong>{index + 1}. {task.title}</strong>
                   <ul>
                     <li><strong>任务 ID:</strong> {task.id}</li>
-                    <li><strong>状态:</strong> {task.status}</li>
+                    <li><strong>状态:</strong> {getStatusDescription(task.status)}</li>
                     <li><strong>创建者:</strong> {task.createdBy}</li>
                     <li><strong>分配给:</strong> {task.assignedTo || '未分配'}</li>
                     <li><strong>创建时间:</strong> {new Date(task.createdAt).toLocaleString()}</li>
@@ -109,7 +122,7 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
                     )}
                   </ul>
 
-                  <Tool name={`view_task_${task.id}`} description={`查看任务 ${task.id} 的详细信息，包括完整的操作选项`} execute={async () => {
+                  <Tool name={`view_task_${task.id}`} description={`查看任务 [${task.id}]${task.title} 的详细信息，包括完整的操作选项`} execute={async () => {
                     await navigate(`prompt:///tasks/${task.id}`)
                     return `已跳转到任务详情页面: ${task.id}`
                   }}>
