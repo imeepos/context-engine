@@ -1,11 +1,13 @@
 import { Page } from './browser'
 import { Browser, RenderResult } from './browser'
-import { Inject, Injectable, Provider } from '@sker/core'
+import { Inject, Injectable, Provider, forwardRef } from '@sker/core'
 /** UI 渲染防抖延迟（毫秒） */
 export const RENDER_DEBOUNCE_MS = 50
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
+    useFactory: (browser: Browser) => new UIRenderer(browser),
+    deps: [forwardRef(() => Browser)]
 })
 export class UIRenderer {
     private browser: Browser;

@@ -23,7 +23,11 @@ export const CURRENT_PAGE = new InjectionToken<Page>(`CURRENT_PAGE`);
 export const COMPONENT = new InjectionToken<React.FunctionComponent>(`COMPONENT`);
 export const INPUT = new InjectionToken<string>(`INPUT`);
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+  useFactory: (injector: Injector) => new Browser(injector),
+  deps: [Injector]
+})
 export class Browser {
   private currentUrl: string = 'prompt:///';
 
