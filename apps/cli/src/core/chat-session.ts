@@ -1,9 +1,9 @@
 import * as readline from 'readline'
 import { Injector } from '@sker/core'
 import { LLMService } from '@sker/compiler'
-import { UIRenderer } from '../ui/renderer'
 import { InputHandler } from '../handlers/input-handler'
 import { createRouter } from '../router'
+import { UIRenderer } from '@sker/prompt-renderer'
 
 export interface ChatSessionConfig {
   llmInjector: Injector

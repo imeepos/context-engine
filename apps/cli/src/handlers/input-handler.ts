@@ -1,6 +1,6 @@
 import { isUnifiedTextContent, isUnifiedThinkingContent, LLMService, UnifiedRequestBuilder } from '@sker/compiler'
-import { UIRenderer } from '../ui/renderer'
 import { DEFAULT_MODEL, MAX_ITERATIONS } from '../config/constants'
+import { UIRenderer } from '@sker/prompt-renderer'
 
 export class InputHandler {
   private llmService: LLMService

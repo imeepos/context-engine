@@ -1,9 +1,8 @@
 import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
-import { CURRENT_ROUTE, ToolUse } from '@sker/prompt-renderer'
+import { CURRENT_ROUTE, Link, ToolUse } from '@sker/prompt-renderer'
 import { CURRENT_AGENT_ID } from '../tokens'
-import { NavigateTool } from '../tools/NavigateTool'
 import { SendMessageTool } from '../tools/SendMessageTool'
 import { AgentRegistryService } from '../services/agent-registry.service'
 import { MessageBrokerService } from '../services/message-broker.service'
@@ -25,7 +24,7 @@ export async function ChatPageComponent({ injector }: ChatPageProps) {
 
   return (
     <Layout injector={injector}>
-      <ToolUse use={NavigateTool} propertyKey={`execute`}>返回</ToolUse>
+      <Link href='prompt:///'>返回</Link>
       <h2>所有在线的AGENT有：</h2>
       {agents.map(agent => (
         <div key={agent.id}>

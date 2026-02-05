@@ -1,8 +1,7 @@
 import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
-import { NAVIGATE } from '../tokens'
-import { Tool } from '@sker/prompt-renderer'
+import { Browser, Tool } from '@sker/prompt-renderer'
 import { PluginRegistryService } from '../services/plugin-registry.service'
 
 interface PluginManagerPageProps {
@@ -10,7 +9,7 @@ interface PluginManagerPageProps {
 }
 
 export async function PluginManagerPage({ injector }: PluginManagerPageProps) {
-  const navigate = injector.get(NAVIGATE)
+  const navigate = injector.get(Browser)
   const registryService = injector.get(PluginRegistryService)
   const plugins = await registryService.getAllPlugins()
 
@@ -48,7 +47,7 @@ export async function PluginManagerPage({ injector }: PluginManagerPageProps) {
         name="create_plugin"
         description="创建新插件"
         execute={async () => {
-          await navigate('prompt:///plugins/develop')
+          await navigate.setCurrentUrl('prompt:///plugins/develop')
           return '已跳转到插件开发页面'
         }}
       >

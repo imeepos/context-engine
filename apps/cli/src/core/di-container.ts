@@ -14,7 +14,6 @@ import { TaskDependencyResolverService } from '../services/task-dependency-resol
 import { SendMessageTool } from '../tools/SendMessageTool'
 import { ListAgentsTool } from '../tools/ListAgentsTool'
 import { GetMessageHistoryTool } from '../tools/GetMessageHistoryTool'
-import { NavigateTool } from '../tools/NavigateTool'
 import { CreateTaskTool } from '../tools/CreateTaskTool'
 import { BatchCreateTasksTool } from '../tools/BatchCreateTasksTool'
 import { ClaimTaskTool } from '../tools/ClaimTaskTool'
@@ -51,7 +50,6 @@ export function createDIContainer(config: DIContainerConfig): Injector {
     { provide: SendMessageTool, useClass: SendMessageTool },
     { provide: ListAgentsTool, useClass: ListAgentsTool },
     { provide: GetMessageHistoryTool, useClass: GetMessageHistoryTool },
-    { provide: NavigateTool, useClass: NavigateTool },
     { provide: CreateTaskTool, useClass: CreateTaskTool },
     { provide: BatchCreateTasksTool, useClass: BatchCreateTasksTool },
     { provide: ClaimTaskTool, useClass: ClaimTaskTool },

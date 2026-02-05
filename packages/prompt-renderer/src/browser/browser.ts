@@ -23,7 +23,7 @@ export const CURRENT_PAGE = new InjectionToken<Page>(`CURRENT_PAGE`);
 export const COMPONENT = new InjectionToken<React.FunctionComponent>(`COMPONENT`);
 export const INPUT = new InjectionToken<string>(`INPUT`);
 
-@Injectable({ providedIn: 'auto' })
+@Injectable({ providedIn: 'root' })
 export class Browser {
   private currentUrl: string = 'prompt:///';
 
@@ -31,6 +31,10 @@ export class Browser {
 
   getCurrentUrl(): string {
     return this.currentUrl;
+  }
+
+  setCurrentUrl(url: string) {
+    this.currentUrl = url;
   }
 
   open(url: string, providers: Provider[] = []): Page {

@@ -2,6 +2,7 @@ import { VNode, ElementNode } from './types';
 import { UnifiedTool, buildUnifiedTool, zodToParams } from '@sker/compiler';
 import { Type, ToolMetadataKey, root, ToolMetadata, Injector } from '@sker/core';
 import { ToolProps } from '../components/Tool';
+import { Browser } from '../browser';
 
 export interface ExtractResult {
   tools: UnifiedTool[];
