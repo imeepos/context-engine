@@ -304,3 +304,35 @@ describe('Markdown Renderer - Table', () => {
     expect(markdown).toBe('| Header 1 | Header 2 |\n');
   });
 });
+
+describe('Markdown Renderer - Code Blocks', () => {
+  it('renders pre element as code block', () => {
+    const pre = createElement('pre', {}, [createTextNode('  code with spaces  ')]);
+    const markdown = renderToMarkdown(pre);
+    expect(markdown).toBe('```\n  code with spaces  \n```\n');
+  });
+
+  it('renders code element as code block', () => {
+    const code = createElement('code', {}, [createTextNode('const x = 1;')]);
+    const markdown = renderToMarkdown(code);
+    expect(markdown).toBe('```\nconst x = 1;\n```\n');
+  });
+
+  it('renders code block with language', () => {
+    const code = createElement('code', { lang: 'javascript' }, [createTextNode('const x = 1;')]);
+    const markdown = renderToMarkdown(code);
+    expect(markdown).toBe('```javascript\nconst x = 1;\n```\n');
+  });
+
+  it('preserves whitespace in pre element', () => {
+    const pre = createElement('pre', {}, [createTextNode('  ♜ ♞ ♝\n  ♟ ♟ ♟')]);
+    const markdown = renderToMarkdown(pre);
+    expect(markdown).toBe('```\n  ♜ ♞ ♝\n  ♟ ♟ ♟\n```\n');
+  });
+
+  it('renders empty pre element', () => {
+    const pre = createElement('pre', {}, []);
+    const markdown = renderToMarkdown(pre);
+    expect(markdown).toBe('```\n\n```\n');
+  });
+});
