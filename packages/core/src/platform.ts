@@ -2,6 +2,7 @@ import { Provider } from './provider';
 import { PlatformRef } from './platform-ref';
 import { EnvironmentInjector } from './environment-injector';
 import { Injector } from './injector';
+import { root } from './environment-injector';
 
 /**
  * 创建平台实例
@@ -9,19 +10,28 @@ import { Injector } from './injector';
  * @returns 新的平台引用
  */
 export function createPlatform(providers: Provider[] = []): PlatformRef {
-  // 确保 root injector 存在，如果不存在则创建
-  if (!EnvironmentInjector.getRootInjector()) {
-    EnvironmentInjector.createRootInjector();
+  // 重置 platformInjectorInstance 如果已存在
+  if (EnvironmentInjector.getPlatformInjector()) {
+    EnvironmentInjector.resetPlatformInjector();
   }
 
-  const platformInjector = EnvironmentInjector.createPlatformInjector([
-    ...providers,
-    {
-      provide: PlatformRef, useFactory: () => {
-        return new PlatformRef(platformInjector);
-      }, deps: [Injector]
-    }
-  ]);
+  // 使用全局 root injector 作为 parent 创建 platform injector
+  const platformInjector = new EnvironmentInjector(
+    [
+      ...providers,
+      {
+        provide: PlatformRef, useFactory: () => {
+          return new PlatformRef(platformInjector);
+        }, deps: [Injector]
+      }
+    ],
+    root,  // 使用全局 root injector 作为 parent
+    'platform'
+  );
+
+  // 设置为全局 platform injector
+  (EnvironmentInjector as any).platformInjectorInstance = platformInjector;
+
   return platformInjector.get(PlatformRef);
 }
 
