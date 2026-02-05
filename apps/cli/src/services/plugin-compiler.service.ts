@@ -29,15 +29,37 @@ export class PluginCompilerService {
     const absoluteOutDir = path.join(baseDir, `plugins/${pluginId}/build`)
 
     try {
-      await build({
+      const result = await build({
         entryPoints: [absoluteEntryPath],
         bundle: true,
         platform: 'node',
         target: 'node20',
         outdir: absoluteOutDir,
         format: 'cjs',
-        external: ['react', '@sker/core', '@sker/prompt-renderer', '@sker/plugin-runtime']
+        external: ['react', '@sker/core', '@sker/prompt-renderer', '@sker/plugin-runtime'],
+        logLevel: 'silent',
+        plugins: [{
+          name: 'fail-on-unresolved',
+          setup(build) {
+            build.onResolve({ filter: /.*/ }, args => {
+              if (args.kind === 'import-statement' && !args.path.startsWith('.') && !args.path.startsWith('/')) {
+                const external = ['react', '@sker/core', '@sker/prompt-renderer', '@sker/plugin-runtime']
+                if (!external.includes(args.path) && !args.path.startsWith('node:')) {
+                  return { errors: [{ text: `Cannot resolve module "${args.path}"` }] }
+                }
+              }
+              return undefined
+            })
+          }
+        }]
       })
+
+      if (result.errors.length > 0) {
+        return {
+          success: false,
+          error: result.errors.map(e => e.text).join('\n')
+        }
+      }
 
       return { success: true }
     } catch (error) {

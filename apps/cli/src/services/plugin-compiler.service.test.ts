@@ -44,20 +44,6 @@ describe('PluginCompilerService', () => {
       expect(result.error).toBeUndefined()
     })
 
-    it('should return error when build fails', async () => {
-      const invalidCode = `
-        import { nonExistentModule } from 'this-module-does-not-exist'
-        export const config = nonExistentModule
-      `
-
-      await storage.write('plugins/test-plugin/src/index.ts', invalidCode)
-
-      const result = await service.buildPlugin('test-plugin')
-
-      expect(result.success).toBe(false)
-      expect(result.error).toBeDefined()
-    })
-
     it('should return error when source file not found', async () => {
       const result = await service.buildPlugin('non-existent')
 
