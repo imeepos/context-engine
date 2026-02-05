@@ -2,7 +2,6 @@
   "name": "@sker/prompt-renderer",
   "version": "0.1.0",
   "description": "React-based prompt renderer for AI agents",
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
