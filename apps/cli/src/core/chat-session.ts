@@ -38,7 +38,6 @@ export class ChatSession {
     })
 
     this.rl.on('close', async () => {
-      console.log('\nGoodbye!')
       process.exit(0)
     })
   }

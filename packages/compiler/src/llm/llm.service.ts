@@ -44,7 +44,6 @@ export class LLMService {
 
       return response;
     } catch (e) {
-      console.log(request, tools, options)
       throw e;
     }
 

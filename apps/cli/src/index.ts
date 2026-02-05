@@ -89,16 +89,6 @@ async function main() {
       // 启动应用模块
       await app.bootstrap(CliModule)
 
-      // 如果启用了 MCP，显示连接状态
-      if (options.mcp !== false) {
-        const mcpService = app.injector.get(McpClientService)
-        if (mcpService.isConnected()) {
-          console.log('✓ 远程 MCP 服务器已连接')
-        } else {
-          console.warn('⚠ 远程 MCP 服务器连接失败，仅使用本地工具')
-        }
-      }
-
       // 创建并启动聊天会话
       const chatSession = new ChatSession({
         llmInjector: app.injector,

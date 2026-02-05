@@ -223,7 +223,6 @@ export function controllerFactory(ControllerClass: Type<any>): Record<string, En
 
     // Create endpoint
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    console.log(fullPath)
     const endpoint = createAuthEndpoint(
       fullPath,
       endpointConfig as any,

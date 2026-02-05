@@ -80,7 +80,6 @@ export class McpClient implements IMcpClient {
 
       await this.loadTools()
 
-      console.log('✓ 已连接到远程 MCP 服务器:', this.config.baseUrl)
     } catch (error) {
       this.state = McpConnectionState.ERROR
       const mcpError = handleMcpError(error)

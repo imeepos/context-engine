@@ -14,20 +14,6 @@ describe('ChatSession', () => {
 
     await app.bootstrap(CliModule)
 
-    // 调试：先尝试获取 Browser
-    console.log('Trying to get Browser from app.injector...')
-    try {
-      const browser = app.injector.get(Browser)
-      console.log('Browser obtained:', browser)
-    } catch (error) {
-      console.error('Failed to get Browser:', error)
-    }
-
-    // 调试：检查 UIRenderer 是否可以从 app.injector 获取
-    console.log('Trying to get UIRenderer from app.injector...')
-    const renderer = app.injector.get(UIRenderer)
-    console.log('UIRenderer obtained:', renderer)
-
     // 模拟 index.ts 中的实际使用方式
     expect(() => {
       new ChatSession({

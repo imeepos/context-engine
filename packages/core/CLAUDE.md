@@ -237,7 +237,6 @@ class Service {
 class MyService {
   @OnInit()
   initialize() {
-    console.log('Service initialized');
   }
 }
 ```
@@ -405,9 +404,6 @@ import { ApplicationRef } from '@sker/core';
 // 启动应用（解析模块、执行 APP_INITIALIZER、触发 OnInit）
 await app.bootstrap(AppModule);
 
-// 检查状态
-console.log(app.isBootstrapped);  // true
-console.log(app.isDestroyed);     // false
 
 // 销毁应用
 await app.destroy();
@@ -479,14 +475,14 @@ await platform.destroy();
 
 ### 可用脚本
 
-| 脚本 | 命令 | 说明 |
-|------|------|------|
-| build | `pnpm build` | 使用 tsup 构建包（生成 ESM/CJS 双格式输出到 dist/） |
-| claude | `pnpm claude` | 运行 Claude Code（跳过权限检查） |
-| lint | `pnpm lint` | 使用 ESLint 检查代码（最多 0 个警告） |
-| check-types | `pnpm check-types` | TypeScript 类型检查（不生成输出） |
-| test | `pnpm test` | 运行测试（使用 Vitest） |
-| test:watch | `pnpm test:watch` | 监听模式运行测试 |
+| 脚本        | 命令               | 说明                                                |
+| ----------- | ------------------ | --------------------------------------------------- |
+| build       | `pnpm build`       | 使用 tsup 构建包（生成 ESM/CJS 双格式输出到 dist/） |
+| claude      | `pnpm claude`      | 运行 Claude Code（跳过权限检查）                    |
+| lint        | `pnpm lint`        | 使用 ESLint 检查代码（最多 0 个警告）               |
+| check-types | `pnpm check-types` | TypeScript 类型检查（不生成输出）                   |
+| test        | `pnpm test`        | 运行测试（使用 Vitest）                             |
+| test:watch  | `pnpm test:watch`  | 监听模式运行测试                                    |
 
 ### 开发流程
 

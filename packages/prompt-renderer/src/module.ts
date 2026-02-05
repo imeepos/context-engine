@@ -14,7 +14,6 @@ export class PromptRendererModule {
                 }),
                 {
                     provide: BROWSER, useFactory: (parent: Injector) => {
-                        console.log({ parent })
                         return new Browser(parent)
                     }, deps: [Injector]
                 },
