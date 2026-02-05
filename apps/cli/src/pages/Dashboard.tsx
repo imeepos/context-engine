@@ -18,11 +18,14 @@ export async function DashboardComponent({ injector }: DashboardProps) {
   const myTasks = await taskManager.getTasksByAgent(currentAgentId)
   const taskList = myTasks.filter(t => t.assignedTo === currentAgentId)
 
+  let taskDetail = null;
   if (taskList.length === 0) {
-    return <div>暂无任务，你可以<a href="/task/new">创建一个任务</a>或者<a href="/task/list">查看任务列表</a></div>
+    taskDetail = <div>暂无任务，你可以<a href="/task/new">创建一个任务</a>或者<a href="/task/list">查看任务列表</a></div>
+  } else {
+    const firstTask = myTasks[0]!
+    taskDetail = await TaskDetailComponent({ task: firstTask, injector })
   }
-  const firstTask = myTasks[0]!
-  const taskDetail = await TaskDetailComponent({ task: firstTask, injector })
+
 
   return (
     <Layout injector={injector}>
