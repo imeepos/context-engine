@@ -70,8 +70,39 @@ export function renderToMarkdown(node: VNode): string {
   }
 
   if (element.type === 'input') {
+    const type = element.props?.type;
+    const checked = element.props?.checked;
     const placeholder = element.props?.placeholder;
+
+    if (type === 'checkbox') {
+      return checked ? '[x] ' : '[ ] ';
+    }
+
+    if (type === 'radio') {
+      return checked ? '(x) ' : '( ) ';
+    }
+
     return placeholder ? `[Input: ${placeholder}] ` : '[Input] ';
+  }
+
+  if (element.type === 'checkbox') {
+    const checked = element.props?.checked;
+    return checked ? '[x] ' : '[ ] ';
+  }
+
+  if (element.type === 'radio') {
+    const checked = element.props?.checked;
+    return checked ? '(x) ' : '( ) ';
+  }
+
+  if (element.type === 'select') {
+    const placeholder = element.props?.placeholder || element.props?.value;
+    return placeholder ? `[Select: ${placeholder}] ` : '[Select] ';
+  }
+
+  if (element.type === 'textarea') {
+    const placeholder = element.props?.placeholder;
+    return placeholder ? `[Textarea: ${placeholder}] ` : '[Textarea] ';
   }
 
   if (element.type === 'p') {
