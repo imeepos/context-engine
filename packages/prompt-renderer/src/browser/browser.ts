@@ -25,8 +25,16 @@ export const INPUT = new InjectionToken<string>(`INPUT`);
 
 @Injectable({ providedIn: 'auto' })
 export class Browser {
+  private currentUrl: string = 'prompt:///';
+
   constructor(@Inject(Injector) private parent: Injector) { }
+
+  getCurrentUrl(): string {
+    return this.currentUrl;
+  }
+
   open(url: string, providers: Provider[] = []): Page {
+    this.currentUrl = url;
     if (!url || typeof url !== 'string') {
       throw new Error('Invalid URL format');
     }

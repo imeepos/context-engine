@@ -5,10 +5,8 @@ export * from './browser/index';
 // Router
 export { parseUrl, buildUrl, extractParams } from './router/url';
 export { matchRoute, compilePattern, rankRoutes } from './router/matcher';
-export { createHistory } from './router/history';
 export type { PromptURL } from './router/url';
 export type { Match } from './router/matcher';
-export type { NavigationHistory, NavigationAction as HistoryAction } from './router/history';
 
 // Reconciler
 export { createTextNode, createElement } from './reconciler/dom';

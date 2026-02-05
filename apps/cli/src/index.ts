@@ -9,9 +9,7 @@ import { CliModule } from './cli.module'
 import { JsonFileStorage } from './storage/json-file-storage'
 import { STORAGE_TOKEN } from './storage/storage.interface'
 import { AgentRegistryService } from './services/agent-registry.service'
-import { MessageBrokerService } from './services/message-broker.service'
 import { TaskManagerService } from './services/task-manager.service'
-import { StateManager } from './ui/state-manager'
 import { ChatSession } from './core/chat-session'
 import { MCP_CLIENT_CONFIG, CURRENT_AGENT_ID } from './tokens'
 import { McpClientService } from './services/mcp-client.service'
@@ -52,7 +50,6 @@ async function main() {
       await storage.init()
 
       const agentRegistry = new AgentRegistryService(storage)
-      const messageBroker = new MessageBrokerService(storage, agentRegistry)
       const taskManager = new TaskManagerService(storage)
       await taskManager.init()
 
@@ -64,8 +61,6 @@ async function main() {
         process.exit(1)
       }
 
-      await messageBroker.init()
-
       // 创建 platform 和 application
       const platform = createPlatform()
 
@@ -74,7 +69,6 @@ async function main() {
         { provide: STORAGE_TOKEN, useValue: storage },
         { provide: JsonFileStorage, useValue: storage },
         { provide: AgentRegistryService, useValue: agentRegistry },
-        { provide: MessageBrokerService, useValue: messageBroker },
         { provide: TaskManagerService, useValue: taskManager },
         { provide: CURRENT_AGENT_ID, useValue: currentAgent.id }
       ]
@@ -107,32 +101,9 @@ async function main() {
         }
       }
 
-      // 加载历史消息
-      const onlineAgents = await agentRegistry.getOnlineAgents()
-      const allMessages: any[] = []
-      for (const agent of onlineAgents) {
-        if (agent.id !== currentAgent?.id) {
-          const history = await messageBroker.getMessageHistory(agent.id)
-          allMessages.push(...history)
-        }
-      }
-
-      // 创建状态管理器
-      const stateManager = new StateManager(
-        {
-          agents: onlineAgents,
-          currentAgentId: currentAgent?.id || '',
-          messages: allMessages
-        },
-        agentRegistry
-      )
-
       // 创建并启动聊天会话
       const chatSession = new ChatSession({
         llmInjector: app.injector,
-        agentRegistry,
-        messageBroker,
-        stateManager
       })
 
       await chatSession.start()
