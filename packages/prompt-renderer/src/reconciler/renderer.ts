@@ -61,17 +61,17 @@ export function renderToMarkdown(node: VNode): string {
 
   if (element.type === 'button') {
     const label = getTextContentDefault(element);
-    return `[${label}]`;
+    return `[${label}] `;
   }
 
   if (element.type === 'tool') {
     const label = getTextContentDefault(element);
-    return `[@tool:${label}]`;
+    return `[@tool:${label}] `;
   }
 
   if (element.type === 'input') {
     const placeholder = element.props?.placeholder;
-    return placeholder ? `[Input: ${placeholder}]` : '[Input]';
+    return placeholder ? `[Input: ${placeholder}] ` : '[Input] ';
   }
 
   if (element.type === 'p') {

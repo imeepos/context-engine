@@ -116,31 +116,31 @@ describe('Markdown Renderer - Interactive Elements', () => {
   it('renders button without data-action', () => {
     const button = createElement('button', {}, [createTextNode('Click me')]);
     const markdown = renderToMarkdown(button);
-    expect(markdown).toBe('[Click me]');
+    expect(markdown).toBe('[Click me] ');
   });
 
   it('renders button with data-action', () => {
     const button = createElement('button', { 'data-action': 'submit' }, [createTextNode('Submit')]);
     const markdown = renderToMarkdown(button);
-    expect(markdown).toBe('[Submit]');
+    expect(markdown).toBe('[Submit] ');
   });
 
   it('renders input with placeholder', () => {
     const input = createElement('input', { placeholder: 'Enter text' }, []);
     const markdown = renderToMarkdown(input);
-    expect(markdown).toBe('[Input: Enter text]');
+    expect(markdown).toBe('[Input: Enter text] ');
   });
 
   it('renders input without placeholder', () => {
     const input = createElement('input', { name: 'email' }, []);
     const markdown = renderToMarkdown(input);
-    expect(markdown).toBe('[Input]');
+    expect(markdown).toBe('[Input] ');
   });
 
   it('renders input with type', () => {
     const input = createElement('input', { type: 'password', placeholder: 'Password' }, []);
     const markdown = renderToMarkdown(input);
-    expect(markdown).toBe('[Input: Password]');
+    expect(markdown).toBe('[Input: Password] ');
   });
 });
 
