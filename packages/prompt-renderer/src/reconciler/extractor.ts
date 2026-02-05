@@ -66,6 +66,8 @@ function extractToolsInternal(
         execute: onClick || (async () => {
           if (href && navigate) {
             navigate(href);
+          } else if (href) {
+            console.warn(`Link to "${href}" clicked but no navigate function provided`);
           }
         })
       });
