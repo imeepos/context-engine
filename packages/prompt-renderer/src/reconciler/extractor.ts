@@ -56,18 +56,30 @@ function extractToolsInternal(
   if (node.type === 'a' || node.type === 'Link') {
     const href = (node as ElementNode).props?.href || (node as ElementNode).props?.to;
     const onClick = (node as ElementNode).props?.onClick;
-    const navigate = (node as ElementNode).props?.navigate;
     if (href || onClick) {
       const label = getTextContent(node);
       tools.push({
-        name: `navigate_${href || 'custom'}`,
+        name: `navigate`,
         description: `Navigate to ${label}`,
-        parameters: { type: 'object', properties: {}, required: [] },
-        execute: onClick || (async () => {
-          if (href && navigate) {
-            navigate(href);
-          } else if (href) {
-            console.warn(`Link to "${href}" clicked but no navigate function provided`);
+        parameters: {
+          type: 'object',
+          properties: {
+            path: {
+              type: 'string',
+              description: '目标路径'
+            }
+          },
+          required: ['path']
+        },
+        execute: onClick || (async (params: Record<string, any>, injector: Injector) => {
+          if (href) {
+            // 从 injector 中获取 Browser 实例并调用 navigate
+            const browser = injector.get(Browser);
+            if (browser) {
+              browser.open(href);
+            } else {
+              console.warn(`Link to "${href}" clicked but no Browser instance found in injector`);
+            }
           }
         })
       });
