@@ -23,11 +23,12 @@ import { McpClientService } from './services/mcp-client.service'
 import { RemoteToolProxy } from './tools/RemoteToolProxy'
 import { MCP_CLIENT } from './tokens'
 import { PromptRendererModule } from '@sker/prompt-renderer'
+import { routes } from './router'
 
 @Module({
   imports: [
     CompilerModule,
-    PromptRendererModule.forRoot([])
+    PromptRendererModule.forRoot(routes)
   ],
   providers: [
     { provide: JsonFileStorage, useClass: JsonFileStorage },

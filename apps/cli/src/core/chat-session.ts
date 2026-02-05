@@ -2,7 +2,6 @@ import * as readline from 'readline'
 import { Injector } from '@sker/core'
 import { LLMService } from '@sker/compiler'
 import { InputHandler } from '../handlers/input-handler'
-import { createRouter } from '../router'
 import { UIRenderer } from '@sker/prompt-renderer'
 
 export interface ChatSessionConfig {
@@ -17,8 +16,7 @@ export class ChatSession {
 
   constructor(config: ChatSessionConfig) {
     this.llmService = config.llmInjector.get(LLMService)
-    const browser = createRouter(config.llmInjector)
-    this.renderer = new UIRenderer(browser)
+    this.renderer = config.llmInjector.get(UIRenderer)
     this.inputHandler = new InputHandler(this.llmService, this.renderer)
   }
 
