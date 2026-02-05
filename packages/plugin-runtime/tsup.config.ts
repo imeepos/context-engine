@@ -7,5 +7,6 @@ export default defineConfig({
   clean: false,
   splitting: false,
   sourcemap: true,
-  target: 'node18'
+  target: 'node18',
+  external: ['react', 'react-dom', '@sker/core']
 })

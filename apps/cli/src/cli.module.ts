@@ -58,6 +58,5 @@ import { routes } from './router'
 export class CliModule implements OnInit {
   constructor(@Inject(Injector) private injector: Injector) { }
   async onInit(): Promise<void> {
-    console.log(this.injector)
   }
 }

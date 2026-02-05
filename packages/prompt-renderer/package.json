@@ -2,18 +2,19 @@
   "name": "@sker/prompt-renderer",
   "version": "0.1.0",
   "description": "React-based prompt renderer for AI agents",
-  "type": "commonjs",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest --watch",
@@ -36,6 +37,7 @@
     "eslint": "^9.39.2",
     "jsdom": "^27.4.0",
     "react-dom": "^18.3.1",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.2",
     "vitest": "^2.1.8"
   },
