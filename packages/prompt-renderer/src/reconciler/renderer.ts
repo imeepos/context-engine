@@ -138,6 +138,12 @@ export function renderToMarkdown(node: VNode): string {
     return `~~${content}~~`;
   }
 
+  if (element.type === 'a' || element.type === 'Link') {
+    const href = element.props?.href || element.props?.to;
+    const content = element.children.map(child => renderToMarkdown(child)).join('');
+    return href ? `[${content}](${href})` : content;
+  }
+
   if (element.type === 'table') {
     const rows = element.children.filter(child =>
       child !== null && child !== undefined && (child as ElementNode).type === 'tr'

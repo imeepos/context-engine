@@ -23,4 +23,6 @@ export { Tool, ToolUse } from './components/Tool';
 export type { ToolProps, ToolUseProps } from './components/Tool';
 export { Space, Tab, Br } from './components/Layout';
 export type { SpaceProps, TabProps, BrProps } from './components/Layout';
+export { Link } from './components/Link';
+export type { LinkProps } from './components/Link';
 export * from './module';

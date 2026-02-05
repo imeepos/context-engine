@@ -53,6 +53,25 @@ function extractToolsInternal(
     }
   }
 
+  if (node.type === 'a' || node.type === 'Link') {
+    const href = (node as ElementNode).props?.href || (node as ElementNode).props?.to;
+    const onClick = (node as ElementNode).props?.onClick;
+    if (href || onClick) {
+      const label = getTextContent(node);
+      tools.push({
+        name: `navigate_${href || 'custom'}`,
+        description: `Navigate to ${label}`,
+        parameters: { type: 'object', properties: {}, required: [] },
+        execute: onClick || (async () => {
+          if (href) {
+            // 这里可以调用 navigate 函数
+            console.log(`Navigating to: ${href}`);
+          }
+        })
+      });
+    }
+  }
+
   for (const child of (node as ElementNode).children) {
     if (child !== null && child !== undefined) {
       tools.push(...extractToolsInternal(child));
