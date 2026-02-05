@@ -88,6 +88,23 @@ export function renderToMarkdown(node: VNode): string {
     return element.children.map(getTextContent).join('');
   }
 
+  if (element.type === 'table') {
+    const rows = element.children.filter(child =>
+      child !== null && child !== undefined && (child as ElementNode).type === 'tr'
+    ) as ElementNode[];
+
+    if (rows.length === 0) return '\n';
+
+    const renderedRows = rows.map(row => {
+      const cells = row.children.filter(child =>
+        child !== null && child !== undefined
+      );
+      return '| ' + cells.map(cell => getTextContent(cell)).join(' | ') + ' |';
+    });
+
+    return renderedRows.join('\n') + '\n';
+  }
+
   return element.children
     .filter(child => child !== null && child !== undefined)
     .map(child => renderToMarkdown(child))

@@ -26,7 +26,7 @@ export class InputHandler {
         .user(trimmed)
         .build()
 
-      await this.llmService.chatWithTools(
+      const response = await this.llmService.chatWithTools(
         request,
         renderResult.tools,
         {
@@ -40,6 +40,8 @@ export class InputHandler {
           }
         }
       )
+
+      console.log(response.content)
     } catch (error: any) {
       console.error(`\n错误: ${error.message}\n`)
     }

@@ -22,7 +22,7 @@ export function Layout({ children, injector }: LayoutProps) {
           }} >1. 查看正在进行的任务</Tool>
         </li>
         <li>
-          <Tool name='navigate_tasks' description='查看待办任务' execute={async () => {
+          <Tool name='navigate_tasks' description='查看或创建待办任务' execute={async () => {
             await navigate('prompt:///tasks')
             return '已成功导航到待办任务'
           }} >2. 查看待办任务</Tool>

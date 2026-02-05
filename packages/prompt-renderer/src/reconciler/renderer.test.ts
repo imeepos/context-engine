@@ -261,3 +261,46 @@ describe('Markdown Renderer - Whitespace Handling', () => {
     expect(markdown).toBe('Multiple words here\n');
   });
 });
+
+describe('Markdown Renderer - Table', () => {
+  it('renders table with single row', () => {
+    const td1 = createElement('td', {}, [createTextNode('A')]);
+    const td2 = createElement('td', {}, [createTextNode('B')]);
+    const tr = createElement('tr', {}, [td1, td2]);
+    const table = createElement('table', {}, [tr]);
+    const markdown = renderToMarkdown(table);
+    expect(markdown).toBe('| A | B |\n');
+  });
+
+  it('renders table with multiple rows', () => {
+    const row1 = createElement('tr', {}, [
+      createElement('td', {}, [createTextNode('♜')]),
+      createElement('td', {}, [createTextNode('♞')]),
+      createElement('td', {}, [createTextNode('♝')])
+    ]);
+    const row2 = createElement('tr', {}, [
+      createElement('td', {}, [createTextNode('♟')]),
+      createElement('td', {}, [createTextNode('♟')]),
+      createElement('td', {}, [createTextNode('♟')])
+    ]);
+    const table = createElement('table', {}, [row1, row2]);
+    const markdown = renderToMarkdown(table);
+    expect(markdown).toBe('| ♜ | ♞ | ♝ |\n| ♟ | ♟ | ♟ |\n');
+  });
+
+  it('renders empty table', () => {
+    const table = createElement('table', {}, []);
+    const markdown = renderToMarkdown(table);
+    expect(markdown).toBe('\n');
+  });
+
+  it('renders table with th elements', () => {
+    const row = createElement('tr', {}, [
+      createElement('th', {}, [createTextNode('Header 1')]),
+      createElement('th', {}, [createTextNode('Header 2')])
+    ]);
+    const table = createElement('table', {}, [row]);
+    const markdown = renderToMarkdown(table);
+    expect(markdown).toBe('| Header 1 | Header 2 |\n');
+  });
+});
