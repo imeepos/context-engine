@@ -9,6 +9,11 @@ import { Injector } from './injector';
  * @returns 新的平台引用
  */
 export function createPlatform(providers: Provider[] = []): PlatformRef {
+  // 确保 root injector 存在，如果不存在则创建
+  if (!EnvironmentInjector.getRootInjector()) {
+    EnvironmentInjector.createRootInjector();
+  }
+
   const platformInjector = EnvironmentInjector.createPlatformInjector([
     ...providers,
     {
