@@ -185,7 +185,6 @@ describe('Module Type<any> Support', () => {
 
       @Module({
         providers: [SharedService],
-        exports: [SharedService],
       })
       class SharedModule {}
 

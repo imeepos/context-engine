@@ -74,7 +74,6 @@ describe('DynamicModule', () => {
                 deps: [CONFIG],
               },
             ],
-            exports: [CONFIG, ConfigService],
           };
         }
       }
@@ -97,7 +96,6 @@ describe('DynamicModule', () => {
           return {
             module: DatabaseModule,
             providers: [{ provide: DB_CONFIG, useValue: config }],
-            exports: [DB_CONFIG],
           };
         }
       }
@@ -124,7 +122,6 @@ describe('DynamicModule', () => {
           return {
             module: LoggerModule,
             providers: [{ provide: LOG_LEVEL, useValue: level }],
-            exports: [LOG_LEVEL],
           };
         }
       }
@@ -136,7 +133,6 @@ describe('DynamicModule', () => {
             module: DatabaseModule,
             imports: [LoggerModule.forRoot('debug')],
             providers: [{ provide: DB_CONFIG, useValue: config }],
-            exports: [DB_CONFIG, LOG_LEVEL],
           };
         }
       }
@@ -159,7 +155,6 @@ describe('DynamicModule', () => {
           return {
             module: ConfigModule,
             providers: [{ provide: CONFIG, useValue: config }],
-            exports: [CONFIG],
           };
         }
       }

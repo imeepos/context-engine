@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Type, InjectionTokenType } from '../injector';
+import { Type } from '../injector';
 import { Provider } from '../provider';
 
 /**
@@ -16,11 +16,6 @@ export interface ModuleMetadata {
    * 导入的其他模块
    */
   imports?: (Type<any> | DynamicModule)[];
-
-  /**
-   * 导出的服务或令牌，供其他模块使用
-   */
-  exports?: InjectionTokenType<any>[];
 
   /**
    * 功能级别的服务，将在 featureInjector 中注册
@@ -49,8 +44,7 @@ const MODULE_METADATA_KEY = Symbol('module:metadata');
  * ```typescript
  * @Module({
  *   providers: [UserService, DatabaseService],
- *   imports: [LoggerModule],
- *   exports: [UserService]
+ *   imports: [LoggerModule]
  * })
  * class UserModule {}
  * ```
@@ -83,60 +77,6 @@ export function isDynamicModule(value: any): value is DynamicModule {
 }
 
 /**
- * 获取模块的导出 providers
- */
-function getModuleExports(moduleType: Type<any> | DynamicModule): Provider[] {
-  // 处理 DynamicModule
-  if (isDynamicModule(moduleType)) {
-    const exportedProviders: Provider[] = [];
-
-    if (!moduleType.exports || moduleType.exports.length === 0) {
-      return exportedProviders;
-    }
-
-    const allProviders = resolveModule(moduleType);
-
-    for (const exportToken of moduleType.exports) {
-      const provider = allProviders.find(p => {
-        const provideToken = typeof p === 'function' ? p : (p as any).provide;
-        return provideToken === exportToken;
-      });
-      if (provider) {
-        exportedProviders.push(provider);
-      }
-    }
-
-    return exportedProviders;
-  }
-
-  // 处理静态模块
-  const metadata = getModuleMetadata(moduleType);
-  if (!metadata) {
-    throw new Error(`${moduleType.name} is not a valid module. Did you forget @Module() decorator?`);
-  }
-
-  const exportedProviders: Provider[] = [];
-
-  if (!metadata.exports || metadata.exports.length === 0) {
-    return exportedProviders;
-  }
-
-  const allProviders = resolveModule(moduleType);
-
-  for (const exportToken of metadata.exports) {
-    const provider = allProviders.find(p => {
-      const provideToken = typeof p === 'function' ? p : (p as any).provide;
-      return provideToken === exportToken;
-    });
-    if (provider) {
-      exportedProviders.push(provider);
-    }
-  }
-
-  return exportedProviders;
-}
-
-/**
  * 解析模块，展平 imports 并合并 providers
  */
 export function resolveModule(moduleType: Type<any> | DynamicModule): Provider[] {
@@ -144,11 +84,11 @@ export function resolveModule(moduleType: Type<any> | DynamicModule): Provider[]
   if (isDynamicModule(moduleType)) {
     const providers: Provider[] = [];
 
-    // 递归解析 imports，只获取导出的 providers
+    // 递归解析 imports，获取所有 providers
     if (moduleType.imports) {
       for (const importedModule of moduleType.imports) {
-        const exportedProviders = getModuleExports(importedModule);
-        providers.push(...exportedProviders);
+        const importedProviders = resolveModule(importedModule);
+        providers.push(...importedProviders);
       }
     }
 
@@ -168,11 +108,11 @@ export function resolveModule(moduleType: Type<any> | DynamicModule): Provider[]
 
   const providers: Provider[] = [];
 
-  // 递归解析 imports，只获取导出的 providers
+  // 递归解析 imports，获取所有 providers
   if (metadata.imports) {
     for (const importedModule of metadata.imports) {
-      const exportedProviders = getModuleExports(importedModule);
-      providers.push(...exportedProviders);
+      const importedProviders = resolveModule(importedModule);
+      providers.push(...importedProviders);
     }
   }
 

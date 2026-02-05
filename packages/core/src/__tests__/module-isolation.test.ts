@@ -48,7 +48,6 @@ describe('Module Isolation', () => {
         { provide: ServiceA, useClass: ServiceA },
         { provide: InternalServiceA, useClass: InternalServiceA },
       ],
-      exports: [ServiceA], // 只导出 ServiceA
     })
     class ModuleA {}
 
@@ -121,7 +120,6 @@ describe('Module Isolation', () => {
         { provide: LoggerService, useClass: LoggerService },
         { provide: InternalLoggerConfig, useClass: InternalLoggerConfig },
       ],
-      exports: [LoggerService],
     })
     class LoggerModule {}
 
@@ -131,7 +129,6 @@ describe('Module Isolation', () => {
         { provide: DatabaseService, useClass: DatabaseService },
         { provide: InternalDbPool, useClass: InternalDbPool },
       ],
-      exports: [DatabaseService],
     })
     class DatabaseModule {}
 
@@ -158,12 +155,12 @@ describe('Module Isolation', () => {
     expect(databaseModuleRef!.get<InternalLoggerConfig>(InternalLoggerConfig).getLevel()).toBe('debug');
 
     // UserModule 可以访问 DatabaseModule 的所有服务（包括未导出的）
+    // 以及通过 DatabaseModule 间接导入的 LoggerModule 的所有服务
     expect(userModuleRef!.get<UserService>(UserService).getUser()).toBe('user');
     expect(userModuleRef!.get<DatabaseService>(DatabaseService).connect()).toBe('connected');
     expect(userModuleRef!.get<InternalDbPool>(InternalDbPool).getPool()).toBe('pool');
-    // UserModule 不能访问 LoggerModule 的服务（因为没有直接导入 LoggerModule）
-    expect(() => userModuleRef!.get(LoggerService)).toThrow();
-    expect(() => userModuleRef!.get(InternalLoggerConfig)).toThrow();
+    expect(userModuleRef!.get<LoggerService>(LoggerService).log('user')).toBe('LOG: user');
+    expect(userModuleRef!.get<InternalLoggerConfig>(InternalLoggerConfig).getLevel()).toBe('debug');
   });
 
   it('should support re-exporting imported services', async () => {
@@ -181,14 +178,12 @@ describe('Module Isolation', () => {
 
     @Module({
       providers: [{ provide: CoreService, useClass: CoreService }],
-      exports: [CoreService],
     })
     class CoreModule {}
 
     @Module({
       imports: [CoreModule],
       providers: [{ provide: SharedService, useClass: SharedService }],
-      exports: [SharedService, CoreService], // 重新导出 CoreService
     })
     class SharedModule {}
 
