@@ -32,6 +32,18 @@ export function Layout({ children, injector }: LayoutProps) {
             return '已成功导航到系统基础信息'
           }} >3. 查看系统基础信息</Tool>
         </li>
+        <li>
+          <Tool name='navigate_plugins' description='查看插件管理' execute={async () => {
+            await navigate.setCurrentUrl('prompt:///plugins')
+            return '已成功导航到插件管理'
+          }} >4. 查看插件管理</Tool>
+        </li>
+        <li>
+          <Tool name='navigate_plugin_develop' description='查看插件开发' execute={async () => {
+            await navigate.setCurrentUrl('prompt:///plugins/develop')
+            return '已成功导航到插件开发'
+          }} >5. 查看插件开发</Tool>
+        </li>
       </ul>
       {children}
     </div>
