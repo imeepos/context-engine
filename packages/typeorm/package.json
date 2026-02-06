@@ -16,7 +16,10 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "lint": "eslint src/",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "reflect-metadata": "^0.2.2"
@@ -26,9 +29,11 @@
     "@sker/typescript-config": "workspace:*",
     "@sker/core": "workspace:*",
     "@sker/eslint-config": "workspace:*",
+    "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^9.39.2",
     "tsup": "^8.3.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^2.1.8"
   },
   "publishConfig": {
     "access": "public",

@@ -340,6 +340,120 @@ root.set([
 ]);
 ```
 
+## Module System
+
+### @Module Decorator
+
+```typescript
+import { Module } from '@sker/core';
+
+@Module({
+  providers: [UserService, DatabaseService],
+  imports: [LoggerModule],
+  features: [RequestHandler]
+})
+class UserModule {}
+
+// Dynamic module
+class ConfigModule {
+  static forRoot(config: Config): DynamicModule {
+    return {
+      module: ConfigModule,
+      providers: [
+        { provide: CONFIG_TOKEN, useValue: config }
+      ]
+    };
+  }
+}
+```
+
+### PlatformRef & ApplicationRef
+
+```typescript
+import { createPlatform } from '@sker/core';
+
+// Create platform
+const platform = createPlatform([
+  { provide: 'PLATFORM_ID', useValue: 'server' }
+]);
+
+// Bootstrap application
+const app = platform.bootstrapApplication([
+  { provide: 'API_URL', useValue: 'https://api.example.com' }
+]);
+
+// Start application with module
+await app.bootstrap(AppModule);
+
+// Cleanup
+await app.destroy();
+await platform.destroy();
+```
+
+### ModuleRef
+
+```typescript
+// Get module reference
+const moduleRef = app.getModuleRef(UserModule);
+const userService = moduleRef.get(UserService);
+
+// Get feature factory
+const factory = moduleRef.getFeatureFactory(RequestHandler);
+const handler = factory([/* additional providers */]);
+```
+
+### Feature System
+
+```typescript
+@Module({
+  providers: [SharedService],
+  features: [RequestScopedService]  // Request-level isolation
+})
+class AppModule {}
+
+// Create feature instance
+const instance = app.createFeature(RequestScopedService, [
+  { provide: REQUEST_ID, useValue: 'req-123' }
+]);
+```
+
+## Convenience Factory Functions
+
+```typescript
+import {
+  createInjector,
+  createRootInjector,
+  createPlatformInjector,
+  createApplicationInjector,
+  createFeatureInjector
+} from '@sker/core';
+
+// Auto-resolving injector (default scope: 'auto')
+const injector = createInjector([
+  { provide: 'CONFIG', useValue: config }
+]);
+
+// Root injector (global singleton)
+const root = createRootInjector([
+  { provide: Logger, useClass: Logger }
+]);
+
+// Platform injector (requires root)
+const platform = createPlatformInjector([
+  { provide: HttpClient, useClass: HttpClient }
+]);
+
+// Application injector (requires platform)
+const app = createApplicationInjector([
+  { provide: AppConfig, useValue: config }
+]);
+
+// Feature injector
+const feature = createFeatureInjector([
+  { provide: FeatureService, useClass: FeatureService }
+], app);
+```
+
 ## Troubleshooting
 
 **Circular dependency detected**: Use `forwardRef(() => Service)` to break the cycle.
@@ -352,6 +466,12 @@ root.set([
 
 **Object cannot be used as injection token**: Use `InjectionToken`, class, string, or symbol instead of plain `Object`.
 
+**Module is not valid**: Ensure class is decorated with `@Module()`.
+
+**Cannot bootstrap destroyed application**: Don't call `bootstrap()` after `destroy()`.
+
+**Platform injector already exists**: Use `resetPlatformInjector()` in tests or reuse existing platform.
+
 ## Implementation Guidelines
 
 1. **Prefer `providedIn: 'root'`** for most services (tree-shakeable, auto-registered)
@@ -363,3 +483,6 @@ root.set([
 7. **Use appropriate scopes** - match service lifetime to usage pattern
 8. **Initialize injectors** with `await injector.init()` before use
 9. **Clean up** with `await injector.destroy()` when done
+10. **Use modules** for organizing related services and features
+11. **Use features** for request-scoped or isolated service instances
+12. **Bootstrap applications** with `await app.bootstrap(AppModule)` for proper initialization order
