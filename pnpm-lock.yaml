@@ -19,6 +19,9 @@ importers:
       '@sker/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@sker/hono':
+        specifier: workspace:*
+        version: link:../../packages/hono
       '@sker/prompt-renderer':
         specifier: workspace:*
         version: link:../../packages/prompt-renderer
@@ -288,6 +291,43 @@ importers:
       typescript-eslint:
         specifier: ^8.40.0
         version: 8.54.0(eslint@9.39.2)(typescript@5.9.2)
+
+  packages/hono:
+    dependencies:
+      '@sker/core':
+        specifier: workspace:*
+        version: link:../core
+      hono:
+        specifier: ^4.0.0
+        version: 4.11.7
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@sker/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@sker/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.19.7
+      eslint:
+        specifier: ^9.38.0
+        version: 9.39.2
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.2)
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: ^4.0.16
+        version: 4.0.18(@types/node@22.19.7)(jsdom@27.4.0(@noble/hashes@2.0.1))(tsx@4.21.0)
 
   packages/plugin-runtime:
     dependencies:
