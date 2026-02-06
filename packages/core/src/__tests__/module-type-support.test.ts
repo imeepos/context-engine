@@ -174,8 +174,8 @@ describe('Module Type<any> Support', () => {
     });
   });
 
-  describe('exports with Type<any> providers', () => {
-    it('should export services provided as Type<any>', async () => {
+  describe('imported module providers with Type<any>', () => {
+    it('should access imported module services provided as Type<any>', async () => {
       @Injectable()
       class SharedService {
         getValue() {

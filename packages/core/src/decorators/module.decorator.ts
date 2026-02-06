@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import { Type } from '../injector';
 import { Provider } from '../provider';
-import { InjectionToken } from '../injection-token';
 
 /**
  * 模块元数据接口
@@ -17,12 +16,6 @@ export interface ModuleMetadata {
    * 导入的其他模块
    */
   imports?: (Type<any> | DynamicModule)[];
-
-  /**
-   * 导出的服务，供其他模块使用
-   * 支持直接传入类、Provider 或 InjectionToken
-   */
-  exports?: (Type<any> | Provider | InjectionToken<any>)[];
 
   /**
    * 功能级别的服务，将在 featureInjector 中注册
