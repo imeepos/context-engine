@@ -1,6 +1,6 @@
 import React from 'react'
 import { Injector } from '@sker/core'
-import { Browser, Tool } from '@sker/prompt-renderer'
+import { UIRenderer, Tool } from '@sker/prompt-renderer'
 import { Task, TaskStatus } from '../types/task'
 import { TaskManagerService } from '../services/task-manager.service'
 import { CURRENT_AGENT_ID } from '../tokens'
@@ -69,7 +69,7 @@ function getAddSubtaskDescription(task: Task, currentAgentId: string): string {
 
 export async function TaskDetailComponent({ task, injector }: TaskDetailProps) {
   const taskManager = injector.get(TaskManagerService)
-  const navigate = injector.get(Browser)
+  const renderer = injector.get(UIRenderer)
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
 
   const subtasks = await taskManager.getSubtasks(task.id)
@@ -117,8 +117,7 @@ export async function TaskDetailComponent({ task, injector }: TaskDetailProps) {
           <p>
             <strong>{parentTask.title}</strong>
             <Tool name="view_parent" description="查看父任务" execute={async () => {
-              await navigate.setCurrentUrl(`prompt:///tasks/${parentTask.id}`)
-              return `已跳转到父任务: ${parentTask.id}`
+              return await renderer.navigate(`prompt:///tasks/${parentTask.id}`)
             }}>
               查看详情
             </Tool>
@@ -134,8 +133,7 @@ export async function TaskDetailComponent({ task, injector }: TaskDetailProps) {
               <li key={subtask.id}>
                 <strong>{subtask.title}</strong> - {subtask.status}
                 <Tool name={`view_subtask_${subtask.id}`} description="查看子任务详情" execute={async () => {
-                  await navigate.setCurrentUrl(`prompt:///tasks/${subtask.id}`)
-                  return `已跳转到子任务: ${subtask.id}`
+                  return await renderer.navigate(`prompt:///tasks/${subtask.id}`)
                 }}>
                   查看详情
                 </Tool>
@@ -212,8 +210,8 @@ export async function TaskDetailComponent({ task, injector }: TaskDetailProps) {
           }
           const success = await taskManager.deleteTask(task.id)
           if (success) {
-            const navigate = injector.get(Browser)
-            await navigate.setCurrentUrl('prompt:///tasks')
+            const renderer = injector.get(UIRenderer)
+            await renderer.navigate('prompt:///tasks')
             return `任务已删除: ${task.id}，已返回任务列表`
           }
           return `删除失败: ${task.id}`

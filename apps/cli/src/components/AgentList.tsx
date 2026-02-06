@@ -1,6 +1,6 @@
 import React from 'react'
 import { Injector } from '@sker/core'
-import { Browser, Tool } from '@sker/prompt-renderer'
+import { UIRenderer, Tool } from '@sker/prompt-renderer'
 import { CURRENT_AGENT_ID } from '../tokens'
 import { AgentRegistryService } from '../services/agent-registry.service'
 import { MessageBrokerService } from '../services/message-broker.service'
@@ -45,7 +45,7 @@ export async function AgentListComponent({ injector }: AgentListProps) {
         return (
           <div key={agent.id}>
             <Tool name={`view_${agent.id}`} description={`查看${agent.id}`} execute={async (params, injector) => {
-              injector.get(Browser).setCurrentUrl(`/chat/${agent.id}`)
+              return await injector.get(UIRenderer).navigate(`/chat/${agent.id}`)
             }}>
               {agent.id} {badge}
             </Tool>

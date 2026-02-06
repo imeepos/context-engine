@@ -19,23 +19,23 @@ export class InputHandler {
     }
 
     try {
-      const renderResult = this.renderer.getRenderResult()
+      const renderResult = await this.renderer.refresh()
+      if (!renderResult) return;
       const request = new UnifiedRequestBuilder()
         .model(DEFAULT_MODEL)
         .system(renderResult.prompt)
         .user(trimmed)
         .build()
-
       const response = await this.llmService.chatWithTools(
         request,
         renderResult.tools,
         {
           maxIterations: MAX_ITERATIONS,
           async onToolAfter(_params, _result) {
-            console.log(`调用工具: ${_params.name} 结果：${_result.content}`)
+            console.log(`调用工具: ${_params.name}`)
           },
           refreshPrompt: async () => {
-            return this.renderer.getRenderResult()
+            return this.renderer.refresh()
           }
         }
       )
@@ -48,7 +48,8 @@ export class InputHandler {
         }
         return ``
       })
-      console.log(contents.join('\n'))
+      const currentResult = await this.renderer.refresh()
+      console.log([...contents, this.renderer.currentUrl, currentResult.prompt].join('\n\n'))
     } catch (error: any) {
       console.error(`\n错误: ${error.message}\n`)
     }

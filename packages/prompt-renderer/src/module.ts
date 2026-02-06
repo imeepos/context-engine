@@ -18,7 +18,7 @@ export class PromptRendererModule {
                     }, deps: [Injector]
                 },
                 { provide: Browser, useFactory: (parent: Injector) => new Browser(parent), deps: [Injector] },
-                { provide: UIRenderer, useFactory: (browser: Browser) => new UIRenderer(browser), deps: [BROWSER] }
+                { provide: UIRenderer, useClass: UIRenderer }
             ]
         }
     }

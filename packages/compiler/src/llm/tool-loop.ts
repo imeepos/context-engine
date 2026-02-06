@@ -53,8 +53,7 @@ export class ToolCallLoop {
       const newSystemPrompt = await options.refreshPrompt();
       currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), currentRequest, {
         messages: [
-          ...updatedMessages,
-          { role: 'user', content: newSystemPrompt.prompt }
+          ...updatedMessages
         ],
         tools: newSystemPrompt.tools
       });

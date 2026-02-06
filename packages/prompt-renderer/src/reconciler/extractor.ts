@@ -2,7 +2,7 @@ import { VNode, ElementNode } from './types';
 import { UnifiedTool, buildUnifiedTool, zodToParams } from '@sker/compiler';
 import { Type, ToolMetadataKey, root, ToolMetadata, Injector } from '@sker/core';
 import { ToolProps } from '../components/Tool';
-import { BROWSER } from '../browser/tokens';
+import { UIRenderer } from '../browser';
 
 export interface ExtractResult {
   tools: UnifiedTool[];
@@ -89,8 +89,7 @@ function extractToolsInternal(
 
   if (node.type === 'a' || node.type === 'Link') {
     const href = (node as ElementNode).props?.href || (node as ElementNode).props?.to;
-    const onClick = (node as ElementNode).props?.onClick;
-    if (href || onClick) {
+    if (href) {
       const label = getTextContent(node);
       const baseName = generateSemanticToolName(label, href);
       const uniqueName = ensureUniqueToolName(baseName, toolNameCounts);
@@ -108,16 +107,12 @@ function extractToolsInternal(
           },
           required: ['path']
         },
-        execute: onClick || (async (params: Record<string, any>, injector: Injector) => {
+        execute: async (params: Record<string, any>, injector: Injector) => {
           if (href) {
-            const browser = injector.get(BROWSER);
-            if (browser) {
-              browser.open(href);
-            } else {
-              console.warn(`Link to "${href}" clicked but no Browser instance found in injector`);
-            }
+            const render = injector.get(UIRenderer);
+            return await render.render(href);
           }
-        })
+        }
       });
     }
   }

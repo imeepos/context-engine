@@ -2,7 +2,7 @@ import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
 import { CURRENT_AGENT_ID } from '../tokens'
-import { Browser, Tool } from '@sker/prompt-renderer'
+import { UIRenderer, Tool } from '@sker/prompt-renderer'
 import { TaskManagerService } from '../services/task-manager.service'
 import { TaskStatus } from '../types/task'
 import z from 'zod'
@@ -26,7 +26,7 @@ function getStatusDescription(status: TaskStatus): string {
 
 export async function TaskListPageComponent({ injector }: TaskListPageProps) {
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
-  const navigate = injector.get(Browser)
+  const renderer = injector.get(UIRenderer)
   const taskManager = injector.get(TaskManagerService)
   const registry = await taskManager.getRegistry()
   const tasks = Object.values(registry.tasks)
@@ -125,8 +125,7 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
                   </ul>
 
                   <Tool name={`view_task_${task.id}`} description={`查看任务 [${task.id}]${task.title} 的详细信息，包括完整的操作选项`} execute={async () => {
-                    navigate.setCurrentUrl(`prompt:///tasks/${task.id}`)
-                    return `已跳转到任务详情页面: ${task.id}`
+                    return await renderer.navigate(`prompt:///tasks/${task.id}`)
                   }}>
                     查看详情
                   </Tool>
@@ -161,8 +160,7 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
                   </ul>
 
                   <Tool name={`view_task_${task.id}`} description={`查看任务 [${task.id}]${task.title} 的详细信息，包括完整的操作选项`} execute={async () => {
-                    await navigate.setCurrentUrl(`prompt:///tasks/${task.id}`)
-                    return `已跳转到任务详情页面: ${task.id}`
+                    return await renderer.navigate(`prompt:///tasks/${task.id}`)
                   }}>
                     查看详情
                   </Tool>

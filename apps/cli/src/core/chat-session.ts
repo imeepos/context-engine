@@ -13,16 +13,19 @@ export class ChatSession {
   private renderer: UIRenderer
   private inputHandler: InputHandler
   private rl: readline.Interface | null = null
-
+  private version: number = new Date().getTime();
   constructor(config: ChatSessionConfig) {
     this.llmService = config.llmInjector.get(LLMService)
     this.renderer = config.llmInjector.get(UIRenderer)
+    console.log(`current chat session version: ${this.version}, current renderer version: ${this.renderer.version}`)
     this.inputHandler = new InputHandler(this.llmService, this.renderer)
   }
 
   async start(): Promise<void> {
     // 初始渲染
-    await this.renderer.render()
+    const result = await this.renderer.render()
+
+    console.log(result.prompt + '\n\n')
     // 创建 readline 接口
     this.rl = readline.createInterface({
       input: process.stdin,
