@@ -1,6 +1,7 @@
 import React from 'react'
 import { Injector } from '@sker/core'
 import { Tool, UIRenderer } from '@sker/prompt-renderer'
+import { SystemPrompt } from './SystemPrompt'
 interface LayoutProps {
   injector: Injector
   children: React.ReactNode
@@ -12,6 +13,7 @@ export function Layout({ children, injector }: LayoutProps) {
 
   return (
     <div>
+      <SystemPrompt />
       <h1>你可以进行以下操作：</h1>
       <ul>
         <li>

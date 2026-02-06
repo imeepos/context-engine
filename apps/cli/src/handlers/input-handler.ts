@@ -32,7 +32,7 @@ export class InputHandler {
         {
           maxIterations: MAX_ITERATIONS,
           async onToolAfter(_params, _result) {
-            console.log(`调用工具: ${_params.name}`)
+            console.log(`调用工具: ${_params.name} 参数： ${JSON.stringify(_params)}`)
           },
           refreshPrompt: async () => {
             return this.renderer.refresh()
@@ -48,8 +48,7 @@ export class InputHandler {
         }
         return ``
       })
-      const currentResult = await this.renderer.refresh()
-      console.log([...contents, this.renderer.currentUrl, currentResult.prompt].join('\n\n'))
+      console.log([...contents].join('\n\n'))
     } catch (error: any) {
       console.error(`\n错误: ${error.message}\n`)
     }
