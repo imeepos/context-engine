@@ -21,6 +21,8 @@ describe('Worker entry integration', () => {
   it('should return health payload from /health', async () => {
     const env = {
       DB: {} as D1Database,
+      SITE_URL: 'http://localhost',
+      BETTER_AUTH_SECRET: 'test-secret-that-is-long-enough-123456',
       MCP_SESSION: {
         idFromName: () => ({ toString: () => 'session-1' }),
         get: () => ({ fetch: async () => new Response('mcp-stub', { status: 200 }) }),
@@ -41,6 +43,8 @@ describe('Worker entry integration', () => {
   it('should resolve controller route /plugins/status', async () => {
     const env = {
       DB: {} as D1Database,
+      SITE_URL: 'http://localhost',
+      BETTER_AUTH_SECRET: 'test-secret-that-is-long-enough-123456',
       MCP_SESSION: {
         idFromName: () => ({ toString: () => 'session-1' }),
         get: () => ({ fetch: async () => new Response('mcp-stub', { status: 200 }) }),
@@ -62,6 +66,8 @@ describe('Worker entry integration', () => {
   it('should reject protected marketplace route without bearer token', async () => {
     const env = {
       DB: {} as D1Database,
+      SITE_URL: 'http://localhost',
+      BETTER_AUTH_SECRET: 'test-secret-that-is-long-enough-123456',
       MCP_SESSION: {
         idFromName: () => ({ toString: () => 'session-1' }),
         get: () => ({ fetch: async () => new Response('mcp-stub', { status: 200 }) }),
@@ -77,6 +83,26 @@ describe('Worker entry integration', () => {
     expect(response.status).toBe(401);
     const body = await response.json<{ success: boolean; error: { code: string } }>();
     expect(body.success).toBe(false);
-    expect(body.error.code).toBe('auth.missing_token');
+    expect(body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('should expose Better Auth route on /api/auth/get-session', async () => {
+    const env = {
+      DB: {} as D1Database,
+      SITE_URL: 'http://localhost',
+      BETTER_AUTH_SECRET: 'test-secret-that-is-long-enough-123456',
+      MCP_SESSION: {
+        idFromName: () => ({ toString: () => 'session-1' }),
+        get: () => ({ fetch: async () => new Response('mcp-stub', { status: 200 }) }),
+      },
+    } as unknown as Env;
+
+    const response = await worker.fetch(
+      new Request('http://localhost/api/auth/get-session'),
+      env,
+      {} as ExecutionContext
+    );
+
+    expect(response.status).not.toBe(404);
   });
 });

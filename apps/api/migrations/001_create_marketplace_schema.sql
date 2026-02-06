@@ -1,30 +1,6 @@
--- Migration: Create Marketplace + Auth Schema
--- Description: Adds auth and plugin marketplace tables for Phase 2
+-- Migration: Create Marketplace Schema
+-- Description: Adds plugin marketplace tables
 -- Date: 2026-02-06
-
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  email TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  display_name TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-
-CREATE TABLE IF NOT EXISTS auth_sessions (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  token_hash TEXT NOT NULL UNIQUE,
-  expires_at TEXT NOT NULL,
-  revoked_at TEXT,
-  created_at TEXT NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_auth_sessions_expiry ON auth_sessions(expires_at);
 
 CREATE TABLE IF NOT EXISTS plugins (
   id TEXT PRIMARY KEY,
@@ -38,7 +14,7 @@ CREATE TABLE IF NOT EXISTS plugins (
   status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (author_id) REFERENCES user(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_plugins_author ON plugins(author_id);
@@ -66,7 +42,7 @@ CREATE TABLE IF NOT EXISTS plugin_installs (
   installed_version TEXT NOT NULL,
   installed_at TEXT NOT NULL,
   FOREIGN KEY (plugin_id) REFERENCES plugins(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
   UNIQUE (plugin_id, user_id)
 );
 
@@ -81,7 +57,7 @@ CREATE TABLE IF NOT EXISTS plugin_reviews (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (plugin_id) REFERENCES plugins(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
   UNIQUE (plugin_id, user_id)
 );
 

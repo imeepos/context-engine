@@ -8,6 +8,7 @@
   "vars": {
     "ENVIRONMENT": "production",
     "SITE_URL": "https://mcp.sker.us",
+    "BETTER_AUTH_SECRET": "replace-with-a-strong-random-secret-value-32-plus-chars",
     "APP_LOG_LEVEL": "summary"
   },
   "observability": {

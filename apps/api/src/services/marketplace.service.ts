@@ -1,4 +1,12 @@
-import { Optional, Injectable } from '@sker/core';
+import {
+  Injectable,
+  Optional,
+  ConflictError,
+  ForbiddenError,
+  InternalError,
+  NotFoundError,
+  UnprocessableEntityError,
+} from '@sker/core';
 import { D1_DATABASE } from '@sker/typeorm';
 
 export interface ListPluginsQuery {
@@ -77,16 +85,6 @@ export interface SubmitReviewInput {
   userId: string;
   rating: number;
   feedback?: string;
-}
-
-export class MarketplaceError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly code: string,
-    message: string
-  ) {
-    super(message);
-  }
 }
 
 @Injectable({ providedIn: 'auto' })
@@ -174,7 +172,7 @@ export class MarketplaceService {
       .first<Record<string, unknown>>();
 
     if (!detail) {
-      throw new MarketplaceError(404, 'marketplace.plugin_not_found', `Plugin not found: ${id}`);
+      throw new NotFoundError('Plugin', id);
     }
 
     const versionsResult = await database
@@ -209,7 +207,7 @@ export class MarketplaceService {
       .bind(input.slug)
       .first<{ id: string }>();
     if (existing) {
-      throw new MarketplaceError(409, 'marketplace.plugin_slug_conflict', `Plugin slug already exists: ${input.slug}`);
+      throw new ConflictError(`Plugin slug already exists: ${input.slug}`);
     }
 
     const now = new Date().toISOString();
@@ -282,7 +280,7 @@ export class MarketplaceService {
       .bind(input.pluginId, input.version)
       .first<{ id: string }>();
     if (existing) {
-      throw new MarketplaceError(409, 'marketplace.plugin_version_conflict', `Version already exists: ${input.version}`);
+      throw new ConflictError(`Version already exists: ${input.version}`);
     }
 
     const now = new Date().toISOString();
@@ -437,7 +435,7 @@ export class MarketplaceService {
     const database = this.getDatabase();
     await this.ensurePluginExists(input.pluginId);
     if (input.rating < 1 || input.rating > 5) {
-      throw new MarketplaceError(422, 'marketplace.invalid_rating', 'Rating must be between 1 and 5');
+      throw new UnprocessableEntityError('Rating must be between 1 and 5');
     }
 
     const existing = await database
@@ -510,10 +508,10 @@ export class MarketplaceService {
       .first<Record<string, unknown>>();
 
     if (!plugin) {
-      throw new MarketplaceError(404, 'marketplace.plugin_not_found', `Plugin not found: ${pluginId}`);
+      throw new NotFoundError('Plugin', pluginId);
     }
     if (String(plugin.authorId) !== actorId) {
-      throw new MarketplaceError(403, 'marketplace.permission_denied', 'Only plugin author can modify this resource');
+      throw new ForbiddenError('Only plugin author can modify this resource');
     }
     return {
       id: String(plugin.id),
@@ -529,7 +527,7 @@ export class MarketplaceService {
   private assertSemver(version: string) {
     const semver = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-.]+)?(?:\+[0-9A-Za-z-.]+)?$/;
     if (!semver.test(version)) {
-      throw new MarketplaceError(422, 'marketplace.invalid_semver', `Invalid semver version: ${version}`);
+      throw new UnprocessableEntityError(`Invalid semver version: ${version}`);
     }
   }
 
@@ -540,7 +538,7 @@ export class MarketplaceService {
       .bind(pluginId)
       .first<{ id: string }>();
     if (!plugin) {
-      throw new MarketplaceError(404, 'marketplace.plugin_not_found', `Plugin not found: ${pluginId}`);
+      throw new NotFoundError('Plugin', pluginId);
     }
   }
 
@@ -552,14 +550,14 @@ export class MarketplaceService {
         .bind(pluginId, requestedVersion)
         .first<{ id: string }>();
       if (!existing) {
-        throw new MarketplaceError(404, 'marketplace.version_not_found', `Version not found: ${requestedVersion}`);
+        throw new NotFoundError('Plugin version', requestedVersion);
       }
       return requestedVersion;
     }
 
     const latest = await this.getLatestVersion(pluginId);
     if (!latest) {
-      throw new MarketplaceError(404, 'marketplace.version_not_found', 'No available plugin version to install');
+      throw new NotFoundError('Plugin version');
     }
     return latest;
   }
@@ -598,7 +596,7 @@ export class MarketplaceService {
 
   private getDatabase() {
     if (!this.db) {
-      throw new MarketplaceError(500, 'marketplace.db_unavailable', 'Database binding is not available');
+      throw new InternalError('Database binding is not available');
     }
     return this.db;
   }

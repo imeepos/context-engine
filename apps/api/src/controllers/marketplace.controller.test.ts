@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MarketplaceController } from './marketplace.controller';
-import { MarketplaceError, MarketplaceService } from '../services/marketplace.service';
-import { setAuthSessionOnRequest } from '../auth/session-auth';
+import { MarketplaceService } from '../services/marketplace.service';
+import { ConflictError, ForbiddenError, NotFoundError, UnprocessableEntityError } from '@sker/core';
+import type { AuthSession } from '../auth/session.token';
 
 describe('MarketplaceController', () => {
   const makeService = (overrides: Partial<Record<keyof MarketplaceService, any>> = {}) =>
@@ -20,12 +21,25 @@ describe('MarketplaceController', () => {
       ...overrides,
     } as unknown as MarketplaceService);
 
-  const withSession = (request: Request) => {
-    setAuthSessionOnRequest(request, {
-      sessionId: 's1',
-      user: { id: 'u1', email: 'u1@example.com', displayName: null },
-    });
-    return request;
+  const session: AuthSession = {
+    user: {
+      id: 'u1',
+      email: 'u1@example.com',
+      name: 'User 1',
+      role: 'user',
+      emailVerified: true,
+      image: null,
+    },
+    session: {
+      id: 's1',
+      userId: 'u1',
+      token: 't1',
+      expiresAt: new Date('2026-12-31T00:00:00.000Z'),
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      ipAddress: null,
+      userAgent: null,
+    },
   };
 
   it('should return 200 with paginated plugin list', async () => {
@@ -36,7 +50,7 @@ describe('MarketplaceController', () => {
         pageSize: 20,
       }),
     });
-    const controller = new MarketplaceController(service, new Request('http://localhost/plugins'));
+    const controller = new MarketplaceController(service);
 
     const response = await controller.listPlugins({ q: 'hello', page: '1', pageSize: '20' });
     const payload = await response.json<{ success: boolean; data: { page: number } }>();
@@ -47,16 +61,16 @@ describe('MarketplaceController', () => {
   });
 
   it('should return 422 for invalid query', async () => {
-    const controller = new MarketplaceController(makeService(), new Request('http://localhost/plugins'));
+    const controller = new MarketplaceController(makeService());
     const response = await controller.listPlugins({ page: '0' });
     expect(response.status).toBe(422);
   });
 
   it('should return 404 for missing plugin detail', async () => {
     const service = makeService({
-      getPluginDetail: vi.fn().mockRejectedValue(new MarketplaceError(404, 'marketplace.plugin_not_found', 'Plugin not found')),
+      getPluginDetail: vi.fn().mockRejectedValue(new NotFoundError('Plugin', 'missing-id')),
     });
-    const controller = new MarketplaceController(service, new Request('http://localhost/plugins/missing-id'));
+    const controller = new MarketplaceController(service);
     const response = await controller.getPluginDetail('missing-id');
     expect(response.status).toBe(404);
   });
@@ -65,8 +79,7 @@ describe('MarketplaceController', () => {
     const service = makeService({
       createPlugin: vi.fn().mockResolvedValue({ id: 'p1', version: '1.0.0' }),
     });
-    const request = withSession(new Request('http://localhost/plugins'));
-    const controller = new MarketplaceController(service, request);
+    const controller = new MarketplaceController(service, session);
     const response = await controller.createPlugin({
       slug: 'hello-plugin',
       name: 'Hello Plugin',
@@ -77,7 +90,7 @@ describe('MarketplaceController', () => {
   });
 
   it('should return 401 for plugin publish without token', async () => {
-    const controller = new MarketplaceController(makeService(), new Request('http://localhost/plugins'));
+    const controller = new MarketplaceController(makeService());
     const response = await controller.createPlugin({
       slug: 'hello-plugin',
       name: 'Hello Plugin',
@@ -89,53 +102,44 @@ describe('MarketplaceController', () => {
 
   it('should return 403 for update by non-owner', async () => {
     const service = makeService({
-      updatePlugin: vi.fn().mockRejectedValue(
-        new MarketplaceError(403, 'marketplace.permission_denied', 'Only plugin author can modify this resource')
-      ),
+      updatePlugin: vi.fn().mockRejectedValue(new ForbiddenError('Only plugin author can modify this resource')),
     });
-    const request = withSession(new Request('http://localhost/plugins/p1'));
-    const controller = new MarketplaceController(service, request);
+    const controller = new MarketplaceController(service, session);
     const response = await controller.updatePlugin('p1', { name: 'new-name' });
     expect(response.status).toBe(403);
   });
 
   it('should return 409 when publishing duplicate version', async () => {
     const service = makeService({
-      createPluginVersion: vi.fn().mockRejectedValue(
-        new MarketplaceError(409, 'marketplace.plugin_version_conflict', 'Version already exists')
-      ),
+      createPluginVersion: vi.fn().mockRejectedValue(new ConflictError('Version already exists')),
     });
-    const request = withSession(new Request('http://localhost/plugins/p1/versions'));
-    const controller = new MarketplaceController(service, request);
+    const controller = new MarketplaceController(service, session);
     const response = await controller.createPluginVersion('p1', { version: '1.0.0', sourceCode: 'export default {}' });
     expect(response.status).toBe(409);
   });
 
   it('should return 422 for invalid semver on version publish input', async () => {
     const service = makeService({
-      createPluginVersion: vi.fn().mockRejectedValue(
-        new MarketplaceError(422, 'marketplace.invalid_semver', 'Invalid semver version: invalid')
-      ),
+      createPluginVersion: vi.fn().mockRejectedValue(new UnprocessableEntityError('Invalid semver version: invalid')),
     });
-    const request = withSession(new Request('http://localhost/plugins/p1/versions'));
-    const controller = new MarketplaceController(service, request);
+    const controller = new MarketplaceController(service, session);
     const response = await controller.createPluginVersion('p1', { version: 'invalid', sourceCode: 'export default {}' });
     expect(response.status).toBe(422);
   });
 
   it('should return 401 when session is missing from request context', async () => {
-    const request = new Request('http://localhost/plugins/p1');
-    const controller = new MarketplaceController(makeService(), request);
+    const controller = new MarketplaceController(makeService());
     const response = await controller.updatePlugin('p1', { name: 'new-name' });
     expect(response.status).toBe(401);
+    const body = await response.json<{ error: { code: string } }>();
+    expect(body.error.code).toBe('UNAUTHORIZED');
   });
 
   it('should return 200 for install and 204 for idempotent uninstall', async () => {
     const service = makeService({
       uninstallPlugin: vi.fn().mockResolvedValue({ pluginId: 'p1', removed: false }),
     });
-    const request = withSession(new Request('http://localhost/plugins/p1/install'));
-    const controller = new MarketplaceController(service, request);
+    const controller = new MarketplaceController(service, session);
 
     const installResponse = await controller.installPlugin('p1');
     const uninstallResponse = await controller.uninstallPlugin('p1');
@@ -145,8 +149,7 @@ describe('MarketplaceController', () => {
   });
 
   it('should return 200 for installed/published/updates views', async () => {
-    const request = withSession(new Request('http://localhost/plugins/views'));
-    const controller = new MarketplaceController(makeService(), request);
+    const controller = new MarketplaceController(makeService(), session);
 
     const installed = await controller.listInstalledPlugins();
     const published = await controller.listPublishedPlugins();
@@ -158,20 +161,16 @@ describe('MarketplaceController', () => {
   });
 
   it('should return 200 for review submission', async () => {
-    const request = withSession(new Request('http://localhost/plugins/p1/reviews'));
-    const controller = new MarketplaceController(makeService(), request);
+    const controller = new MarketplaceController(makeService(), session);
     const response = await controller.submitReview('p1', { rating: 5, feedback: 'Great plugin' });
     expect(response.status).toBe(200);
   });
 
   it('should return 422 for invalid rating from service', async () => {
     const service = makeService({
-      submitReview: vi.fn().mockRejectedValue(
-        new MarketplaceError(422, 'marketplace.invalid_rating', 'Rating must be between 1 and 5')
-      ),
+      submitReview: vi.fn().mockRejectedValue(new UnprocessableEntityError('Rating must be between 1 and 5')),
     });
-    const request = withSession(new Request('http://localhost/plugins/p1/reviews'));
-    const controller = new MarketplaceController(service, request);
+    const controller = new MarketplaceController(service, session);
     const response = await controller.submitReview('p1', { rating: 5, feedback: 'Great plugin' });
     expect(response.status).toBe(422);
   });

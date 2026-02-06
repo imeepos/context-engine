@@ -8,8 +8,10 @@ declare namespace Cloudflare {
 	interface Env {
 		DB: D1Database;
 		APP_LOG_LEVEL: "summary";
+		BETTER_AUTH_SECRET: string;
 		ENVIRONMENT: "production";
 		MCP_SESSION: DurableObjectNamespace /* McpSessionDurableObject from sker-mcp-api */;
+		SITE_URL: "https://mcp.sker.us";
 	}
 }
 interface Env extends Cloudflare.Env {}

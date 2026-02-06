@@ -1,8 +1,22 @@
-import { Body, Controller, Delete, Get, Inject, Injectable, Param, Post, Put, Query, REQUEST } from '@sker/core';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Injectable,
+  Optional,
+  Param,
+  Post,
+  Put,
+  Query,
+  RequirePermissions,
+  UnauthorizedError,
+} from '@sker/core';
 import { z } from 'zod';
-import { MarketplaceError, MarketplaceService } from '../services/marketplace.service';
-import { AuthSessionError, getAuthSessionFromRequest } from '../auth/session-auth';
-import { RequireAuthSession } from '../auth/require-auth.decorator';
+import { MarketplaceService } from '../services/marketplace.service';
+import { AUTH_SESSION, type AuthSession } from '../auth/session.token';
+import { errorResponse, successResponse } from '../utils/api-response';
 
 const listPluginsQuerySchema = z.object({
   q: z.string().min(1).optional(),
@@ -50,7 +64,7 @@ const reviewSchema = z.object({
 export class MarketplaceController {
   constructor(
     @Inject(MarketplaceService) private marketplaceService: MarketplaceService,
-    @Inject(REQUEST) private request: Request
+    @Optional(AUTH_SESSION) private session?: AuthSession
   ) {}
 
   @Get('/status')
@@ -66,9 +80,9 @@ export class MarketplaceController {
     try {
       const validated = listPluginsQuerySchema.parse(query);
       const result = await this.marketplaceService.listPlugins(validated);
-      return this.successResponse(200, result);
+      return successResponse(200, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
@@ -76,197 +90,147 @@ export class MarketplaceController {
   async getPluginDetail(@Param('id') id: string) {
     try {
       const result = await this.marketplaceService.getPluginDetail(id);
-      return this.successResponse(200, result);
+      return successResponse(200, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
   @Post('/')
-  @RequireAuthSession()
+  @RequirePermissions({ roles: 'user' })
   async createPlugin(@Body(createPluginSchema) body: z.infer<typeof createPluginSchema>) {
     try {
-      const session = getAuthSessionFromRequest(this.request);
+      const session = this.requireSession();
       const created = await this.marketplaceService.createPlugin({
         ...body,
         authorId: session.user.id,
       });
-      return this.successResponse(201, created);
+      return successResponse(201, created);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
   @Put('/:id')
-  @RequireAuthSession()
+  @RequirePermissions({ roles: 'user' })
   async updatePlugin(@Param('id') id: string, @Body(updatePluginSchema) body: z.infer<typeof updatePluginSchema>) {
     try {
-      const session = getAuthSessionFromRequest(this.request);
+      const session = this.requireSession();
       const result = await this.marketplaceService.updatePlugin({
         id,
         actorId: session.user.id,
         ...body,
       });
-      return this.successResponse(200, result);
+      return successResponse(200, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
   @Post('/:id/versions')
-  @RequireAuthSession()
+  @RequirePermissions({ roles: 'user' })
   async createPluginVersion(@Param('id') id: string, @Body(createVersionSchema) body: z.infer<typeof createVersionSchema>) {
     try {
-      const session = getAuthSessionFromRequest(this.request);
+      const session = this.requireSession();
       const result = await this.marketplaceService.createPluginVersion({
         pluginId: id,
         actorId: session.user.id,
         ...body,
       });
-      return this.successResponse(201, result);
+      return successResponse(201, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
   @Post('/:id/install')
-  @RequireAuthSession()
+  @RequirePermissions({ roles: 'user' })
   async installPlugin(@Param('id') id: string, @Query('version') version?: string) {
     try {
-      const session = getAuthSessionFromRequest(this.request);
+      const session = this.requireSession();
       const result = await this.marketplaceService.installPlugin({
         pluginId: id,
         userId: session.user.id,
         version,
       });
-      return this.successResponse(200, result);
+      return successResponse(200, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
   @Delete('/:id/install')
-  @RequireAuthSession()
+  @RequirePermissions({ roles: 'user' })
   async uninstallPlugin(@Param('id') id: string) {
     try {
-      const session = getAuthSessionFromRequest(this.request);
+      const session = this.requireSession();
       const result = await this.marketplaceService.uninstallPlugin(id, session.user.id);
       if (!result.removed) {
         return new Response(null, { status: 204 });
       }
-      return this.successResponse(200, result);
+      return successResponse(200, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
   @Get('/installed')
-  @RequireAuthSession()
+  @RequirePermissions({ roles: 'user' })
   async listInstalledPlugins() {
     try {
-      const session = getAuthSessionFromRequest(this.request);
+      const session = this.requireSession();
       const result = await this.marketplaceService.listInstalledPlugins(session.user.id);
-      return this.successResponse(200, result);
+      return successResponse(200, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
   @Get('/published')
-  @RequireAuthSession()
+  @RequirePermissions({ roles: 'user' })
   async listPublishedPlugins() {
     try {
-      const session = getAuthSessionFromRequest(this.request);
+      const session = this.requireSession();
       const result = await this.marketplaceService.listPublishedPlugins(session.user.id);
-      return this.successResponse(200, result);
+      return successResponse(200, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
   @Get('/updates')
-  @RequireAuthSession()
+  @RequirePermissions({ roles: 'user' })
   async checkPluginUpdates() {
     try {
-      const session = getAuthSessionFromRequest(this.request);
+      const session = this.requireSession();
       const result = await this.marketplaceService.checkPluginUpdates(session.user.id);
-      return this.successResponse(200, result);
+      return successResponse(200, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
   @Post('/:id/reviews')
-  @RequireAuthSession()
+  @RequirePermissions({ roles: 'user' })
   async submitReview(@Param('id') id: string, @Body(reviewSchema) body: z.infer<typeof reviewSchema>) {
     try {
-      const session = getAuthSessionFromRequest(this.request);
+      const session = this.requireSession();
       const result = await this.marketplaceService.submitReview({
         pluginId: id,
         userId: session.user.id,
         rating: body.rating,
         feedback: body.feedback,
       });
-      return this.successResponse(200, result);
+      return successResponse(200, result);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
-  private successResponse(status: number, data: unknown) {
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data,
-        timestamp: new Date().toISOString(),
-      }),
-      {
-        status,
-        headers: { 'content-type': 'application/json' },
-      }
-    );
-  }
-
-  private errorResponse(error: unknown) {
-    if (error instanceof z.ZodError) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: 'validation.invalid_query',
-            message: 'Invalid query parameters',
-            details: error.issues,
-          },
-          timestamp: new Date().toISOString(),
-        }),
-        {
-          status: 422,
-          headers: { 'content-type': 'application/json' },
-        }
-      );
+  private requireSession() {
+    if (!this.session) {
+      throw new UnauthorizedError();
     }
-
-    const knownError = error instanceof MarketplaceError || error instanceof AuthSessionError
-      ? error
-      : new MarketplaceError(
-          500,
-          'marketplace.internal_error',
-          error instanceof Error ? error.message : 'Unexpected error'
-        );
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: {
-          code: knownError.code,
-          message: knownError.message,
-        },
-        timestamp: new Date().toISOString(),
-      }),
-      {
-        status: knownError.status,
-        headers: { 'content-type': 'application/json' },
-      }
-    );
+    return this.session;
   }
 }

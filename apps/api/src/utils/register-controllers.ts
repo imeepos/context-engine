@@ -1,7 +1,17 @@
 import 'reflect-metadata';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { createLogger, REQUEST, root, type ApplicationRef, InjectionToken } from '@sker/core';
+import {
+  createLogger,
+  REQUEST,
+  root,
+  type ApplicationRef,
+  InjectionToken,
+  MIDDLEWARE_METADATA,
+  type PermissionInput,
+  UnauthorizedError,
+  ForbiddenError,
+} from '@sker/core';
 import {
   CONTROLLES,
   PATH_METADATA,
@@ -12,8 +22,9 @@ import {
   LoggerLevel
 } from '@sker/core';
 import { D1_DATABASE } from '@sker/typeorm';
-import { REQUIRE_AUTH_SESSION_METADATA } from '../auth/require-auth.decorator';
-import { authenticateBearerRequest, AuthSessionError, setAuthSessionOnRequest } from '../auth/session-auth';
+import { AUTH_SESSION, type AuthSession } from '../auth/session.token';
+import { createAuth } from '../auth/better-auth.config';
+import { errorResponse } from './api-response';
 
 // 定义请求级别的 tokens
 export const ENV = new InjectionToken<any>('ENV');
@@ -31,7 +42,56 @@ interface RouteRegistration {
   fullPath: string;
   honoMethod: 'get' | 'post' | 'put' | 'delete' | 'patch';
   argsMetadata: Record<string, RouteArgMetadata>;
-  requiresAuth: boolean;
+  permissions?: PermissionInput;
+}
+
+interface NormalizedPermissions {
+  roles: string[];
+  connector: 'AND' | 'OR';
+}
+
+function normalizePermissions(input: PermissionInput): NormalizedPermissions {
+  if (typeof input === 'string') {
+    return { roles: [input], connector: 'AND' };
+  }
+  if (Array.isArray(input)) {
+    return { roles: input, connector: 'AND' };
+  }
+  if (input && typeof input === 'object' && 'roles' in input) {
+    const roles = (input as { roles?: unknown }).roles;
+    if (typeof roles === 'string') {
+      return { roles: [roles], connector: 'AND' };
+    }
+    if (Array.isArray(roles)) {
+      return { roles: roles.filter((value): value is string => typeof value === 'string'), connector: 'AND' };
+    }
+    if (roles && typeof roles === 'object') {
+      const normalizedRoles = (roles as { roles?: unknown }).roles;
+      const connector = (roles as { connector?: 'AND' | 'OR' }).connector ?? 'AND';
+      if (Array.isArray(normalizedRoles)) {
+        return {
+          roles: normalizedRoles.filter((value): value is string => typeof value === 'string'),
+          connector,
+        };
+      }
+    }
+  }
+  return { roles: [], connector: 'AND' };
+}
+
+function hasRequiredRoles(userRole: string | undefined, permissions: NormalizedPermissions): boolean {
+  if (permissions.roles.length === 0) {
+    return true;
+  }
+  const userRoles = String(userRole ?? 'user')
+    .split(',')
+    .map(role => role.trim().toLowerCase())
+    .filter(Boolean);
+  const required = permissions.roles.map(role => role.toLowerCase());
+  if (permissions.connector === 'OR') {
+    return required.some(role => userRoles.includes(role));
+  }
+  return required.every(role => userRoles.includes(role));
 }
 
 function getHttpMethodName(method: RequestMethod): 'get' | 'post' | 'put' | 'delete' | 'patch' {
@@ -126,13 +186,16 @@ export function registerControllers(
         const fullPath = `${controllerPath}${methodPath}`.replace(/\/+/g, '/');
         const honoMethod = getHttpMethodName(httpMethod);
         const argsMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, method);
-        const requiresAuth = Reflect.getMetadata(REQUIRE_AUTH_SESSION_METADATA, method) === true;
+        const middlewareMetadata = Reflect.getMetadata(
+          MIDDLEWARE_METADATA,
+          method
+        ) as { permissions?: PermissionInput } | undefined;
         routes.push({
           methodName,
           fullPath,
           honoMethod,
           argsMetadata,
-          requiresAuth,
+          permissions: middlewareMetadata?.permissions,
         });
       }
 
@@ -144,9 +207,48 @@ export function registerControllers(
 
         app[route.honoMethod](route.fullPath, async (c: Context) => {
           try {
-            if (route.requiresAuth) {
-              const session = await authenticateBearerRequest(c.req.raw, c.env.DB);
-              setAuthSessionOnRequest(c.req.raw, session);
+            let authSession: AuthSession | undefined;
+
+            if (route.permissions !== undefined) {
+              const auth = createAuth(c.env.DB, {
+                baseURL: c.env.SITE_URL,
+                secret: c.env.BETTER_AUTH_SECRET,
+              });
+              const sessionResult = await auth.api.getSession({
+                headers: c.req.raw.headers,
+              });
+              if (!sessionResult) {
+                throw new UnauthorizedError();
+              }
+
+              authSession = {
+                user: {
+                  id: sessionResult.user.id,
+                  email: sessionResult.user.email,
+                  name: sessionResult.user.name,
+                  role: String((sessionResult.user as { role?: string }).role ?? 'user'),
+                  image: sessionResult.user.image ?? null,
+                  emailVerified: Boolean(sessionResult.user.emailVerified),
+                  banned: Boolean((sessionResult.user as { banned?: boolean }).banned),
+                  banReason: (sessionResult.user as { banReason?: string | null }).banReason ?? null,
+                  banExpires: (sessionResult.user as { banExpires?: Date | null }).banExpires ?? null,
+                },
+                session: {
+                  id: sessionResult.session.id,
+                  token: sessionResult.session.token,
+                  expiresAt: sessionResult.session.expiresAt,
+                  userId: sessionResult.session.userId,
+                  createdAt: sessionResult.session.createdAt,
+                  updatedAt: sessionResult.session.updatedAt,
+                  ipAddress: sessionResult.session.ipAddress ?? null,
+                  userAgent: sessionResult.session.userAgent ?? null,
+                },
+              };
+
+              const normalized = normalizePermissions(route.permissions);
+              if (!hasRequiredRoles(authSession.user.role, normalized)) {
+                throw new ForbiddenError('Access forbidden');
+              }
             }
 
             // 通过 ControllerClass 直接获取对应的 moduleRef
@@ -158,12 +260,17 @@ export function registerControllers(
             const factory = moduleRef.getFeatureFactory<any>(ControllerClass);
 
             // 传入请求级别的 providers
-            const controllerInstance = factory([
+            const providers = [
               { provide: REQUEST, useValue: c.req.raw },
               { provide: ENV, useValue: c.env },
               { provide: EXECUTION_CONTEXT, useValue: c.executionCtx },
               { provide: D1_DATABASE, useValue: c.env.DB }
-            ]);
+            ];
+            if (authSession) {
+              providers.push({ provide: AUTH_SESSION, useValue: authSession });
+            }
+
+            const controllerInstance = factory(providers);
 
             const params = await resolveMethodParams(c, route.argsMetadata);
             const result = await controllerInstance[route.methodName](...params);
@@ -174,24 +281,8 @@ export function registerControllers(
             }
 
             return c.json({ success: true, data: result });
-          } catch (error: any) {
-            if (error instanceof AuthSessionError) {
-              return new Response(
-                JSON.stringify({
-                  success: false,
-                  error: {
-                    code: error.code,
-                    message: error.message,
-                  },
-                  timestamp: new Date().toISOString(),
-                }),
-                {
-                  status: error.status,
-                  headers: { 'content-type': 'application/json' },
-                }
-              );
-            }
-            return c.json({ success: false, error: error.message }, 400);
+          } catch (error) {
+            return errorResponse(error);
           }
         });
       }

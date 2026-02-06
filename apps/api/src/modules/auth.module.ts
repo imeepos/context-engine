@@ -1,9 +1,9 @@
-import { Module } from '@sker/core';
-import { AuthController } from '../controllers/auth.controller';
-import { AuthService } from '../services/auth.service';
+import { InjectionToken, Module } from '@sker/core';
+import { createAuth } from '../auth/better-auth.config';
+
+export const AUTH_FACTORY = new InjectionToken<typeof createAuth>('AUTH_FACTORY');
 
 @Module({
-  providers: [{ provide: AuthService, useClass: AuthService }],
-  features: [AuthController],
+  providers: [{ provide: AUTH_FACTORY, useValue: createAuth }],
 })
 export class AuthModule {}

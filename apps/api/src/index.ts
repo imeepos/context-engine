@@ -6,6 +6,7 @@ import type { ExecutionContext } from 'hono';
 import { AppModule } from './modules/app.module';
 import { registerControllers } from './utils/register-controllers';
 import { resolveApiLoggerLevel } from './logging/api-log-level';
+import { createAuth } from './auth/better-auth.config';
 
 // Export Durable Object
 export { McpSessionDurableObject } from './mcp/session-durable-object';
@@ -38,6 +39,15 @@ async function createApp(loggerLevel: LoggerLevel) {
   logger.debug('Registering health check endpoint...');
   app.get('/health', (c) => {
     return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // Better Auth endpoints
+  app.all('/api/auth/*', async (c) => {
+    const auth = createAuth(c.env.DB, {
+      baseURL: c.env.SITE_URL,
+      secret: c.env.BETTER_AUTH_SECRET,
+    });
+    return auth.handler(c.req.raw);
   });
 
   // MCP endpoint - use Durable Object for session management

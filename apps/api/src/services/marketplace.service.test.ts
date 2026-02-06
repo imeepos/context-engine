@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MarketplaceError, MarketplaceService } from './marketplace.service';
+import { MarketplaceService } from './marketplace.service';
 
 type QueryResult = { results?: Record<string, unknown>[] };
 
@@ -80,9 +80,9 @@ describe('MarketplaceService', () => {
     const service = new MarketplaceService(db as unknown as D1Database);
 
     await expect(service.getPluginDetail('missing-id')).rejects.toMatchObject({
-      status: 404,
-      code: 'marketplace.plugin_not_found',
-    } satisfies Partial<MarketplaceError>);
+      statusCode: 404,
+      code: 'NOT_FOUND',
+    });
   });
 
   it('should throw 422 for invalid semver on plugin creation', async () => {
@@ -105,9 +105,9 @@ describe('MarketplaceService', () => {
         authorId: 'u1',
       })
     ).rejects.toMatchObject({
-      status: 422,
-      code: 'marketplace.invalid_semver',
-    } satisfies Partial<MarketplaceError>);
+      statusCode: 422,
+      code: 'UNPROCESSABLE_ENTITY',
+    });
   });
 
   it('should throw 409 when plugin slug already exists', async () => {
@@ -130,9 +130,9 @@ describe('MarketplaceService', () => {
         authorId: 'u1',
       })
     ).rejects.toMatchObject({
-      status: 409,
-      code: 'marketplace.plugin_slug_conflict',
-    } satisfies Partial<MarketplaceError>);
+      statusCode: 409,
+      code: 'CONFLICT',
+    });
   });
 
   it('should install plugin idempotently when same version already installed', async () => {
@@ -193,8 +193,8 @@ describe('MarketplaceService', () => {
     await expect(
       service.submitReview({ pluginId: 'p1', userId: 'u1', rating: 0, feedback: 'bad' })
     ).rejects.toMatchObject({
-      status: 422,
-      code: 'marketplace.invalid_rating',
-    } satisfies Partial<MarketplaceError>);
+      statusCode: 422,
+      code: 'UNPROCESSABLE_ENTITY',
+    });
   });
 });
