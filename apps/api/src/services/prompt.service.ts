@@ -1,6 +1,5 @@
 import { Injectable, Inject, root, PromptMetadataKey, PromptMetadata } from '@sker/core';
 import { renderComponent } from '../utils/render-component';
-import React from 'react';
 
 export interface PromptArgument {
   name: string;

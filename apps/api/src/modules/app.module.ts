@@ -1,9 +1,5 @@
 import { Module } from '@sker/core';
 import { SharedModule } from './shared.module';
-import { McpModule } from './mcp.module';
-import { PromptModule } from './prompt.module';
-import { GitModule } from './git.module';
-import { PageModule } from './page.module';
 import { AuthModule } from './auth.module';
 import { MarketplaceModule } from './marketplace.module';
 
@@ -14,10 +10,6 @@ import { MarketplaceModule } from './marketplace.module';
 @Module({
   imports: [
     SharedModule,
-    McpModule,
-    PromptModule,
-    GitModule,
-    PageModule,
     AuthModule,
     MarketplaceModule,
   ]
