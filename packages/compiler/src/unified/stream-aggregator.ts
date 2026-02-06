@@ -6,7 +6,7 @@
 
 import { Injectable } from '@sker/core';
 import { Observable, reduce, firstValueFrom, scan } from 'rxjs';
-import { Ast, UnifiedResponseAst, UnifiedStreamEventAst, UnifiedContent, UnifiedProvider, UnifiedStopReason, UnifiedUsage } from '../ast';
+import { Ast, UnifiedResponseAst, UnifiedContent, UnifiedStopReason, UnifiedUsage } from '../ast';
 import {
   AnthropicMessageStartAst,
   AnthropicContentBlockStartAst,
@@ -264,7 +264,7 @@ export class UnifiedStreamAggregator {
         try {
           const inputObj = JSON.parse(partialJson);
           block.input = { ...block.input, ...inputObj };
-        } catch (error) {
+        } catch (_error) {
           // 如果解析失败，保留原始字符串
           block.input = { ...block.input, _partialJson: partialJson };
         }
@@ -436,7 +436,7 @@ export class UnifiedStreamAggregator {
   ): void {
     for (const tc of toolCalls) {
       // 查找已存在的 tool_use 块
-      let existingBlock = contentBlocks.find(
+      const existingBlock = contentBlocks.find(
         (block) => block.type === 'tool_use' && block.id === tc.id
       ) as any;
 
@@ -450,7 +450,7 @@ export class UnifiedStreamAggregator {
           try {
             const inputObj = JSON.parse(tc.function.arguments);
             existingBlock.input = { ...existingBlock.input, ...inputObj };
-          } catch (error) {
+          } catch (_error) {
             // 如果解析失败，追加到 _partialJson
             existingBlock.input = {
               ...existingBlock.input,
@@ -464,7 +464,7 @@ export class UnifiedStreamAggregator {
         if (tc.function?.arguments) {
           try {
             input = JSON.parse(tc.function.arguments);
-          } catch (error) {
+          } catch (_error) {
             input = { _partialJson: tc.function.arguments };
           }
         }

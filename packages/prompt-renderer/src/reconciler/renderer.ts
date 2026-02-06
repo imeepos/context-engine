@@ -1,87 +1,183 @@
 import { VNode, ElementNode, TextNode } from './types';
 
 function escapeMarkdown(text: string): string {
-  return text.replace(/([*_#])/g, '\\$1');
+  return text.replace(/([*_#[\]])/g, '\\$1');
 }
 
-function getTextContent(node: VNode): string {
+function getTextContent(node: VNode, preserveWhitespace = false): string {
   if (node.type === 'TEXT') {
-    return (node as TextNode).content;
+    return preserveWhitespace ? (node as TextNode).content : (node as TextNode).content;
   }
-  return (node as ElementNode).children.map(getTextContent).join('');
+  return (node as ElementNode).children.map(child => getTextContent(child, preserveWhitespace)).join('');
+}
+
+function getTextContentDefault(node: VNode): string {
+  return getTextContent(node, false);
 }
 
 export function renderToMarkdown(node: VNode): string {
   if (node.type === 'TEXT') {
-    return (node as TextNode).content;
+    return escapeMarkdown((node as TextNode).content.trim());
   }
 
   const element = node as ElementNode;
 
   if (element.type === 'h1') {
-    const content = element.children.map(getTextContent).join('');
-    return content ? `# ${content}\n` : '#\n';
+    const content = element.children.map(getTextContentDefault).join('');
+    return content ? `# ${content}\n\n` : '#';
   }
   if (element.type === 'h2') {
-    const content = element.children.map(getTextContent).join('');
-    return content ? `## ${content}\n` : '##\n';
+    const content = element.children.map(getTextContentDefault).join('');
+    return content ? `## ${content}\n\n` : '##';
   }
   if (element.type === 'h3') {
-    const content = element.children.map(getTextContent).join('');
-    return content ? `### ${content}\n` : '###\n';
+    const content = element.children.map(getTextContentDefault).join('');
+    return content ? `### ${content}\n\n` : '###';
   }
   if (element.type === 'h4') {
-    const content = element.children.map(getTextContent).join('');
-    return content ? `#### ${content}\n` : '####\n';
+    const content = element.children.map(getTextContentDefault).join('');
+    return content ? `#### ${content}\n\n` : '####';
   }
   if (element.type === 'h5') {
-    const content = element.children.map(getTextContent).join('');
-    return content ? `##### ${content}\n` : '#####\n';
+    const content = element.children.map(getTextContentDefault).join('');
+    return content ? `##### ${content}\n\n` : '#####';
   }
   if (element.type === 'h6') {
-    const content = element.children.map(getTextContent).join('');
-    return content ? `###### ${content}\n` : '######\n';
+    const content = element.children.map(getTextContentDefault).join('');
+    return content ? `###### ${content}\n\n` : '######';
   }
 
   if (element.type === 'ul') {
     return element.children
-      .map(child => `- ${getTextContent(child)}`)
+      .map(child => `- ${getTextContentDefault(child)}`)
       .join('\n') + '\n';
   }
 
   if (element.type === 'ol') {
     return element.children
-      .map((child, i) => `${i + 1}. ${getTextContent(child)}`)
+      .map((child, i) => `${i + 1}. ${getTextContentDefault(child)}`)
       .join('\n') + '\n';
   }
 
   if (element.type === 'button') {
-    const label = getTextContent(element);
-    return `[${label}]`;
+    const label = getTextContentDefault(element);
+    return `[${label}] `;
   }
 
   if (element.type === 'tool') {
-    const label = getTextContent(element);
-    const toolName = element.props.name || 'unknown';
-    return `[@tool:${toolName} ${label}]`;
+    const label = getTextContentDefault(element);
+    return `[@tool:${label}] `;
+  }
+
+  if (element.type === 'input') {
+    const type = element.props?.type;
+    const checked = element.props?.checked;
+    const placeholder = element.props?.placeholder;
+
+    if (type === 'checkbox') {
+      return checked ? '[x] ' : '[ ] ';
+    }
+
+    if (type === 'radio') {
+      return checked ? '(x) ' : '( ) ';
+    }
+
+    return placeholder ? `[Input: ${placeholder}] ` : '[Input] ';
+  }
+
+  if (element.type === 'checkbox') {
+    const checked = element.props?.checked;
+    return checked ? '[x] ' : '[ ] ';
+  }
+
+  if (element.type === 'radio') {
+    const checked = element.props?.checked;
+    return checked ? '(x) ' : '( ) ';
+  }
+
+  if (element.type === 'select') {
+    const placeholder = element.props?.placeholder || element.props?.value;
+    return placeholder ? `[Select: ${placeholder}] ` : '[Select] ';
+  }
+
+  if (element.type === 'textarea') {
+    const placeholder = element.props?.placeholder;
+    return placeholder ? `[Textarea: ${placeholder}] ` : '[Textarea] ';
   }
 
   if (element.type === 'p') {
-    const content = element.children.map(getTextContent).join('');
-    return content ? `${content}\n` : '';
+    const content = element.children.map(getTextContentDefault).join('').trim();
+    return escapeMarkdown(content) + `\n`;
   }
 
   if (element.type === 'div') {
     const children = element.children
       .filter(child => child !== null && child !== undefined)
-      .map(child => renderToMarkdown(child));
+      .map(child => renderToMarkdown(child))
+      .filter(content => content.length > 0);
 
-    const content = children.join('');
-    return content ? content + '\n' : '';
+    return children.join('') + '\n';
   }
 
   if (element.type === 'span') {
-    return element.children.map(getTextContent).join('');
+    return element.children.map(getTextContentDefault).join('');
+  }
+
+  if (element.type === 'strong' || element.type === 'b') {
+    const content = element.children.map(child => renderToMarkdown(child)).join('');
+    return `**${content}**`;
+  }
+
+  if (element.type === 'em' || element.type === 'i') {
+    const content = element.children.map(child => renderToMarkdown(child)).join('');
+    return `*${content}*`;
+  }
+
+  if (element.type === 'del' || element.type === 's' || element.type === 'strike') {
+    const content = element.children.map(child => renderToMarkdown(child)).join('');
+    return `~~${content}~~`;
+  }
+
+  if (element.type === 'a' || element.type === 'Link') {
+    const href = element.props?.href || element.props?.to;
+    const content = element.children.map(child => renderToMarkdown(child)).join('');
+    return href ? `[${content}](${href})` : content;
+  }
+
+  if (element.type === 'table') {
+    const rows = element.children.filter(child =>
+      child !== null && child !== undefined && (child as ElementNode).type === 'tr'
+    ) as ElementNode[];
+
+    if (rows.length === 0) return '\n';
+
+    const renderedRows = rows.map(row => {
+      const cells = row.children.filter(child =>
+        child !== null && child !== undefined
+      );
+      return '| ' + cells.map(cell => getTextContentDefault(cell)).join(' | ') + ' |';
+    });
+
+    return renderedRows.join('\n') + '\n';
+  }
+
+  if (element.type === 'pre' || element.type === 'code') {
+    const content = element.children.map(child => getTextContent(child, true)).join('');
+    const lang = element.props?.lang || element.props?.language || '';
+    return '```' + lang + '\n' + content + '\n```\n';
+  }
+
+  if (element.type === 'Br' || element.type === 'br') {
+    return '\n';
+  }
+
+  if (element.type === 'Tab') {
+    return '    ';
+  }
+
+  if (element.type === 'Space') {
+    const count = element.props?.count || 1;
+    return ' '.repeat(count);
   }
 
   return element.children

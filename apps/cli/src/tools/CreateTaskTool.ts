@@ -1,13 +1,15 @@
-import { Injectable, Tool, ToolArg } from '@sker/core'
+import { Injectable, Tool, ToolArg, Inject } from '@sker/core'
 import { z } from 'zod'
 import { TaskManagerService } from '../services/task-manager.service'
 import { TaskDependencyResolverService } from '../services/task-dependency-resolver.service'
+import { CURRENT_AGENT_ID } from '../tokens'
 
 @Injectable()
 export class CreateTaskTool {
   constructor(
     private taskManager: TaskManagerService,
-    private dependencyResolver: TaskDependencyResolverService
+    private dependencyResolver: TaskDependencyResolverService,
+    @Inject(CURRENT_AGENT_ID) private currentAgentId: string
   ) {}
 
   @Tool({
@@ -29,6 +31,7 @@ export class CreateTaskTool {
     const task = await this.taskManager.createTask({
       title,
       description,
+      createdBy: this.currentAgentId,
       parentId,
       dependencies,
       metadata

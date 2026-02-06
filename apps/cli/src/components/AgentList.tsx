@@ -1,29 +1,34 @@
 import React from 'react'
 import { Injector } from '@sker/core'
-import { Agent } from '../types/agent'
-import { Tool } from '@sker/prompt-renderer'
-import { AGENTS, CURRENT_AGENT_ID, NAVIGATE, MESSAGES } from '../tokens'
-import { NavigateTool } from '../tools/NavigateTool'
+import { UIRenderer, Tool } from '@sker/prompt-renderer'
+import { CURRENT_AGENT_ID } from '../tokens'
+import { AgentRegistryService } from '../services/agent-registry.service'
+import { MessageBrokerService } from '../services/message-broker.service'
 
 interface AgentListProps {
   injector: Injector
 }
 
-export function AgentListComponent({ injector }: AgentListProps) {
-  const agents = injector.get(AGENTS)
+export async function AgentListComponent({ injector }: AgentListProps) {
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
-  const navigate = injector.get(NAVIGATE)
-  const allMessages = injector.get(MESSAGES)
+  const agentRegistryService = injector.get(AgentRegistryService)
+  const messageBrokerService = injector.get(MessageBrokerService)
+
+  const agents = await agentRegistryService.getOnlineAgents()
+
+  const allMessagesPromises = agents.map(agent =>
+    messageBrokerService.getMessageHistory(agent.id)
+  )
+  const allMessagesArrays = await Promise.all(allMessagesPromises)
+  const allMessages = allMessagesArrays.flat()
 
   return (
     <div>
-      <h2>在线Agent列表</h2>
+      <h2>Agent</h2>
       {agents.map(agent => {
-        // 计算与该agent的未读消息数和最新消息
         const messagesWithAgent = allMessages.filter(m =>
-          (m.from === agent.id && m.to === currentAgentId && !m.read) ||
-          (m.from === currentAgentId && m.to === agent.id) ||
-          (m.from === agent.id && m.to === currentAgentId && m.read)
+          (m.from === agent.id && m.to === currentAgentId) ||
+          (m.from === currentAgentId && m.to === agent.id)
         ).sort((a, b) => b.timestamp - a.timestamp)
 
         const unreadCount = allMessages.filter(m =>
@@ -32,19 +37,19 @@ export function AgentListComponent({ injector }: AgentListProps) {
 
         const latestMessage = messagesWithAgent[0]
 
+        const isSelf = agent.id === currentAgentId
+        const badge = isSelf ? '●' : unreadCount > 0 ? `(${unreadCount})` : ''
+        const direction = latestMessage ? (latestMessage.from === currentAgentId ? '→' : '←') : ''
+        const preview = latestMessage ? `${direction} ${latestMessage.content.substring(0, 20)}${latestMessage.content.length > 20 ? '...' : ''}` : ''
+
         return (
           <div key={agent.id}>
-            - {agent.id}{agent.id === currentAgentId ? ' (你)' : ''} [在线]
-            {agent.id !== currentAgentId && ` [${unreadCount}条未读]`}
-            {latestMessage && ` - ${latestMessage.content.substring(0, 20)}${latestMessage.content.length > 20 ? '...' : ''}`}
-            {' '}
-            <Tool
-              use={NavigateTool}
-              boundParams={{ path: `/chat/${agent.id}` }}
-              key={`navigate-${agent.id}`}
-            >
-              查看
+            <Tool name={`view_${agent.id}`} description={`查看${agent.id}`} execute={async (params, injector) => {
+              return await injector.get(UIRenderer).navigate(`/chat/${agent.id}`)
+            }}>
+              {agent.id} {badge}
             </Tool>
+            {preview && <div>  {preview}</div>}
           </div>
         )
       })}

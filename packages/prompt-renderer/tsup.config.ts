@@ -1,0 +1,11 @@
+import { defineConfig } from 'tsup'
+
+export default defineConfig({
+  entry: ['src/index.ts'],
+  format: ['esm', 'cjs'],
+  dts: true,
+  clean: false,
+  sourcemap: true,
+  target: 'node18',
+  external: ['react', 'react-dom', '@sker/core', '@sker/compiler']
+})

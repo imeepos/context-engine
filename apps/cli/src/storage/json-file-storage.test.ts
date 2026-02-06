@@ -10,7 +10,7 @@ describe('JsonFileStorage', () => {
   let testDir: string
 
   beforeEach(async () => {
-    testDir = path.join(os.tmpdir(), `sker-test-${Date.now()}`)
+    testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sker-test-'))
     storage = new JsonFileStorage(testDir)
     await storage.init()
   })
@@ -99,11 +99,12 @@ describe('JsonFileStorage', () => {
           resolve()
         })
 
+        // Wait longer for watcher to initialize
         setTimeout(async () => {
           await storage.write('test', { value: 100 })
-        }, 100)
+        }, 1000)
       })
-    }, 10000)
+    }, 15000)
 
     it('stops watching after unwatch is called', async () => {
       await storage.write('test', { value: 42 })

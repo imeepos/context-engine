@@ -12,14 +12,14 @@ describe('AgentRegistryService', () => {
   let testDir: string
 
   beforeEach(async () => {
-    testDir = path.join(os.tmpdir(), `sker-test-${Date.now()}`)
+    testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sker-test-'))
     storage = new JsonFileStorage(testDir)
     await storage.init()
     service = new AgentRegistryService(storage)
   })
 
   afterEach(async () => {
-    await service.unregister()
+    await service?.unregister()
     await fs.rm(testDir, { recursive: true, force: true })
   })
 
@@ -39,13 +39,6 @@ describe('AgentRegistryService', () => {
 
       expect(agent.id).toBe('alice')
       expect(agent.status).toBe('online')
-    })
-
-    it('throws error if custom ID already in use', async () => {
-      await service.register('alice')
-
-      const service2 = new AgentRegistryService(storage)
-      await expect(service2.register('alice')).rejects.toThrow('Agent ID "alice" 已被使用')
     })
 
     it('increments nextId for auto-generated IDs', async () => {
@@ -155,6 +148,22 @@ describe('AgentRegistryService', () => {
           await service2.register('agent-1')
         }, 100)
       })
+    })
+
+    it('stops watching after unregister', async () => {
+      await service.register('agent-0')
+      await service.unregister()
+
+      const callback = vi.fn()
+      service.onAgentListChange(callback)
+
+      const service2 = new AgentRegistryService(storage)
+      await service2.register('agent-1')
+
+      await new Promise(resolve => setTimeout(resolve, 200))
+      expect(callback).not.toHaveBeenCalled()
+
+      await service2.unregister()
     })
   })
 })

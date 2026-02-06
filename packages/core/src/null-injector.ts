@@ -1,4 +1,4 @@
-import { Injector, InjectionTokenType, Type } from './injector';
+import { Injector, InjectionTokenType } from './injector';
 import type { Provider } from './provider';
 
 /**
@@ -32,12 +32,6 @@ export class NullInjector extends Injector {
     } else {
       tokenName = JSON.stringify(token)
     }
-
-    console.error(`NullInjector: No Provider for "${tokenName}"`, {
-      token,
-      tokenType: typeof token,
-      isBuiltIn: token === Object || token === Array || token === String || token === Number || token === Boolean
-    });
 
     throw new Error(`NullInjector: 未找到 Provider for "${tokenName}"\n\n可能的原因：\n1. 忘记在模块中注册该服务\n2. 服务未使用 @Injectable() 装饰器\n3. 使用了内置类型（Object/Array 等）而非具体的类或 InjectionToken`);
   }

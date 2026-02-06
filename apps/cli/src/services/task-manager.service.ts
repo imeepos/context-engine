@@ -1,14 +1,15 @@
-import { Injectable } from '@sker/core'
+import { Inject, Injectable } from '@sker/core'
 import { JsonFileStorage } from '../storage/json-file-storage'
 import { Task, TaskRegistry, TaskStatus } from '../types/task'
 import { v4 as uuidv4 } from 'uuid'
+import { STORAGE_TOKEN } from '../storage/storage.interface'
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: 'auto' })
 export class TaskManagerService {
   private readonly STORAGE_KEY = 'tasks'
   private readonly MAX_RETRIES = 3
 
-  constructor(private storage: JsonFileStorage) {}
+  constructor(@Inject(STORAGE_TOKEN) private storage: JsonFileStorage) { }
 
   async init(): Promise<void> {
     const registry = await this.storage.read<TaskRegistry>(this.STORAGE_KEY)
@@ -20,6 +21,7 @@ export class TaskManagerService {
   async createTask(params: {
     title: string
     description: string
+    createdBy: string
     parentId?: string | null
     dependencies?: string[]
     metadata?: Record<string, any>
@@ -31,6 +33,7 @@ export class TaskManagerService {
       description: params.description,
       status: params.dependencies?.length ? TaskStatus.BLOCKED : TaskStatus.PENDING,
       assignedTo: null,
+      createdBy: params.createdBy,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       claimedAt: null,
@@ -48,6 +51,13 @@ export class TaskManagerService {
   }
 
   async claimTask(taskId: string, agentId: string): Promise<boolean> {
+    const agentTasks = await this.getTasksByAgent(agentId)
+    const hasInProgressTask = agentTasks.some(t => t.status === TaskStatus.IN_PROGRESS)
+
+    if (hasInProgressTask) {
+      return false
+    }
+
     for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
       const registry = await this.getRegistry()
       const task = registry.tasks[taskId]
@@ -96,7 +106,10 @@ export class TaskManagerService {
   }
 
   async cancelTask(taskId: string): Promise<boolean> {
-    return this.updateTaskStatus(taskId, TaskStatus.CANCELLED)
+    return this.updateTaskStatus(taskId, TaskStatus.PENDING, {
+      assignedTo: null,
+      claimedAt: null
+    })
   }
 
   async getTask(taskId: string): Promise<Task | null> {
@@ -117,6 +130,36 @@ export class TaskManagerService {
   async getSubtasks(parentId: string): Promise<Task[]> {
     const registry = await this.getRegistry()
     return Object.values(registry.tasks).filter(t => t.parentId === parentId)
+  }
+
+  async updateTask(taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<boolean> {
+    const registry = await this.getRegistry()
+    const task = registry.tasks[taskId]
+
+    if (!task) return false
+
+    registry.tasks[taskId] = {
+      ...task,
+      ...updates,
+      updatedAt: Date.now()
+    }
+    registry.version++
+
+    await this.storage.write(this.STORAGE_KEY, registry)
+    return true
+  }
+
+  async deleteTask(taskId: string): Promise<boolean> {
+    const registry = await this.getRegistry()
+
+    if (!registry.tasks[taskId]) return false
+
+    const { [taskId]: _, ...remainingTasks } = registry.tasks
+    registry.tasks = remainingTasks
+    registry.version++
+
+    await this.storage.write(this.STORAGE_KEY, registry)
+    return true
   }
 
   private async updateTaskStatus(
@@ -141,7 +184,7 @@ export class TaskManagerService {
     return true
   }
 
-  private async getRegistry(): Promise<TaskRegistry> {
+  async getRegistry(): Promise<TaskRegistry> {
     const registry = await this.storage.read<TaskRegistry>(this.STORAGE_KEY)
     return registry || { tasks: {}, version: 0 }
   }

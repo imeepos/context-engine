@@ -1,4 +1,5 @@
 import { root } from "./environment-injector";
+import { InjectionTokenType } from "./injector";
 
 /**
  * 注入器作用域类型
@@ -28,17 +29,18 @@ export interface InjectableOptions {
   /**
    * 工厂函数，用于创建实例
    */
-  useFactory?: (...args: any[]) => any;
+  useFactory?: (...args: any[]) => unknown;
 
   /**
    * 工厂函数的依赖
    */
-  deps?: any[];
+  deps?: InjectionTokenType<any>[];
 }
 
 /**
  * Injectable 元数据
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface InjectableMetadata extends InjectableOptions { }
 
 /**
@@ -57,13 +59,12 @@ export function Injectable(options: InjectableOptions = {}): ClassDecorator {
   return function <T extends Function>(target: T): T {
     // 存储 Injectable 元数据
     Reflect.defineMetadata(INJECTABLE_METADATA_KEY, options, target);
-    const providedIn = options.providedIn || 'root'
+    const providedIn = options.providedIn ?? 'auto'
     if (providedIn === 'root') {
-      const provide = target;
       if (options.useFactory) {
-        root.set([{ provide: provide, useFactory: options.useFactory as any, deps: options.deps || [] }])
+        root.set([{ provide: target, useFactory: options.useFactory, deps: options.deps || [] }])
       } else {
-        root.set([{ provide: provide, useClass: target as any }])
+        root.set([target])
       }
     }
     return target;
@@ -77,7 +78,7 @@ export function Injectable(options: InjectableOptions = {}): ClassDecorator {
  * @returns Injectable 元数据或 undefined
  */
 export function getInjectableMetadata(
-  target: any,
+  target: Function,
 ): InjectableMetadata | undefined {
   return Reflect.getMetadata(INJECTABLE_METADATA_KEY, target);
 }
@@ -88,6 +89,6 @@ export function getInjectableMetadata(
  * @param target 目标类
  * @returns 是否为可注入类
  */
-export function isInjectable(target: any): boolean {
+export function isInjectable(target: Function): boolean {
   return Reflect.hasMetadata(INJECTABLE_METADATA_KEY, target);
 }

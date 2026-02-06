@@ -1,6 +1,8 @@
-import { VNode, ElementNode, Tool } from './types';
-import { UnifiedTool, zodToJsonSchema, isOptionalParam } from '@sker/compiler';
-import { root, ToolMetadataKey, ToolArgMetadataKey, Type, ToolMetadata, ToolArgMetadata } from '@sker/core';
+import { VNode, ElementNode } from './types';
+import { UnifiedTool, buildUnifiedTool, zodToParams } from '@sker/compiler';
+import { Type, ToolMetadataKey, root, ToolMetadata, Injector } from '@sker/core';
+import { ToolProps } from '../components/Tool';
+import { UIRenderer } from '../browser';
 
 export interface ExtractResult {
   tools: UnifiedTool[];
@@ -14,214 +16,116 @@ function getTextContent(node: VNode): string {
   return (node as ElementNode).children.map(getTextContent).join('');
 }
 
-function extractToolFromClass(toolClass: Type<any>): {
-  name: string;
-  description: string;
-  params: { properties?: Record<string, any>; required?: string[] };
-  execute: (params?: any) => Promise<any>;
-} | null {
+function generateSemanticToolName(label: string, href?: string): string {
+  let base = label
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .slice(0, 30);
+
+  if (!base && href) {
+    const pathParts = href.split('/').filter(Boolean);
+    base = pathParts[pathParts.length - 1]
+      ?.replace(/[^a-z0-9_]/g, '_')
+      .slice(0, 30) || '';
+  }
+
+  return base ? `navigate_${base}` : 'navigate';
+}
+
+function ensureUniqueToolName(
+  baseName: string,
+  toolNameCounts: Map<string, number>
+): string {
+  const count = toolNameCounts.get(baseName) || 0;
+  toolNameCounts.set(baseName, count + 1);
+  return count === 0 ? baseName : `${baseName}_${count + 1}`;
+}
+
+function extractToolFromClass(toolClass: Type<any>, propertyKey: string | symbol): UnifiedTool | null {
   const toolMetadatas = root.get(ToolMetadataKey) ?? []
-  const toolMeta = toolMetadatas.find((m: ToolMetadata) => m.target === toolClass)
-
-  if (!toolMeta) {
-    return null
+  const currentToolMetadatas = toolMetadatas.filter((m: ToolMetadata) => m.target.name === toolClass.name)
+  if (currentToolMetadatas.length === 1) {
+    propertyKey = currentToolMetadatas[0].propertyKey
   }
-
-  const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
-  const args = toolArgMetadatas.filter((m: ToolArgMetadata) =>
-    m.target === toolClass && m.propertyKey === toolMeta.propertyKey
-  ).sort((a, b) => a.parameterIndex - b.parameterIndex)
-
-  const properties: Record<string, any> = {}
-  const required: string[] = []
-
-  for (const arg of args) {
-    const paramName = arg.paramName ?? `param${arg.parameterIndex}`
-    properties[paramName] = zodToJsonSchema(arg.zod)
-    if (!isOptionalParam(arg.zod)) {
-      required.push(paramName)
-    }
-  }
-
-  const execute = async (params?: any) => {
-    const instance = root.get(toolClass)
-    const callArgs: any[] = []
-
-    for (const arg of args) {
-      const paramName = arg.paramName ?? `param${arg.parameterIndex}`
-      callArgs.push(params?.[paramName])
-    }
-
-    const result = instance[toolMeta.propertyKey](...callArgs)
-    return result instanceof Promise ? await result : result
-  }
-
-  return {
-    name: toolMeta.name,
-    description: toolMeta.description,
-    params: {
-      properties: Object.keys(properties).length > 0 ? properties : undefined,
-      required: required.length > 0 ? required : undefined
-    },
-    execute
-  }
+  return buildUnifiedTool(toolClass, propertyKey)
 }
 
-function transformToUnifiedTool(tool: Tool): UnifiedTool {
-  const properties: Record<string, any> = {};
-  const required: string[] = [];
 
-  // Handle tool params (from <Tool params={...}>)
-  if (tool.params?.properties) {
-    // 排除已绑定的参数
-    const boundKeys = Object.keys(tool.params.bound || {});
-    for (const [key, value] of Object.entries(tool.params.properties)) {
-      if (!boundKeys.includes(key)) {
-        properties[key] = value;
-      }
-    }
-
-    // 只要求未绑定的参数
-    if (tool.params.required) {
-      required.push(...tool.params.required.filter(k => !boundKeys.includes(k)));
-    }
-  }
-
-  if (tool.type === 'input') {
-    properties.value = {
-      type: 'string',
-      description: tool.placeholder || 'Input value'
-    };
-    required.push('value');
-  }
-
-  const description = tool.type === 'input'
-    ? (tool.placeholder || tool.name)
-    : (tool.description !== undefined ? tool.description : (tool.label !== undefined ? tool.label : tool.name));
-
-  return {
-    name: tool.name,
-    description,
-    parameters: {
-      type: 'object',
-      properties,
-      required: required.length > 0 ? required : undefined
-    }
-  };
-}
-
+const emptyTool = async (_params: Record<string, any>, _injector: Injector) => { }
 function extractToolsInternal(
   node: VNode,
-  executors: Map<string, () => void | Promise<void>>
-): Tool[] {
+  toolNameCounts: Map<string, number>
+): UnifiedTool[] {
   if (node.type === 'TEXT') {
     return [];
   }
 
-  const element = node as ElementNode;
-  const tools: Tool[] = [];
+  const tools: UnifiedTool[] = [];
 
-  if (element.type === 'button') {
-    const id = element.props.id;
-    const dataAction = element.props['data-action'];
-    const dataParams = element.props['data-params'];
-    const description = element.props.description;
-    const onClick = element.props.onClick;
-    const toolName = id || dataAction;
+  if (node.type === 'tool') {
+    const { name, description, params, execute } = node.props as ToolProps;
+    const uniqueName = ensureUniqueToolName(name, toolNameCounts);
+    tools.push({
+      name: uniqueName,
+      description: description || getTextContent(node),
+      parameters: zodToParams(params),
+      execute: execute || emptyTool
+    })
+  }
 
-    if (typeof toolName === 'string' && toolName.length > 0) {
-      const tool: Tool = {
-        name: toolName,
-        type: 'button',
-        label: getTextContent(element)
-      };
-      if (description !== undefined) {
-        tool.description = description;
-      }
-      if (dataParams !== undefined) {
-        tool.params = {
-          properties: { params: dataParams },
-          required: ['params']
-        };
-      }
-      tools.push(tool);
-
-      // 搜集执行函数
-      if (typeof onClick === 'function') {
-        executors.set(toolName, onClick);
-      }
+  if (node.type === 'tool-use') {
+    const { use, propertyKey } = node.props as { use: Type<any>, propertyKey: string | symbol };
+    const tool = extractToolFromClass(use, propertyKey);
+    if (tool) {
+      const uniqueName = ensureUniqueToolName(tool.name, toolNameCounts);
+      tools.push({
+        ...tool,
+        name: uniqueName
+      });
     }
   }
 
-  if (element.type === 'tool') {
-    const { use, name, description, params, execute, key, boundParams } = element.props;
+  if (node.type === 'a' || node.type === 'Link') {
+    const href = (node as ElementNode).props?.href || (node as ElementNode).props?.to;
+    if (href) {
+      const label = getTextContent(node);
+      const baseName = generateSemanticToolName(label, href);
+      const uniqueName = ensureUniqueToolName(baseName, toolNameCounts);
 
-    // 新 API：使用 use 属性
-    if (use) {
-      const extracted = extractToolFromClass(use)
-      if (extracted) {
-        // 使用 key 作为唯一工具名，如果没有提供则使用原始名称
-        const toolName = key || extracted.name
-
-        const tool: Tool = {
-          name: toolName,
-          type: 'button',
-          description: extracted.description,
-          label: getTextContent(element)
-        }
-
-        // 处理参数绑定
-        if (boundParams) {
-          // 标记哪些参数已绑定
-          tool.params = {
-            ...extracted.params,
-            bound: boundParams
+      tools.push({
+        name: uniqueName,
+        description: `Navigate to ${label}`,
+        parameters: {
+          type: 'object',
+          properties: {
+            path: {
+              type: 'string',
+              description: '目标路径'
+            }
+          },
+          required: ['path']
+        },
+        execute: async (params: Record<string, any>, injector: Injector) => {
+          if (href) {
+            const render = injector.get(UIRenderer);
+            return await render.render(href);
           }
-          // 创建带预绑定参数的执行器
-          executors.set(toolName, () => extracted.execute(boundParams))
-        } else {
-          if (extracted.params.properties) {
-            tool.params = extracted.params
-          }
-          executors.set(toolName, extracted.execute)
         }
-
-        tools.push(tool)
-      }
-    }
-    // 旧 API：手动传递属性（向后兼容）
-    else if (typeof name === 'string' && name.length > 0) {
-      const tool: Tool = {
-        name,
-        type: 'button',
-        description,
-        label: getTextContent(element)
-      }
-      if (params !== undefined) {
-        tool.params = params
-      }
-      tools.push(tool)
-
-      if (typeof execute === 'function') {
-        executors.set(name, execute)
-      }
+      });
     }
   }
 
-  for (const child of element.children) {
+  for (const child of (node as ElementNode).children) {
     if (child !== null && child !== undefined) {
-      tools.push(...extractToolsInternal(child, executors));
+      tools.push(...extractToolsInternal(child, toolNameCounts));
     }
   }
-
   return tools;
 }
 
-export function extractTools(node: VNode): ExtractResult {
-  const executors = new Map<string, () => void | Promise<void>>();
-  const tools = extractToolsInternal(node, executors);
-  return {
-    tools: tools.map(transformToUnifiedTool),
-    executors
-  };
+export function extractTools(node: VNode): UnifiedTool[] {
+  const toolNameCounts = new Map<string, number>();
+  return extractToolsInternal(node, toolNameCounts);
 }

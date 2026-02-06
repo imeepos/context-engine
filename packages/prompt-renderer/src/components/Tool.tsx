@@ -1,19 +1,23 @@
 import React from 'react'
-import { Type } from '@sker/core'
+import { Injector, Type } from '@sker/core'
 
+export interface ToolUseProps<T = any> {
+  use: Type<T>
+  propertyKey: keyof T;
+  children?: React.ReactNode
+}
 export interface ToolProps {
-  // 新 API（基于装饰器）
-  use?: Type<any>
-
-  // 旧 API（手动，向后兼容）
-  name?: string
+  name: string
   description?: string
-  params?: Record<string, any>
-  execute?: (params?: any) => void | Promise<void>
+  params?: any;
+  execute: (params: Record<string, any>, injector: Injector) => Promise<any>
 
   children?: React.ReactNode
 }
 
 export function Tool(props: ToolProps): React.ReactElement {
   return React.createElement('tool', props, props.children)
+}
+export function ToolUse(props: ToolUseProps): React.ReactElement {
+  return React.createElement('tool-use', props, props.children)
 }

@@ -1,0 +1,44 @@
+{
+  "name": "sker-mcp-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-01-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "ENVIRONMENT": "production",
+    "SITE_URL": "https://mcp.sker.us",
+    "BETTER_AUTH_SECRET": "replace-with-a-strong-random-secret-value-32-plus-chars",
+    "APP_LOG_LEVEL": "summary"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sker",
+      "database_id": "d9068995-1e09-488e-b582-bb2e1eee4178"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MCP_SESSION",
+        "class_name": "McpSessionDurableObject",
+        "script_name": "sker-mcp-api"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": [
+        "McpSessionDurableObject"
+      ]
+    }
+  ]
+}

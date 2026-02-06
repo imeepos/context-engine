@@ -30,7 +30,7 @@ export function matchRoute(pattern: string, pathname: string): Match {
 
   if (hasOptional) {
     const requiredSegments = patternSegments.filter(s => !s.endsWith('?'));
-    const optionalSegments = patternSegments.filter(s => s.endsWith('?'));
+    const _optionalSegments = patternSegments.filter(s => s.endsWith('?'));
 
     if (pathSegments.length < requiredSegments.length ||
         pathSegments.length > patternSegments.length) {
@@ -63,7 +63,7 @@ export function matchRoute(pattern: string, pathname: string): Match {
 }
 
 export function compilePattern(pattern: string): RegExp {
-  let regexPattern = pattern
+  const regexPattern = pattern
     .replace(/\//g, '\\/')
     .replace(/:\w+/g, '([^/]+)')
     .replace(/\*/g, '.*');

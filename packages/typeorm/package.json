@@ -1,0 +1,37 @@
+{
+  "name": "@sker/typeorm",
+  "version": "0.1.0",
+  "description": "Minimal TypeORM-style API for Cloudflare D1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src/",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "@sker/typescript-config": "workspace:*",
+    "@sker/core": "workspace:*",
+    "@sker/eslint-config": "workspace:*",
+    "eslint": "^9.39.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.9.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "http://43.240.223.138:4873"
+  }
+}

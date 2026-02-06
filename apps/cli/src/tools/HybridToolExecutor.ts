@@ -2,6 +2,8 @@ import { Injectable, Inject, Injector, ToolMetadataKey, ToolArgMetadataKey, Tool
 import { UnifiedToolResult } from '@sker/compiler'
 import { UnifiedToolUseContent } from '@sker/compiler'
 import { DynamicToolExecutorService } from './DynamicToolExecutorService'
+import { RemoteToolProxy } from './RemoteToolProxy'
+import { McpClientService } from '../services/mcp-client.service'
 
 function buildToolArgsMap(toolArgMetadatas: ToolArgMetadata[]): Map<string, ToolArgMetadata[]> {
   const map = new Map<string, ToolArgMetadata[]>()
@@ -17,13 +19,59 @@ function buildToolArgsMap(toolArgMetadatas: ToolArgMetadata[]): Map<string, Tool
 
 @Injectable()
 export class HybridToolExecutor {
+  private readonly localTools = new Set([
+    'send_message',
+    'list_agents',
+    'get_message_history',
+    'navigate',
+    'create_task',
+    'batch_create_tasks',
+    'claim_task',
+    'complete_task',
+    'cancel_task',
+    'list_tasks',
+    'get_task',
+    'update_task',
+    'search-plugins',
+    'install-plugin',
+    'uninstall-plugin',
+    'update-plugin',
+    'publish-plugin',
+    'publish-version'
+  ])
+
   constructor(
     @Inject(Injector) private injector: Injector,
-    @Inject(DynamicToolExecutorService) private dynamicExecutor: DynamicToolExecutorService
-  ) {}
+    @Inject(DynamicToolExecutorService) private dynamicExecutor: DynamicToolExecutorService,
+    @Inject(RemoteToolProxy) private remoteProxy: RemoteToolProxy,
+    @Inject(McpClientService) private mcpService: McpClientService
+  ) { }
 
   async execute(toolUse: UnifiedToolUseContent): Promise<UnifiedToolResult> {
-    // 先检查是否是动态工具
+    // 检查是否是远程工具
+    if (!this.localTools.has(toolUse.name) && this.mcpService.isConnected()) {
+      try {
+        const hasRemote = await this.remoteProxy.hasRemoteTool(toolUse.name)
+        if (hasRemote) {
+          const result = await this.remoteProxy.callRemoteTool(toolUse.name, toolUse.input)
+          return {
+            toolUseId: toolUse.id,
+            toolName: toolUse.name,
+            content: JSON.stringify(result),
+            isError: false
+          }
+        }
+      } catch (error) {
+        return {
+          toolUseId: toolUse.id,
+          toolName: toolUse.name,
+          content: error instanceof Error ? error.message : String(error),
+          isError: true
+        }
+      }
+    }
+
+    // 检查是否是动态工具
     if (this.dynamicExecutor.has(toolUse.name)) {
       try {
         await this.dynamicExecutor.execute(toolUse.name, toolUse.input)

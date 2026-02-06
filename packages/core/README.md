@@ -26,6 +26,17 @@
 pnpm add @sker/core reflect-metadata
 ```
 
+### 可用脚本
+
+| 脚本        | 命令               | 说明                                        |
+| ----------- | ------------------ | ------------------------------------------- |
+| build       | `pnpm build`       | 使用 tsup 构建包（生成 ESM/CJS 双格式输出） |
+| claude      | `pnpm claude`      | 运行 Claude Code（跳过权限检查）            |
+| lint        | `pnpm lint`        | 使用 ESLint 检查代码（最多 0 个警告）       |
+| check-types | `pnpm check-types` | TypeScript 类型检查（不生成输出）           |
+| test        | `pnpm test`        | 运行测试（使用 Vitest）                     |
+| test:watch  | `pnpm test:watch`  | 监听模式运行测试                            |
+
 ### 基础使用
 
 ```typescript
@@ -200,17 +211,26 @@ class MyService {
 ### 6. 多值注入
 
 ```typescript
-// 定义多值提供者
+import { InjectionToken } from '@sker/core';
+
+// 使用 InjectionToken 实现类型安全的多值注入
+interface Plugin {
+  name: string;
+  init(): void;
+}
+
+const PLUGINS = new InjectionToken<Plugin[]>('app.plugins');
+
 const providers = [
-  { provide: 'PLUGINS', useValue: pluginA, multi: true },
-  { provide: 'PLUGINS', useValue: pluginB, multi: true },
-  { provide: 'PLUGINS', useValue: pluginC, multi: true }
+  { provide: PLUGINS, useValue: pluginA, multi: true },
+  { provide: PLUGINS, useValue: pluginB, multi: true },
+  { provide: PLUGINS, useValue: pluginC, multi: true }
 ];
 
 const injector = createRootInjector(providers);
 
-// 获取所有值（返回数组）
-const plugins = injector.get('PLUGINS'); // [pluginA, pluginB, pluginC]
+// 获取所有值（返回类型安全的数组）
+const plugins: Plugin[] = injector.get(PLUGINS); // [pluginA, pluginB, pluginC]
 ```
 
 ### 7. 生命周期管理
@@ -537,19 +557,54 @@ if (this.resolvingTokens.has(resolvedToken)) {
 // 使用有向无环图（DAG）拓扑排序
 ```
 
+### 11. 模块系统
+
+```typescript
+import { Module, PlatformRef, ApplicationRef, createPlatform } from '@sker/core';
+
+// 定义共享模块
+@Module({
+  providers: [LoggerService, ConfigService],
+})
+class SharedModule {}
+
+// 定义功能模块
+@Module({
+  imports: [SharedModule],  // 导入共享模块
+  providers: [UserService, AuthService]
+})
+class UserModule {}
+
+// 创建平台并启动应用
+const platform: PlatformRef = createPlatform([
+  { provide: 'PLATFORM_ID', useValue: 'server' }
+]);
+
+const app: ApplicationRef = platform.bootstrapApplication([
+  { provide: 'API_URL', useValue: 'https://api.example.com' }
+]);
+
+// 启动应用（解析模块、执行初始化器、触发 OnInit）
+await app.bootstrap(UserModule);
+
+// 销毁应用
+await app.destroy();
+await platform.destroy();
+```
+
 ## 与 Angular DI 的对比
 
-| 特性 | @sker/core | Angular DI |
-|------|-----------|-----------|
-| 装饰器语法 | ✅ 相似 | ✅ |
-| 层次化注入器 | ✅ | ✅ |
-| providedIn | ✅ | ✅ |
-| 多值注入 | ✅ | ✅ |
-| 循环依赖检测 | ✅ | ✅ |
-| ForwardRef | ✅ | ✅ |
+| 特性         | @sker/core         | Angular DI |
+| ------------ | ------------------ | ---------- |
+| 装饰器语法   | ✅ 相似             | ✅          |
+| 层次化注入器 | ✅                  | ✅          |
+| providedIn   | ✅                  | ✅          |
+| 多值注入     | ✅                  | ✅          |
+| 循环依赖检测 | ✅                  | ✅          |
+| ForwardRef   | ✅                  | ✅          |
 | 生命周期钩子 | ✅ OnInit/OnDestroy | ✅ 更多钩子 |
-| 模块系统 | ❌ 轻量化设计 | ✅ NgModule |
-| 编译时优化 | ❌ 运行时 | ✅ Ivy |
+| 模块系统     | ✅ @Module          | ✅ NgModule |
+| 编译时优化   | ❌ 运行时           | ✅ Ivy      |
 
 ## 许可证
 

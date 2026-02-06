@@ -5,3 +5,5 @@ coverage
 dist
 .turbo
 nul
+.wrangler
+.wrangler-state-migration-smoke

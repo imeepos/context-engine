@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Injectable, Tool, ToolArg, EnvironmentInjector, root } from '@sker/core';
 import { z } from 'zod';
 import { UnifiedToolExecutor } from './tool-executor';
+import { buildUnifiedTools } from '../unified/tool-builder';
+import { UnifiedTool } from '../ast';
 
 @Injectable()
 class TestTools {
@@ -33,11 +35,13 @@ class TestTools {
 describe('UnifiedToolExecutor', () => {
   let injector: EnvironmentInjector;
   let executor: UnifiedToolExecutor;
+  let tools: UnifiedTool[];
 
   beforeEach(() => {
     injector = EnvironmentInjector.createWithAutoProviders([{ provide: TestTools, useClass: TestTools }]);
     root.set([{ provide: TestTools, useClass: TestTools }]);
     executor = new UnifiedToolExecutor(injector);
+    tools = buildUnifiedTools([TestTools]);
   });
 
   it('should execute simple tool with string parameter', async () => {
@@ -46,7 +50,7 @@ describe('UnifiedToolExecutor', () => {
       id: 'tool_1',
       name: 'get_weather',
       input: { city: 'Beijing' }
-    });
+    }, tools);
 
     expect(result.toolUseId).toBe('tool_1');
     expect(result.toolName).toBe('get_weather');
@@ -60,7 +64,7 @@ describe('UnifiedToolExecutor', () => {
       id: 'tool_2',
       name: 'calculate',
       input: { a: 5, b: 3 }
-    });
+    }, tools);
 
     expect(result.toolUseId).toBe('tool_2');
     expect(result.toolName).toBe('calculate');
@@ -74,7 +78,7 @@ describe('UnifiedToolExecutor', () => {
       id: 'tool_3',
       name: 'async_operation',
       input: { value: 'test' }
-    });
+    }, tools);
 
     expect(result.toolUseId).toBe('tool_3');
     expect(result.toolName).toBe('async_operation');
@@ -88,7 +92,7 @@ describe('UnifiedToolExecutor', () => {
       id: 'tool_4',
       name: 'error_tool',
       input: {}
-    });
+    }, tools);
 
     expect(result.toolUseId).toBe('tool_4');
     expect(result.toolName).toBe('error_tool');
@@ -102,7 +106,7 @@ describe('UnifiedToolExecutor', () => {
       id: 'tool_5',
       name: 'non_existent',
       input: {}
-    });
+    }, tools);
 
     expect(result.toolUseId).toBe('tool_5');
     expect(result.toolName).toBe('non_existent');
@@ -124,7 +128,7 @@ describe('UnifiedToolExecutor', () => {
         name: 'calculate',
         input: { a: 10, b: 20 }
       }
-    ]);
+    ], tools, {});
 
     expect(results).toHaveLength(2);
     expect(results[0]?.content).toBe('Weather in Tokyo: Sunny, 25°C');
@@ -143,13 +147,14 @@ describe('UnifiedToolExecutor', () => {
     const objInjector = EnvironmentInjector.createWithAutoProviders([{ provide: ObjectTools, useClass: ObjectTools }]);
     root.set([{ provide: ObjectTools, useClass: ObjectTools }]);
     const objExecutor = new UnifiedToolExecutor(objInjector);
+    const objTools = buildUnifiedTools([ObjectTools]);
 
     const result = await objExecutor.execute({
       type: 'tool_use',
       id: 'tool_8',
       name: 'get_object',
       input: {}
-    });
+    }, objTools);
 
     expect(result.content).toBe(JSON.stringify({ status: 'success', data: [1, 2, 3] }));
   });

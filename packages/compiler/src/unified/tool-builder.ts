@@ -3,15 +3,57 @@
  * @description 基于装饰器元数据构建 UnifiedTool，并转换为各厂商格式
  * @version 2.0
  */
-
-import { root, ToolMetadataKey, ToolArgMetadataKey, Type } from '@sker/core'
-import { ToolMetadata, ToolArgMetadata } from '@sker/core'
-import { AnthropicTool, OpenAITool, GoogleTool, GoogleToolFunctionDeclaration, UnifiedTool, UnifiedToolParameters } from '../ast'
+import 'reflect-metadata';
+import { root, ToolMetadataKey, Type } from '@sker/core'
+import { ToolMetadata, TOOL_METADATA_KEY } from '@sker/core'
+import { AnthropicTool, OpenAITool, GoogleTool, GoogleToolFunctionDeclaration, UnifiedTool } from '../ast'
 import { zodToJsonSchema, isOptionalParam } from '../utils/zod-to-json-schema'
-import { buildToolArgsMap } from '../utils/tool-args-map'
 
 // ==================== 核心构建函数 ====================
+export function buildUnifiedTool(tool: Type<any>, propertyKey: string | symbol): UnifiedTool {
+    // 直接从类上读取元数据，O(1) 查找
+    const toolMetadata: ToolMetadata | undefined = Reflect.getMetadata(TOOL_METADATA_KEY, tool, propertyKey);
 
+    if (!toolMetadata) {
+        throw new Error(`Tool metadata not found for ${tool.name}.${String(propertyKey)}`)
+    }
+
+    const properties: Record<string, any> = {}
+    const required: string[] = []
+
+    for (const param of toolMetadata.parameters) {
+        properties[param.paramName] = zodToJsonSchema(param.zod)
+        if (!isOptionalParam(param.zod)) {
+            required.push(param.paramName)
+        }
+    }
+
+    return {
+        name: toolMetadata.name,
+        description: toolMetadata.description,
+        parameters: {
+            type: 'object',
+            properties,
+            required: required.length > 0 ? required : undefined
+        },
+        execute: async (params: Record<string, any>) => {
+            const instance = root.get(tool)
+            const args = toolMetadata.parameters
+
+            const callArgs: any[] = []
+            for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
+                const paramName = arg.paramName ?? `param${arg.parameterIndex}`
+                const value = params[paramName]
+                // zod校验
+                const zodValue = arg.zod.parse(value)
+                callArgs.push(zodValue)
+            }
+
+            const method = (instance as any)[propertyKey]
+            return await method.call(instance, ...callArgs)
+        }
+    }
+}
 /**
  * 从装饰器元数据构建统一工具列表
  * @param filterTools 可选的工具类列表，用于过滤特定工具
@@ -25,36 +67,8 @@ export function buildUnifiedTools(filterTools?: Type<any>[]): UnifiedTool[] {
         toolMetadatas = toolMetadatas.filter((m: ToolMetadata) => filterNames.has(m.target.name))
     }
 
-    const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? []
-
-    // 构建参数映射
-    const toolArgsMap = buildToolArgsMap(toolArgMetadatas)
-
-    // 转换为 UnifiedTool 格式
     return toolMetadatas.map((toolMeta: ToolMetadata): UnifiedTool => {
-        const key = `${toolMeta.target.name}-${String(toolMeta.propertyKey)}`
-        const args = toolArgsMap.get(key) ?? []
-
-        const properties: Record<string, any> = {}
-        const required: string[] = []
-
-        for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
-            const paramName = arg.paramName ?? `param${arg.parameterIndex}`
-            properties[paramName] = zodToJsonSchema(arg.zod)
-            if (!isOptionalParam(arg.zod)) {
-                required.push(paramName)
-            }
-        }
-
-        return {
-            name: toolMeta.name,
-            description: toolMeta.description,
-            parameters: {
-                type: 'object',
-                properties,
-                required: required.length > 0 ? required : undefined
-            }
-        }
+        return buildUnifiedTool(toolMeta.target, toolMeta.propertyKey)
     })
 }
 
@@ -70,11 +84,7 @@ export function unifiedToolsToAnthropic(tools: UnifiedTool[]): AnthropicTool[] {
         return {
             name: tool.name,
             description: tool.description,
-            input_schema: {
-                type: 'object',
-                properties: tool.parameters.properties,
-                required: tool.parameters.required
-            }
+            input_schema: tool.parameters
         }
     })
 }
@@ -91,11 +101,7 @@ export function unifiedToolsToOpenAI(tools: UnifiedTool[]): OpenAITool[] {
             function: {
                 name: tool.name,
                 description: tool.description,
-                parameters: {
-                    type: 'object',
-                    properties: tool.parameters.properties,
-                    required: tool.parameters.required
-                }
+                parameters: tool.parameters
             }
         }
     })
@@ -111,11 +117,7 @@ export function unifiedToolsToGoogle(tools: UnifiedTool[]): GoogleTool {
         return {
             name: tool.name,
             description: tool.description,
-            parameters: {
-                type: 'object',
-                properties: tool.parameters.properties,
-                required: tool.parameters.required
-            }
+            parameters: tool.parameters
         }
     })
 

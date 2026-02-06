@@ -1,13 +1,15 @@
-import { Injectable, Tool, ToolArg } from '@sker/core'
+import { Injectable, Tool, ToolArg, Inject } from '@sker/core'
 import { z } from 'zod'
 import { TaskManagerService } from '../services/task-manager.service'
 import { TaskDependencyResolverService } from '../services/task-dependency-resolver.service'
+import { CURRENT_AGENT_ID } from '../tokens'
 
 @Injectable()
 export class BatchCreateTasksTool {
   constructor(
     private taskManager: TaskManagerService,
-    private dependencyResolver: TaskDependencyResolverService
+    private dependencyResolver: TaskDependencyResolverService,
+    @Inject(CURRENT_AGENT_ID) private currentAgentId: string
   ) { }
 
   @Tool({
@@ -36,7 +38,10 @@ export class BatchCreateTasksTool {
     const createdTasks = []
 
     for (const taskInput of tasks) {
-      const task = await this.taskManager.createTask(taskInput)
+      const task = await this.taskManager.createTask({
+        ...taskInput,
+        createdBy: this.currentAgentId
+      })
       createdTasks.push({
         id: task.id,
         title: task.title,

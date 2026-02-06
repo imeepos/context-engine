@@ -1,3 +1,4 @@
+import { Injector } from "@sker/core";
 
 
 export abstract class Ast {
@@ -327,6 +328,8 @@ export interface Visitor {
     visitUnifiedRequestAst(ast: UnifiedRequestAst, ctx: any): any;
     visitUnifiedResponseAst(ast: UnifiedResponseAst, ctx: any): any;
     visitUnifiedStreamEventAst(ast: UnifiedStreamEventAst, ctx: any): any;
+    visitMCPRequestAst(ast: MCPRequestAst, ctx: any): any;
+    visitMCPResponseAst(ast: MCPResponseAst, ctx: any): any;
 }
 
 export abstract class BaseVisitor implements Visitor {
@@ -378,6 +381,12 @@ export abstract class BaseVisitor implements Visitor {
     visitUnifiedStreamEventAst(ast: UnifiedStreamEventAst, ctx: any): any {
         return null;
     }
+    visitMCPRequestAst(ast: MCPRequestAst, ctx: any): any {
+        return null;
+    }
+    visitMCPResponseAst(ast: MCPResponseAst, ctx: any): any {
+        return null;
+    }
 }
 
 // ==================== 统一请求 AST ====================
@@ -420,8 +429,26 @@ export interface UnifiedImageContent {
     type: 'image';
     source: { type: 'base64' | 'url'; mediaType?: string; data?: string; url?: string };
 }
-
 export type UnifiedContent = UnifiedTextContent | UnifiedThinkingContent | UnifiedToolUseContent | UnifiedToolResultContent | UnifiedImageContent;
+export function isUnifiedTextContent(val: UnifiedContent): val is UnifiedTextContent {
+    return val.type === 'text';
+}
+
+export function isUnifiedThinkingContent(val: UnifiedContent): val is UnifiedThinkingContent {
+    return val.type === 'thinking';
+}
+
+export function isUnifiedToolUseContent(val: UnifiedContent): val is UnifiedToolUseContent {
+    return val.type === 'tool_use';
+}
+
+export function isUnifiedToolResultContent(val: UnifiedContent): val is UnifiedToolResultContent {
+    return val.type === 'tool_result';
+}
+
+export function isUnifiedImageContent(val: UnifiedContent): val is UnifiedImageContent {
+    return val.type === 'image';
+}
 
 export type UnifiedStopReason = 'end_turn' | 'tool_use' | 'max_tokens' | 'stop_sequence' | 'content_filter' | 'error';
 
@@ -485,7 +512,7 @@ export class UnifiedStreamEventAst extends Ast {
 // 工具定义类型
 export interface UnifiedToolParameters {
     type: 'object';
-    properties: Record<string, { type: string; description?: string; enum?: string[]; items?: any }>;
+    properties: Record<string, any>;
     required?: string[];
 }
 
@@ -493,4 +520,29 @@ export interface UnifiedTool {
     name: string;
     description: string;
     parameters: UnifiedToolParameters;
+    execute: (params: Record<string, any>, injector: Injector) => Promise<any>;
+}
+
+// ==================== MCP Request/Response Types ====================
+
+export class MCPRequestAst extends Ast {
+    method!: string;
+    params?: Record<string, unknown>;
+    id?: string | number;
+    visit(visitor: Visitor, ctx: any) {
+        return visitor.visitMCPRequestAst(this, ctx);
+    }
+}
+
+export class MCPResponseAst extends Ast {
+    id!: string | number | null;
+    result?: unknown;
+    error?: {
+        code: number;
+        message: string;
+        data?: unknown;
+    };
+    visit(visitor: Visitor, ctx: any) {
+        return visitor.visitMCPResponseAst(this, ctx);
+    }
 }

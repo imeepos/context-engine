@@ -9,3 +9,4 @@ export * from './request-transformer';
 export * from './response-transformer';
 export * from './reverse-transformer';
 export * from './stream-aggregator';
+export * from './tool-builder'

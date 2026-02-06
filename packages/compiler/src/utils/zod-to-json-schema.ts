@@ -21,12 +21,27 @@ export function zodToJsonSchema(zodSchema: z.ZodTypeAny): any {
     const schema = zodSchema.toJSONSchema()
     // 移除 $schema 字段以保持向后兼容
     if (schema && typeof schema === 'object' && '$schema' in schema) {
-        const { $schema, ...rest } = schema
+        const { $schema: _$schema, ...rest } = schema
         return rest
     }
     return schema
 }
+export function zodToParams(params: Record<string, z.ZodTypeAny> = {}): any {
+    const properties: Record<string, any> = {}
+    const required: string[] = []
 
+    for (const [key, value] of Object.entries(params)) {
+        properties[key] = zodToJsonSchema(value)
+        if (!isOptionalParam(value)) {
+            required.push(key)
+        }
+    }
+    return {
+        type: 'object',
+        properties,
+        required: required
+    }
+}
 /**
  * Zod schema 转换为 JSON Schema（带 description）
  */

@@ -1,4 +1,4 @@
-import { Injectable, Optional, Inject } from '@sker/core';
+import { Injectable, Optional } from '@sker/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { Observable } from 'rxjs';
 import { LLMProviderAdapter } from '../adapter';
@@ -30,7 +30,6 @@ export class AnthropicAdapter implements LLMProviderAdapter {
 
     const transformer = new UnifiedToAnthropicTransformer();
     const anthropicRequest = transformer.transform(request);
-
     const response = await this.client.messages.create(anthropicRequest as any);
 
     const responseTransformer = new AnthropicToUnifiedTransformer();

@@ -134,7 +134,7 @@ export function resetRootInjector() {
  *
  * @Injectable({ providedIn: 'platform' })
  * class PlatformLoggerService {
- *   log(message: string) { console.log(message); }
+ *   log(message: string) {  }
  * }
  *
  * // ✅ 正确的顺序：先创建根注入器

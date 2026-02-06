@@ -11,7 +11,7 @@ import {
  */
 export interface InjectMetadata {
   /** 注入令牌 */
-  token: any;
+  token?: InjectionTokenType<unknown>;
   /** 内部标志位（性能优化） */
   flags: InternalInjectFlags;
 }
@@ -52,7 +52,7 @@ export function Inject<T>(
   options?: InjectOptions,
 ): ParameterDecorator {
   return function (
-    target: any,
+    target: object,
     _propertyKey: string | symbol | undefined,
     parameterIndex: number,
   ) {
@@ -86,7 +86,7 @@ export function Inject<T>(
  * @param target 目标类
  * @returns 注入令牌数组，每个元素对应构造函数的一个参数
  */
-export function getInjectMetadata(target: any): any[] | undefined {
+export function getInjectMetadata(target: Function): InjectionTokenType<unknown>[] | undefined {
   // 🚀 优先获取新的统一元数据
   const unifiedMetadata: InjectMetadata[] | undefined = Reflect.getMetadata(
     INJECT_METADATA_KEY,
@@ -94,13 +94,13 @@ export function getInjectMetadata(target: any): any[] | undefined {
   );
 
   // 向后兼容：获取旧的分离元数据
-  const legacyTokens: any[] | undefined = Reflect.getMetadata(
+  const legacyTokens: InjectionTokenType<unknown>[] | undefined = Reflect.getMetadata(
     LEGACY_INJECT_METADATA_KEY,
     target,
   );
 
   // 获取 TypeScript 推断的参数类型
-  const paramTypes: any[] | undefined = Reflect.getMetadata(
+  const paramTypes: Function[] | undefined = Reflect.getMetadata(
     PARAM_TYPES_KEY,
     target,
   );
@@ -129,7 +129,7 @@ export function getInjectMetadata(target: any): any[] | undefined {
   }
 
   // 构建结果数组
-  const result: any[] = [];
+  const result: InjectionTokenType<unknown>[] = [];
   for (let i = 0; i < maxLength; i++) {
     // 🚀 优先使用新的统一元数据
     if (
@@ -137,17 +137,19 @@ export function getInjectMetadata(target: any): any[] | undefined {
       unifiedMetadata[i] &&
       unifiedMetadata[i]?.token !== undefined
     ) {
-      result[i] = unifiedMetadata[i]!.token;
+      result[i] = unifiedMetadata[i]!.token!;
     }
     // 向后兼容：使用旧的分离元数据
     else if (legacyTokens && legacyTokens[i] !== undefined) {
-      result[i] = legacyTokens[i];
+      result[i] = legacyTokens[i]!;
     }
     // 最后使用 TypeScript 推断的类型
     else if (paramTypes && paramTypes[i] !== undefined) {
-      result[i] = paramTypes[i];
+      result[i] = paramTypes[i]!;
     } else {
-      result[i] = undefined;
+      // 无法确定令牌时，使用 undefined 而不是 Object
+      // 这样注入器可以正确处理缺失的依赖
+      result[i] = undefined as any;
     }
   }
 
@@ -161,7 +163,7 @@ export function getInjectMetadata(target: any): any[] | undefined {
  * @returns 注入选项数组
  */
 export function getInjectOptionsMetadata(
-  target: any,
+  target: Function,
 ): InjectOptions[] | undefined {
   // 🚀 优先获取新的统一元数据
   const unifiedMetadata: InjectMetadata[] | undefined = Reflect.getMetadata(
@@ -208,7 +210,7 @@ export function getInjectOptionsMetadata(
  * @returns 统一的注入元数据数组
  */
 export function getUnifiedInjectMetadata(
-  target: any,
+  target: Function,
 ): InjectMetadata[] | undefined {
   // 获取新的统一元数据
   const unifiedMetadata: InjectMetadata[] | undefined = Reflect.getMetadata(
@@ -221,7 +223,7 @@ export function getUnifiedInjectMetadata(
   }
 
   // 向后兼容：从旧的分离元数据构建统一元数据
-  const legacyTokens: any[] | undefined = Reflect.getMetadata(
+  const legacyTokens: InjectionTokenType<unknown>[] | undefined = Reflect.getMetadata(
     LEGACY_INJECT_METADATA_KEY,
     target,
   );
@@ -229,7 +231,7 @@ export function getUnifiedInjectMetadata(
     LEGACY_INJECT_OPTIONS_METADATA_KEY,
     target,
   );
-  const paramTypes: any[] | undefined = Reflect.getMetadata(
+  const paramTypes: Function[] | undefined = Reflect.getMetadata(
     PARAM_TYPES_KEY,
     target,
   );
@@ -250,13 +252,13 @@ export function getUnifiedInjectMetadata(
 
   const result: InjectMetadata[] = [];
   for (let i = 0; i < maxLength; i++) {
-    let token: any;
+    let token: InjectionTokenType<unknown> | undefined;
 
     // 确定令牌
     if (legacyTokens && legacyTokens[i] !== undefined) {
-      token = legacyTokens[i];
+      token = legacyTokens[i]!;
     } else if (paramTypes && paramTypes[i] !== undefined) {
-      token = paramTypes[i];
+      token = paramTypes[i]!;
     } else {
       token = undefined;
     }
@@ -277,7 +279,7 @@ export function getUnifiedInjectMetadata(
  * @param target 目标类
  * @returns 是否有注入元数据
  */
-export function hasInjectMetadata(target: any): boolean {
+export function hasInjectMetadata(target: Function): boolean {
   return (
     Reflect.hasMetadata(INJECT_METADATA_KEY, target) ||
     Reflect.hasMetadata(LEGACY_INJECT_METADATA_KEY, target) ||

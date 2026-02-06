@@ -1,4 +1,4 @@
-import { Injectable, Optional, Inject } from '@sker/core';
+import { Injectable, Optional } from '@sker/core';
 import OpenAI from 'openai';
 import { Observable } from 'rxjs';
 import { LLMProviderAdapter } from '../adapter';
@@ -14,7 +14,8 @@ export class OpenAIAdapter implements LLMProviderAdapter {
   private client: OpenAI | null = null;
 
   constructor(
-    @Optional(LLM_OPENAI_CONFIG) private config?: LLMProviderConfig
+    @Optional(LLM_OPENAI_CONFIG)
+    private config?: LLMProviderConfig
   ) {
     if (this.config?.apiKey) {
       this.client = new OpenAI({ apiKey: this.config.apiKey, baseURL: this.config.baseUrl });

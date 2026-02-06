@@ -3,13 +3,83 @@ import { ChatPageComponent } from './pages/ChatPage'
 import { DashboardComponent } from './pages/Dashboard'
 import { TaskListPageComponent } from './pages/TaskListPage'
 import { TaskDetailPageComponent } from './pages/TaskDetailPage'
+import { PluginManagerPage } from './pages/PluginManagerPage'
+import { PluginDevelopPage } from './pages/PluginDevelopPage'
+import { PluginContainerPage } from './pages/PluginContainerPage'
 import { Injector } from '@sker/core'
+import { BaseInfo } from './pages/BaseInfo'
+import { MarketPage } from './pages/MarketPage'
+import { MarketDetailPage } from './pages/MarketDetailPage'
+import { MarketInstalledPage } from './pages/MarketInstalledPage'
+import { MarketPublishedPage } from './pages/MarketPublishedPage'
+
+/**
+ * 一级菜单配置
+ */
+export interface MenuItem {
+  /** 菜单标题 */
+  title: string
+  /** 路由路径 */
+  path: string
+  /** Tool 名称 */
+  toolName: string
+  /** Tool 描述 */
+  description: string
+  /** 是否在菜单中显示 */
+  showInMenu?: boolean
+}
+
+export const menuItems: MenuItem[] = [
+  {
+    title: '查看正在进行的任务',
+    path: '/',
+    toolName: 'navigate_dashboard',
+    description: '查看正在进行的任务和系统概览',
+    showInMenu: true
+  },
+  {
+    title: '任务管理',
+    path: '/tasks',
+    toolName: 'navigate_tasks',
+    description: '查看或创建待办任务',
+    showInMenu: true
+  },
+  {
+    title: '应用市场',
+    path: '/market',
+    toolName: 'navigate_market',
+    description: '浏览、搜索、安装和发布插件',
+    showInMenu: true
+  },
+  {
+    title: '插件管理',
+    path: '/plugins',
+    toolName: 'navigate_plugins',
+    description: '管理已安装的插件',
+    showInMenu: true
+  },
+  {
+    title: '系统信息',
+    path: '/base-info',
+    toolName: 'navigate_baseinfo',
+    description: '查看系统基础信息',
+    showInMenu: true
+  }
+]
 
 export const routes: Route[] = [
-  { path: '/', component: DashboardComponent, params: {} },
-  { path: '/chat/:agentId', component: ChatPageComponent, params: {} },
-  { path: '/tasks', component: TaskListPageComponent, params: {} },
-  { path: '/tasks/:taskId', component: TaskDetailPageComponent, params: {} }
+  { path: '/', component: DashboardComponent as any, params: {} },
+  { path: '/base-info', component: BaseInfo as any, params: {} },
+  { path: '/chat/:agentId', component: ChatPageComponent as any, params: {} },
+  { path: '/tasks', component: TaskListPageComponent as any, params: {} },
+  { path: '/tasks/:taskId', component: TaskDetailPageComponent as any, params: {} },
+  { path: '/market', component: MarketPage as any, params: {} },
+  { path: '/market/installed', component: MarketInstalledPage as any, params: {} },
+  { path: '/market/published', component: MarketPublishedPage as any, params: {} },
+  { path: '/market/:id', component: MarketDetailPage as any, params: {} },
+  { path: '/plugins', component: PluginManagerPage as any, params: {} },
+  { path: '/plugins/develop', component: PluginDevelopPage as any, params: {} },
+  { path: '/plugin/:id/*', component: PluginContainerPage as any, params: {} }
 ]
 
 export function createRouter(injector: Injector) {

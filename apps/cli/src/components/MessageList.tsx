@@ -18,7 +18,8 @@ export function MessageListComponent({ injector }: MessageListProps) {
       <h2>消息</h2>
       {messages.map((msg, i) => (
         <div key={i}>
-          <strong>[{msg.from} → {msg.to}]</strong> {msg.content}
+          <strong>[{msg.from} → {msg.to}]</strong>
+          <code>{msg.content}</code>
         </div>
       ))}
     </div>

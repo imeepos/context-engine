@@ -1,17 +1,18 @@
-import { Injectable } from '@sker/core'
-import type { Storage } from '../storage/storage.interface'
+import { Inject, Injectable } from '@sker/core'
+import { STORAGE_TOKEN, type Storage } from '../storage/storage.interface'
 import { InterAgentMessage, MessageQueue } from '../types/message'
 import { AgentRegistryService } from './agent-registry.service'
 import { v4 as uuidv4 } from 'uuid'
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: 'auto' })
 export class MessageBrokerService {
   private messageReceivedCallbacks: Array<(message: InterAgentMessage) => void> = []
+  private unwatchFn?: () => void
 
   constructor(
-    private storage: Storage,
-    private agentRegistry: AgentRegistryService
-  ) {}
+    @Inject(STORAGE_TOKEN) private storage: Storage,
+    @Inject(AgentRegistryService) private agentRegistry: AgentRegistryService
+  ) { }
 
   async init(): Promise<void> {
     const currentAgent = this.agentRegistry.getCurrentAgent()
@@ -25,7 +26,7 @@ export class MessageBrokerService {
       await this.storage.write(queueKey, { messages: [] })
     }
 
-    this.storage.watch(queueKey, async (queue: MessageQueue) => {
+    this.unwatchFn = this.storage.watch(queueKey, async (queue: MessageQueue) => {
       if (!queue || !queue.messages) return
 
       const unreadMessages = queue.messages.filter(m => !m.read)
@@ -34,7 +35,20 @@ export class MessageBrokerService {
       for (const message of unreadMessages) {
         this.messageReceivedCallbacks.forEach(callback => callback(message))
       }
+
+      // Mark messages as read
+      const updatedQueue = {
+        messages: queue.messages.map(m => ({ ...m, read: true }))
+      }
+      await this.storage.write(queueKey, updatedQueue)
     })
+  }
+
+  destroy(): void {
+    if (this.unwatchFn) {
+      this.unwatchFn()
+      this.unwatchFn = undefined
+    }
   }
 
   async sendMessage(to: string, content: string): Promise<void> {
@@ -97,11 +111,19 @@ export class MessageBrokerService {
 
     // Combine and filter messages between the two agents
     const allMessages = [...currentMessages, ...otherMessages]
-    return allMessages
-      .filter(m =>
-        (m.from === currentAgent.id && m.to === withAgent) ||
-        (m.from === withAgent && m.to === currentAgent.id)
-      )
-      .sort((a, b) => a.timestamp - b.timestamp)
+    const filteredMessages = allMessages.filter(m =>
+      (m.from === currentAgent.id && m.to === withAgent) ||
+      (m.from === withAgent && m.to === currentAgent.id)
+    )
+
+    // Deduplicate by message ID
+    const uniqueMessages = new Map<string, InterAgentMessage>()
+    filteredMessages.forEach(m => {
+      if (!uniqueMessages.has(m.id)) {
+        uniqueMessages.set(m.id, m)
+      }
+    })
+
+    return Array.from(uniqueMessages.values()).sort((a, b) => a.timestamp - b.timestamp)
   }
 }

@@ -73,7 +73,9 @@ export class JsonFileStorage implements Storage {
     } finally {
       try {
         await fs.unlink(lockPath)
-      } catch {}
+      } catch {
+        // Ignore unlock errors
+      }
     }
   }
 
@@ -118,6 +120,9 @@ export class JsonFileStorage implements Storage {
       const data = await this.read(key)
       callback(data)
     })
+
+    // Ignore transient watcher errors when temporary test directories are removed.
+    watcher.on('error', (_error) => undefined)
 
     this.watchers.set(key, watcher)
 

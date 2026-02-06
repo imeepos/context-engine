@@ -3,12 +3,11 @@ import { UnifiedTool } from '@sker/compiler'
 import React from 'react';
 import { renderToMarkdown } from '../reconciler/renderer';
 import { extractTools } from '../reconciler/extractor';
-import { createElement } from '../reconciler/dom';
-import { reconciler } from '../reconciler/host-config';
+import { directRenderAsync } from '../reconciler/direct-render-async';
 
 export interface Route<T = any> {
   path: string;
-  component: React.FunctionComponent<T & { injector: Injector }>;
+  component: React.FunctionComponent<T & { injector: Injector }> | ((props: T & { injector: Injector }) => Promise<React.ReactElement>);
   params: T;
 }
 
@@ -22,16 +21,15 @@ export const CURRENT_URL = new InjectionToken<URL>(`CURRENT_URL`);
 export const CURRENT_ROUTE = new InjectionToken<RouteMatch>(`CURRENT_ROUTE`);
 export const CURRENT_PAGE = new InjectionToken<Page>(`CURRENT_PAGE`);
 export const COMPONENT = new InjectionToken<React.FunctionComponent>(`COMPONENT`);
-export const TOOLS = new InjectionToken<RouteTool[]>(`TOOLS`);
-export interface RouteTool {
-  name: string;
-  handler: (params?: any) => Promise<any>;
-  description?: string;
-  parameters?: any;
-}
-@Injectable()
+export const INPUT = new InjectionToken<string>(`INPUT`);
+
+@Injectable({
+  providedIn: 'auto',
+})
 export class Browser {
+
   constructor(@Inject(Injector) private parent: Injector) { }
+
   open(url: string, providers: Provider[] = []): Page {
     if (!url || typeof url !== 'string') {
       throw new Error('Invalid URL format');
@@ -42,12 +40,15 @@ export class Browser {
 
     const pageInjector = createInjector([
       { provide: CURRENT_URL, useFactory: () => parsePromptURL(url) },
-      { provide: CURRENT_ROUTE, useFactory: (parsedUrl: URL, pageInjector: Injector) => matchRoute(parsedUrl.pathname, pageInjector), deps: [CURRENT_URL, Injector] },
-      { provide: CURRENT_PAGE, useClass: Page },
+      {
+        provide: CURRENT_ROUTE, useFactory: (parsedUrl: URL, pageInjector: Injector) => {
+          return matchRoute(parsedUrl.pathname, pageInjector);
+        }, deps: [CURRENT_URL, Injector]
+      },
       ...providers
     ], this.parent)
 
-    return pageInjector.get(CURRENT_PAGE);
+    return pageInjector.get(Page);
   }
 }
 
@@ -122,7 +123,6 @@ export interface PromptURL {
 export interface RenderResult {
   prompt: string;
   tools: UnifiedTool[];
-  executors: Map<string, () => void | Promise<void>>;
 }
 
 export interface ToolCall {
@@ -133,7 +133,7 @@ export interface ToolCall {
 @Injectable({ providedIn: 'auto' })
 export class Page {
   constructor(@Inject(Injector) private parent: Injector) { }
-  render(providers: Provider[] = []): RenderResult {
+  async render(providers: Provider[] = []): Promise<RenderResult> {
     const currentRoute = this.parent.get(CURRENT_ROUTE);
     if (!currentRoute) {
       const url = this.parent.get(CURRENT_URL);
@@ -146,37 +146,19 @@ export class Page {
       ...providers,
     ], this.parent);
 
-    const element = React.createElement(component, { injector });
-    const container = createElement('root', {}, []);
-    const root = reconciler.createContainer(container, 0, null, false, null, '', () => {}, null);
+    // 直接调用组件函数而不是使用 React.createElement
+    // 这样可以支持异步组件
+    const result = component({ injector, ...currentRoute.params });
+    const element = result instanceof Promise ? await result : result;
+    const vnode = await directRenderAsync(element);
 
-    reconciler.updateContainer(element, root, null, () => {});
+    if (!vnode) {
+      return { prompt: '', tools: [] };
+    }
 
-    const vnode = container.children[0] || container;
     const prompt = renderToMarkdown(vnode);
-    const { tools, executors } = extractTools(vnode);
-
-    return { prompt, tools, executors };
-  }
-  async execute(toolName: string, params?: any): Promise<any> {
-    if (!toolName) {
-      throw new Error('Tool name is required');
-    }
-    const tools = this.parent.get(TOOLS, []);
-    const tool = tools?.find(t => t.name === toolName);
-    if (!tool) {
-      throw new Error(`Tool not found: ${toolName}`);
-    }
-
-    return await tool.handler(params);
-  }
-  async executes(calls: ToolCall[]): Promise<any[]> {
-    const results: any[] = [];
-    for (const call of calls) {
-      const result = await this.execute(call.name, call.params);
-      results.push(result);
-    }
-    return results;
+    const tools = extractTools(vnode);
+    return { prompt, tools };
   }
   navigate(url: string): Page {
     const browser = this.parent.get(Browser);

@@ -1,23 +1,22 @@
-import { Injectable } from '@sker/core'
+import { Inject, Injectable } from '@sker/core'
 import type { Storage } from '../storage/storage.interface'
+import { STORAGE_TOKEN } from '../storage/storage.interface'
 import { Agent, AgentRegistry } from '../types/agent'
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: 'auto' })
 export class AgentRegistryService {
   private currentAgent: Agent | null = null
   private heartbeatInterval: NodeJS.Timeout | null = null
   private agentListChangeCallbacks: Array<(agents: Agent[]) => void> = []
+  private unwatchRegistry: (() => void) | null = null
 
-  constructor(private storage: Storage) {}
+  constructor(@Inject(STORAGE_TOKEN) private storage: Storage) { }
 
   async register(customId?: string): Promise<Agent> {
     const registry = await this.getRegistry()
 
     let agentId: string
     if (customId) {
-      if (registry.agents[customId] && registry.agents[customId].status === 'online') {
-        throw new Error(`Agent ID "${customId}" 已被使用`)
-      }
       agentId = customId
     } else {
       agentId = `agent-${registry.nextId}`
@@ -47,6 +46,12 @@ export class AgentRegistryService {
 
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval)
+      this.heartbeatInterval = null
+    }
+
+    if (this.unwatchRegistry) {
+      this.unwatchRegistry()
+      this.unwatchRegistry = null
     }
 
     const registry = await this.getRegistry()
@@ -55,6 +60,8 @@ export class AgentRegistryService {
       agent.status = 'offline'
       await this.storage.write('agents', registry)
     }
+
+    this.currentAgent = null
   }
 
   async getOnlineAgents(): Promise<Agent[]> {
@@ -94,8 +101,13 @@ export class AgentRegistryService {
   }
 
   private watchRegistry(): void {
-    this.storage.watch('agents', async () => {
+    if (this.unwatchRegistry) return
+
+    this.unwatchRegistry = this.storage.watch('agents', async () => {
+      // Delay slightly to avoid reading a partially written file.
+      await new Promise(resolve => setTimeout(resolve, 30))
       const agents = await this.getOnlineAgents()
+      if (agents.length === 0) return
       this.agentListChangeCallbacks.forEach(callback => callback(agents))
     })
   }

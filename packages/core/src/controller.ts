@@ -11,19 +11,19 @@ export enum RequestMethod {
   DELETE = 3,
   PATCH = 4
 }
-export const CONTROLLES = new InjectionToken<Type<any>[]>(`CONTROLLES`)
+export const CONTROLLES = new InjectionToken<Type<unknown>[]>(`CONTROLLES`)
 export const FEATURE_PROVIDERS = new InjectionToken<Provider[][]>(`FEATURE_PROVIDERS`)
 
-export function Controller(prefix?: string | Type<any>): ClassDecorator {
-  return (target: any) => {
+export function Controller(prefix?: string | Type<unknown>): ClassDecorator {
+  return (target: Function) => {
     if (typeof prefix === 'function') {
       root.set([
-        { provide: prefix, useClass: target },
+        { provide: prefix as Type<unknown>, useClass: target },
         { provide: target, useClass: target },
         {
           provide: FEATURE_PROVIDERS,
           useValue: [
-            { provide: prefix, useClass: target },
+            { provide: prefix as Type<unknown>, useClass: target },
             { provide: target, useClass: target },
           ],
           multi: true
@@ -52,7 +52,7 @@ export const SSE_METADATA = 'sse';
  */
 interface HttpMethodOptions {
   path?: string;
-  schema?: any;
+  schema?: unknown;
   contentType?: string;
   sse?: boolean;
 }
@@ -75,13 +75,13 @@ interface HttpMethodOptions {
  */
 function createHttpMethodDecorator(method: RequestMethod) {
   return (
-    pathOrOptionsOrSchema?: string | HttpMethodOptions | any,
-    zodOrContentType?: any,
+    pathOrOptionsOrSchema?: string | HttpMethodOptions | unknown,
+    zodOrContentType?: unknown,
     contentType?: string
   ): MethodDecorator => {
-    return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+    return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
       let routePath: string;
-      let responseSchema: any;
+      let responseSchema: unknown;
       let finalContentType: string = 'application/json';
 
       // 检测是否为配置对象
@@ -100,7 +100,7 @@ function createHttpMethodDecorator(method: RequestMethod) {
 
         // 处理 SSE 标识
         if (options.sse) {
-          const methodTarget = descriptor.value || target[propertyKey];
+          const methodTarget = descriptor.value || (target as Record<string | symbol, unknown>)[propertyKey];
           Reflect.defineMetadata(SSE_METADATA, true, methodTarget);
         }
       } else {
@@ -118,7 +118,7 @@ function createHttpMethodDecorator(method: RequestMethod) {
             : 'application/json';
         } else {
           // 模式 1: @Post(path, schema, contentType)
-          routePath = pathOrOptionsOrSchema || '/';
+          routePath = (pathOrOptionsOrSchema as string) || '/';
           responseSchema = zodOrContentType && typeof zodOrContentType !== 'string'
             ? zodOrContentType
             : undefined;
@@ -128,7 +128,7 @@ function createHttpMethodDecorator(method: RequestMethod) {
 
       // 使用 target[propertyKey] 而不是 descriptor.value
       // 原因：抽象方法没有 descriptor.value，但仍需要附加元数据
-      const methodTarget = descriptor.value || target[propertyKey];
+      const methodTarget = descriptor.value || (target as Record<string | symbol, unknown>)[propertyKey];
       Reflect.defineMetadata(PATH_METADATA, routePath, methodTarget);
       Reflect.defineMetadata(METHOD_METADATA, method, methodTarget);
       Reflect.defineMetadata(CONTENT_TYPE_METADATA, finalContentType, methodTarget);
@@ -181,20 +181,61 @@ export interface RouteParamMetadata {
   data?: string;
 }
 
-function createParamDecorator(type: ParamType): (key?: string | any, zod?: any) => ParameterDecorator {
+/**
+ * Permission requirement interface (object form)
+ *
+ * Extensible base type for structured permission configurations.
+ * Packages like @sker/auth can augment this interface to add strong typing:
+ *
+ * @example Module augmentation in @sker/auth:
+ * ```typescript
+ * declare module '@sker/core' {
+ *   interface PermissionRequirement {
+ *     roles?: string | string[] | RoleRequirement;
+ *     custom?: (user: UserWithRole) => boolean | Promise<boolean>;
+ *     message?: string;
+ *   }
+ * }
+ * ```
+ */
+export interface PermissionRequirement {
+  [key: string]: unknown;
+}
+
+/**
+ * Union type for all accepted permission input formats
+ *
+ * Supports:
+ * - string: single role name, e.g. 'admin'
+ * - string[]: array of role names, e.g. ['admin', 'moderator']
+ * - PermissionRequirement: structured config object, e.g. { roles: 'admin', message: '...' }
+ */
+export type PermissionInput = string | string[] | PermissionRequirement;
+
+/**
+ * Middleware permission metadata stored by @RequirePermissions decorator
+ *
+ * This is the shape of the metadata object attached to methods via Reflect.defineMetadata.
+ * Consumers (e.g. @sker/auth factory) read this metadata to build middleware chains.
+ */
+export interface MiddlewarePermissionMetadata {
+  permissions?: PermissionInput;
+}
+
+function createParamDecorator(type: ParamType): (key?: string | unknown, zod?: unknown) => ParameterDecorator {
   /**
    * 支持两种用法：
    * @Body('name', z.string()) name: string  - 明确指定字段名
    * @Body(z.string()) name: string          - 从参数名推断字段名
    */
-  return (key?: string | any, zod?: any) => (target: Object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
+  return (key?: string | unknown, zod?: unknown) => (target: object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
     if (!propertyKey) {
       throw new Error('参数装饰器只能用于方法参数');
     }
 
     // 判断第一个参数是字段名还是 schema
     let fieldName: string | undefined;
-    let schema: any;
+    let schema: unknown;
 
     // 检测是否为 zod schema（具有 _def 或 parse/safeParse 方法）
     const isZodSchema = key && typeof key === 'object' && ('_def' in key || 'parse' in key || 'safeParse' in key);
@@ -205,7 +246,7 @@ function createParamDecorator(type: ParamType): (key?: string | any, zod?: any) 
       schema = key;
     } else {
       // 模式 1: @Body('name', z.string()) name: string
-      fieldName = key;
+      fieldName = key as string | undefined;
       schema = zod;
     }
 
@@ -230,16 +271,17 @@ export const Param = createParamDecorator(ParamType.PARAM);
 export const Query = createParamDecorator(ParamType.QUERY);
 export const Body = createParamDecorator(ParamType.BODY);
 
-export function RequirePermissions(permissions: any): MethodDecorator {
-  return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-    const methodTarget = descriptor.value || target[propertyKey];
-    Reflect.defineMetadata(MIDDLEWARE_METADATA, { permissions }, methodTarget);
+export function RequirePermissions(permissions: PermissionInput): MethodDecorator {
+  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+    const methodTarget = descriptor.value || (target as Record<string | symbol, unknown>)[propertyKey];
+    const metadata: MiddlewarePermissionMetadata = { permissions };
+    Reflect.defineMetadata(MIDDLEWARE_METADATA, metadata, methodTarget);
   };
 }
 
 export function ApiDescription(description: string, tags?: string[]): MethodDecorator {
-  return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-    const methodTarget = descriptor.value || target[propertyKey];
+  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+    const methodTarget = descriptor.value || (target as Record<string | symbol, unknown>)[propertyKey];
     Reflect.defineMetadata(OPENAPI_DESCRIPTION_METADATA, description, methodTarget);
     if (tags) {
       Reflect.defineMetadata(OPENAPI_TAGS_METADATA, tags, methodTarget);

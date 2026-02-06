@@ -1,6 +1,6 @@
-import { Injectable, Injector, ToolMetadataKey, ToolArgMetadataKey, ToolMetadata, ToolArgMetadata, root, Inject } from '@sker/core';
-import { UnifiedToolUseContent } from '../ast';
-import { buildToolArgsMap } from '../utils/tool-args-map';
+import { Inject, Injectable, Injector } from '@sker/core';
+import { UnifiedToolUseContent, UnifiedTool } from '../ast';
+import { ToolLoopOptions } from './tool-loop';
 
 export interface UnifiedToolResult {
   toolUseId: string;
@@ -11,14 +11,12 @@ export interface UnifiedToolResult {
 
 @Injectable()
 export class UnifiedToolExecutor {
-  constructor(@Inject(Injector) private injector: Injector) {}
+  constructor(@Inject(Injector) private injector: Injector) { }
 
-  async execute(toolUse: UnifiedToolUseContent): Promise<UnifiedToolResult> {
+  async execute(toolUse: UnifiedToolUseContent, tools: UnifiedTool[]): Promise<UnifiedToolResult> {
     try {
-      const toolMetadatas = root.get(ToolMetadataKey) ?? [];
-      const toolMeta = toolMetadatas.find((m: ToolMetadata) => m.name === toolUse.name);
-
-      if (!toolMeta) {
+      const tool = tools.find(t => t.name === toolUse.name);
+      if (!tool) {
         return {
           toolUseId: toolUse.id,
           toolName: toolUse.name,
@@ -26,28 +24,7 @@ export class UnifiedToolExecutor {
           isError: true
         };
       }
-
-      let instance;
-      try {
-        instance = this.injector.get(toolMeta.target);
-      } catch {
-        instance = root.get(toolMeta.target);
-      }
-
-      const toolArgMetadatas = root.get(ToolArgMetadataKey) ?? [];
-      const toolArgsMap = buildToolArgsMap(toolArgMetadatas);
-      const key = `${toolMeta.target.name}-${String(toolMeta.propertyKey)}`;
-      const args = toolArgsMap.get(key) ?? [];
-
-      const callArgs: any[] = [];
-      for (const arg of args.sort((a, b) => a.parameterIndex - b.parameterIndex)) {
-        const paramName = arg.paramName ?? `param${arg.paramName}`;
-        const value = toolUse.input[paramName];
-        callArgs.push(value);
-      }
-
-      const method = (instance as any)[toolMeta.propertyKey];
-      const result = await method.call(instance, ...callArgs);
+      const result = await tool.execute(toolUse.input, this.injector);
 
       return {
         toolUseId: toolUse.id,
@@ -65,7 +42,16 @@ export class UnifiedToolExecutor {
     }
   }
 
-  async executeAll(toolUses: UnifiedToolUseContent[]): Promise<UnifiedToolResult[]> {
-    return Promise.all(toolUses.map(tu => this.execute(tu)));
+  async executeAll(toolUses: UnifiedToolUseContent[], tools: UnifiedTool[], options: ToolLoopOptions): Promise<UnifiedToolResult[]> {
+    return Promise.all(toolUses.map(async tu => {
+      if (options.onToolBefore) {
+        await options.onToolBefore(tu)
+      }
+      const result = await this.execute(tu, tools)
+      if (options.onToolAfter) {
+        await options.onToolAfter(tu, result)
+      }
+      return result;
+    }));
   }
 }

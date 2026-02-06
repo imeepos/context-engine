@@ -10,8 +10,11 @@
     "claude": "claude --dangerously-skip-permissions"
   },
   "exports": {
+    "./base": "./base.js",
     "./base.js": "./base.js",
+    "./next": "./next.js",
     "./next.js": "./next.js",
+    "./react-internal": "./react-internal.js",
     "./react-internal.js": "./react-internal.js"
   },
   "devDependencies": {
