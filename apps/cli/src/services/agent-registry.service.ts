@@ -93,7 +93,10 @@ export class AgentRegistryService {
 
   private watchRegistry(): void {
     this.storage.watch('agents', async () => {
+      // 文件写入触发 watch 时可能尚未完成写入，稍等片刻再读取以避免解析空/半写入文件
+      await new Promise(resolve => setTimeout(resolve, 30))
       const agents = await this.getOnlineAgents()
+      if (agents.length === 0) return
       this.agentListChangeCallbacks.forEach(callback => callback(agents))
     })
   }

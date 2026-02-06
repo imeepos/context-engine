@@ -7,7 +7,6 @@ import { UnifiedToolExecutor } from './llm/tool-executor'
 import { AnthropicAdapter } from './llm/adapters/anthropic.adapter'
 import { OpenAIAdapter } from './llm/adapters/openai.adapter'
 import { GoogleAdapter } from './llm/adapters/google.adapter'
-import { MCPAdapter } from './llm/adapters/mcp.adapter'
 import { LLM_PROVIDER_ADAPTER } from './llm/adapter'
 
 // 导出所有类型和工具
