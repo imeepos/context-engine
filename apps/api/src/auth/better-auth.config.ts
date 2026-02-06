@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { admin } from 'better-auth/plugins/admin';
 import { D1Dialect } from 'kysely-d1';
-
+import { createSkerAuthPlugin } from '@sker/auth'
 interface CreateAuthOptions {
   baseURL?: string;
   secret?: string;
@@ -19,6 +19,9 @@ export function createAuth(db: D1Database, options: CreateAuthOptions = {}) {
     emailAndPassword: {
       enabled: true,
     },
-    plugins: [admin()],
+    plugins: [
+      admin(),
+      createSkerAuthPlugin([])
+    ],
   });
 }
