@@ -3,7 +3,7 @@
  */
 
 import type { z } from 'zod';
-import type { ParamType, RequestMethod } from '@sker/core';
+import type { ParamType, RequestMethod, MiddlewarePermissionMetadata } from '@sker/core';
 import type { OpenAPISchema } from '../openapi';
 
 /** Route parameter metadata */
@@ -14,10 +14,14 @@ export interface RouteParameter {
   index: number;
 }
 
-/** Middleware metadata from decorators */
-export interface MiddlewareMetadata {
-  permissions?: Record<string, unknown>;
-}
+/**
+ * Middleware metadata from decorators
+ *
+ * Re-exported from @sker/core's MiddlewarePermissionMetadata for backward compatibility.
+ * When @sker/auth's augment.ts is loaded, the permissions field gains strong typing
+ * for Better Auth roles, custom checkers, and error messages.
+ */
+export type MiddlewareMetadata = MiddlewarePermissionMetadata;
 
 /** OpenAPI parameter definition */
 export interface OpenAPIParameter {

@@ -181,6 +181,47 @@ export interface RouteParamMetadata {
   data?: string;
 }
 
+/**
+ * Permission requirement interface (object form)
+ *
+ * Extensible base type for structured permission configurations.
+ * Packages like @sker/auth can augment this interface to add strong typing:
+ *
+ * @example Module augmentation in @sker/auth:
+ * ```typescript
+ * declare module '@sker/core' {
+ *   interface PermissionRequirement {
+ *     roles?: string | string[] | RoleRequirement;
+ *     custom?: (user: UserWithRole) => boolean | Promise<boolean>;
+ *     message?: string;
+ *   }
+ * }
+ * ```
+ */
+export interface PermissionRequirement {
+  [key: string]: unknown;
+}
+
+/**
+ * Union type for all accepted permission input formats
+ *
+ * Supports:
+ * - string: single role name, e.g. 'admin'
+ * - string[]: array of role names, e.g. ['admin', 'moderator']
+ * - PermissionRequirement: structured config object, e.g. { roles: 'admin', message: '...' }
+ */
+export type PermissionInput = string | string[] | PermissionRequirement;
+
+/**
+ * Middleware permission metadata stored by @RequirePermissions decorator
+ *
+ * This is the shape of the metadata object attached to methods via Reflect.defineMetadata.
+ * Consumers (e.g. @sker/auth factory) read this metadata to build middleware chains.
+ */
+export interface MiddlewarePermissionMetadata {
+  permissions?: PermissionInput;
+}
+
 function createParamDecorator(type: ParamType): (key?: string | unknown, zod?: unknown) => ParameterDecorator {
   /**
    * 支持两种用法：
@@ -230,10 +271,11 @@ export const Param = createParamDecorator(ParamType.PARAM);
 export const Query = createParamDecorator(ParamType.QUERY);
 export const Body = createParamDecorator(ParamType.BODY);
 
-export function RequirePermissions(permissions: unknown): MethodDecorator {
+export function RequirePermissions(permissions: PermissionInput): MethodDecorator {
   return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
     const methodTarget = descriptor.value || (target as Record<string | symbol, unknown>)[propertyKey];
-    Reflect.defineMetadata(MIDDLEWARE_METADATA, { permissions }, methodTarget);
+    const metadata: MiddlewarePermissionMetadata = { permissions };
+    Reflect.defineMetadata(MIDDLEWARE_METADATA, metadata, methodTarget);
   };
 }
 

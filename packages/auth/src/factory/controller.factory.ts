@@ -8,6 +8,7 @@ import 'reflect-metadata';
 import { createAuthEndpoint, sessionMiddleware } from 'better-auth/api';
 import type { Endpoint, EndpointContext } from 'better-auth';
 import { RequestMethod, root, FEATURE_PROVIDERS, createInjector, Injector, isObservable, RESPONSE, isPromise, REQUEST, Type } from '@sker/core';
+import type { PermissionInput } from '@sker/core';
 
 import { permissionMiddleware } from '../permission';
 import type { ControllerConstructor, EndpointConfig, RouteParameter } from './factory.types';
@@ -52,13 +53,23 @@ function pathToCamelCase(path: string): string {
 
 /**
  * Build middleware array for endpoint
+ *
+ * Normalizes PermissionInput (string | string[] | PermissionRequirement)
+ * into a format that permissionMiddleware can consume.
  */
-function buildMiddleware(permissions?: Record<string, unknown>): unknown[] {
+function buildMiddleware(permissions?: PermissionInput): unknown[] {
   if (!permissions) {
     return [];
   }
 
-  return [sessionMiddleware, permissionMiddleware(permissions)];
+  // Normalize string/array shorthand into PermissionConfig object
+  const normalized = typeof permissions === 'string'
+    ? { roles: permissions }
+    : Array.isArray(permissions)
+      ? { roles: permissions }
+      : permissions;
+
+  return [sessionMiddleware, permissionMiddleware(normalized)];
 }
 
 /**

@@ -4,6 +4,9 @@
  * Built on Better Auth with RBAC support
  */
 
+// Module augmentation: extends @sker/core's PermissionRequirement with Better Auth types
+import './augment';
+
 // Plugin
 export { createSkerAuthPlugin, type SkerAuthPluginOptions } from './plugin';
 
