@@ -11,7 +11,7 @@ import { STORAGE_TOKEN } from './storage/storage.interface'
 import { AgentRegistryService } from './services/agent-registry.service'
 import { TaskManagerService } from './services/task-manager.service'
 import { ChatSession } from './core/chat-session'
-import { MCP_CLIENT_CONFIG, CURRENT_AGENT_ID } from './tokens'
+import { MCP_CLIENT_CONFIG, CURRENT_AGENT_ID, MARKETPLACE_API_CONFIG } from './tokens'
 
 // Load .env file from the CLI package directory (ES module compatible)
 const __filename = fileURLToPath(import.meta.url)
@@ -80,6 +80,14 @@ async function main() {
           timeout: parseInt(process.env.MCP_API_TIMEOUT || '30000'),
           retryAttempts: 3,
           retryDelay: 1000
+        }
+      })
+
+      providers.push({
+        provide: MARKETPLACE_API_CONFIG,
+        useValue: {
+          baseUrl: options.mcpUrl || 'https://mcp.sker.us',
+          timeout: parseInt(process.env.MCP_API_TIMEOUT || '30000')
         }
       })
 

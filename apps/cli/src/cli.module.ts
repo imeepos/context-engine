@@ -16,12 +16,20 @@ import { CancelTaskTool } from './tools/CancelTaskTool'
 import { ListTasksTool } from './tools/ListTasksTool'
 import { GetTaskTool } from './tools/GetTaskTool'
 import { UpdateTaskTool } from './tools/UpdateTaskTool'
+import { SearchPluginsTool } from './tools/SearchPluginsTool'
+import { InstallPluginTool } from './tools/InstallPluginTool'
+import { UninstallPluginTool } from './tools/UninstallPluginTool'
+import { UpdatePluginTool } from './tools/UpdatePluginTool'
+import { PublishPluginTool } from './tools/PublishPluginTool'
+import { PublishVersionTool } from './tools/PublishVersionTool'
 import { DynamicToolExecutorService } from './tools/DynamicToolExecutorService'
 import { HybridToolExecutor } from './tools/HybridToolExecutor'
 import { McpClient } from './mcp/client'
 import { McpClientService } from './services/mcp-client.service'
+import { AuthSessionService } from './services/auth-session.service'
+import { MarketplaceApiService } from './services/marketplace-api.service'
 import { RemoteToolProxy } from './tools/RemoteToolProxy'
-import { MCP_CLIENT } from './tokens'
+import { MCP_CLIENT, MARKETPLACE_API_CLIENT } from './tokens'
 import { PromptRendererModule } from '@sker/prompt-renderer'
 import { routes } from './router'
 
@@ -41,6 +49,9 @@ import { routes } from './router'
     { provide: McpClient, useClass: McpClient },
     { provide: MCP_CLIENT, useExisting: McpClient },
     { provide: McpClientService, useClass: McpClientService },
+    { provide: AuthSessionService, useClass: AuthSessionService },
+    { provide: MarketplaceApiService, useClass: MarketplaceApiService },
+    { provide: MARKETPLACE_API_CLIENT, useExisting: MarketplaceApiService },
     { provide: RemoteToolProxy, useClass: RemoteToolProxy },
     { provide: SendMessageTool, useClass: SendMessageTool },
     { provide: ListAgentsTool, useClass: ListAgentsTool },
@@ -52,7 +63,13 @@ import { routes } from './router'
     { provide: CancelTaskTool, useClass: CancelTaskTool },
     { provide: ListTasksTool, useClass: ListTasksTool },
     { provide: GetTaskTool, useClass: GetTaskTool },
-    { provide: UpdateTaskTool, useClass: UpdateTaskTool }
+    { provide: UpdateTaskTool, useClass: UpdateTaskTool },
+    { provide: SearchPluginsTool, useClass: SearchPluginsTool },
+    { provide: InstallPluginTool, useClass: InstallPluginTool },
+    { provide: UninstallPluginTool, useClass: UninstallPluginTool },
+    { provide: UpdatePluginTool, useClass: UpdatePluginTool },
+    { provide: PublishPluginTool, useClass: PublishPluginTool },
+    { provide: PublishVersionTool, useClass: PublishVersionTool }
   ],
 })
 export class CliModule implements OnInit {

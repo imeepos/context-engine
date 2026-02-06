@@ -31,7 +31,13 @@ export class HybridToolExecutor {
     'cancel_task',
     'list_tasks',
     'get_task',
-    'update_task'
+    'update_task',
+    'search-plugins',
+    'install-plugin',
+    'uninstall-plugin',
+    'update-plugin',
+    'publish-plugin',
+    'publish-version'
   ])
 
   constructor(
