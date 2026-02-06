@@ -8,6 +8,7 @@ export class AgentRegistryService {
   private currentAgent: Agent | null = null
   private heartbeatInterval: NodeJS.Timeout | null = null
   private agentListChangeCallbacks: Array<(agents: Agent[]) => void> = []
+  private unwatchRegistry: (() => void) | null = null
 
   constructor(@Inject(STORAGE_TOKEN) private storage: Storage) { }
 
@@ -45,6 +46,12 @@ export class AgentRegistryService {
 
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval)
+      this.heartbeatInterval = null
+    }
+
+    if (this.unwatchRegistry) {
+      this.unwatchRegistry()
+      this.unwatchRegistry = null
     }
 
     const registry = await this.getRegistry()
@@ -53,6 +60,8 @@ export class AgentRegistryService {
       agent.status = 'offline'
       await this.storage.write('agents', registry)
     }
+
+    this.currentAgent = null
   }
 
   async getOnlineAgents(): Promise<Agent[]> {
@@ -92,8 +101,10 @@ export class AgentRegistryService {
   }
 
   private watchRegistry(): void {
-    this.storage.watch('agents', async () => {
-      // 文件写入触发 watch 时可能尚未完成写入，稍等片刻再读取以避免解析空/半写入文件
+    if (this.unwatchRegistry) return
+
+    this.unwatchRegistry = this.storage.watch('agents', async () => {
+      // Delay slightly to avoid reading a partially written file.
       await new Promise(resolve => setTimeout(resolve, 30))
       const agents = await this.getOnlineAgents()
       if (agents.length === 0) return

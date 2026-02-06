@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
+    "@sker/auth": "workspace:*",
     "@sker/core": "workspace:*",
     "@sker/prompt-renderer": "workspace:*",
     "@sker/typeorm": "workspace:*",

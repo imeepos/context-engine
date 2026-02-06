@@ -10,7 +10,7 @@ describe('JsonFileStorage', () => {
   let testDir: string
 
   beforeEach(async () => {
-    testDir = path.join(os.tmpdir(), `sker-test-${Date.now()}`)
+    testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sker-test-'))
     storage = new JsonFileStorage(testDir)
     await storage.init()
   })

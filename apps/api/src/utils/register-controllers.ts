@@ -8,11 +8,12 @@ import {
   METHOD_METADATA,
   ROUTE_ARGS_METADATA,
   RequestMethod,
-  ParamType
+  ParamType,
+  LoggerLevel
 } from '@sker/core';
 import { D1_DATABASE } from '@sker/typeorm';
-
-const logger = createLogger('RegisterControllers');
+import { REQUIRE_AUTH_SESSION_METADATA } from '../auth/require-auth.decorator';
+import { authenticateBearerRequest, AuthSessionError, setAuthSessionOnRequest } from '../auth/session-auth';
 
 // 定义请求级别的 tokens
 export const ENV = new InjectionToken<any>('ENV');
@@ -25,6 +26,14 @@ interface RouteArgMetadata {
   zod?: any;
 }
 
+interface RouteRegistration {
+  methodName: string;
+  fullPath: string;
+  honoMethod: 'get' | 'post' | 'put' | 'delete' | 'patch';
+  argsMetadata: Record<string, RouteArgMetadata>;
+  requiresAuth: boolean;
+}
+
 function getHttpMethodName(method: RequestMethod): 'get' | 'post' | 'put' | 'delete' | 'patch' {
   switch (method) {
     case RequestMethod.GET: return 'get';
@@ -34,6 +43,23 @@ function getHttpMethodName(method: RequestMethod): 'get' | 'post' | 'put' | 'del
     case RequestMethod.PATCH: return 'patch';
     default: return 'get';
   }
+}
+
+function compareRoutePriority(pathA: string, pathB: string): number {
+  const segmentsA = pathA.split('/').filter(Boolean);
+  const segmentsB = pathB.split('/').filter(Boolean);
+
+  const paramsA = segmentsA.filter(segment => segment.startsWith(':')).length;
+  const paramsB = segmentsB.filter(segment => segment.startsWith(':')).length;
+  if (paramsA !== paramsB) {
+    return paramsA - paramsB; // static routes first
+  }
+
+  if (segmentsA.length !== segmentsB.length) {
+    return segmentsB.length - segmentsA.length; // more specific routes first
+  }
+
+  return pathB.length - pathA.length;
 }
 
 async function resolveMethodParams(c: Context, argsMetadata: Record<string, RouteArgMetadata>): Promise<any[]> {
@@ -68,22 +94,28 @@ async function resolveMethodParams(c: Context, argsMetadata: Record<string, Rout
   return params;
 }
 
-export function registerControllers(app: Hono<{ Bindings: Env }>, application: ApplicationRef): void {
+export function registerControllers(
+  app: Hono<{ Bindings: Env }>,
+  application: ApplicationRef,
+  loggerLevel: LoggerLevel = LoggerLevel.info
+): void {
+  const logger = createLogger('RegisterControllers', loggerLevel);
   try {
-    logger.log('Starting controller registration...');
+    logger.debug('Starting controller registration...');
     const controllers = root.get(CONTROLLES, []);
-    logger.log(`Found ${controllers.length} controllers`);
+    logger.debug(`Found ${controllers.length} controllers`);
 
     for (const ControllerClass of controllers) {
       const controllerPath = Reflect.getMetadata(PATH_METADATA, ControllerClass) || '';
-      logger.log(`Registering controller: ${ControllerClass.name} at path: ${controllerPath}`);
+      logger.debug(`Registering controller: ${ControllerClass.name} at path: ${controllerPath}`);
       const prototype = ControllerClass.prototype;
 
       const methodNames = Object.getOwnPropertyNames(prototype).filter(
         name => name !== 'constructor' && typeof prototype[name] === 'function'
       );
-      logger.log(`Found ${methodNames.length} methods in ${ControllerClass.name}`);
+      logger.debug(`Found ${methodNames.length} methods in ${ControllerClass.name}`);
 
+      const routes: RouteRegistration[] = [];
       for (const methodName of methodNames) {
         const method = prototype[methodName];
         const methodPath = Reflect.getMetadata(PATH_METADATA, method);
@@ -94,10 +126,29 @@ export function registerControllers(app: Hono<{ Bindings: Env }>, application: A
         const fullPath = `${controllerPath}${methodPath}`.replace(/\/+/g, '/');
         const honoMethod = getHttpMethodName(httpMethod);
         const argsMetadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, method);
-        logger.log(`Registering route: ${honoMethod.toUpperCase()} ${fullPath} -> ${ControllerClass.name}.${methodName}`);
+        const requiresAuth = Reflect.getMetadata(REQUIRE_AUTH_SESSION_METADATA, method) === true;
+        routes.push({
+          methodName,
+          fullPath,
+          honoMethod,
+          argsMetadata,
+          requiresAuth,
+        });
+      }
 
-        app[honoMethod](fullPath, async (c: Context) => {
+      routes.sort((a, b) => compareRoutePriority(a.fullPath, b.fullPath));
+      for (const route of routes) {
+        logger.debug(
+          `Registering route: ${route.honoMethod.toUpperCase()} ${route.fullPath} -> ${ControllerClass.name}.${route.methodName}`
+        );
+
+        app[route.honoMethod](route.fullPath, async (c: Context) => {
           try {
+            if (route.requiresAuth) {
+              const session = await authenticateBearerRequest(c.req.raw, c.env.DB);
+              setAuthSessionOnRequest(c.req.raw, session);
+            }
+
             // 通过 ControllerClass 直接获取对应的 moduleRef
             const moduleRef = application.getModuleRefByFeature(ControllerClass);
             if (!moduleRef) {
@@ -114,8 +165,8 @@ export function registerControllers(app: Hono<{ Bindings: Env }>, application: A
               { provide: D1_DATABASE, useValue: c.env.DB }
             ]);
 
-            const params = await resolveMethodParams(c, argsMetadata);
-            const result = await controllerInstance[methodName](...params);
+            const params = await resolveMethodParams(c, route.argsMetadata);
+            const result = await controllerInstance[route.methodName](...params);
 
             // 如果返回值是 Response 对象，直接返回
             if (result instanceof Response) {
@@ -124,12 +175,28 @@ export function registerControllers(app: Hono<{ Bindings: Env }>, application: A
 
             return c.json({ success: true, data: result });
           } catch (error: any) {
+            if (error instanceof AuthSessionError) {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  error: {
+                    code: error.code,
+                    message: error.message,
+                  },
+                  timestamp: new Date().toISOString(),
+                }),
+                {
+                  status: error.status,
+                  headers: { 'content-type': 'application/json' },
+                }
+              );
+            }
             return c.json({ success: false, error: error.message }, 400);
           }
         });
       }
     }
-    logger.log('Controller registration completed');
+    logger.debug('Controller registration completed');
   } catch (error) {
     logger.error(`Failed to register controllers: ${error}`);
   }

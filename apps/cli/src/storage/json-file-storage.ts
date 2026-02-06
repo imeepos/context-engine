@@ -121,6 +121,9 @@ export class JsonFileStorage implements Storage {
       callback(data)
     })
 
+    // Ignore transient watcher errors when temporary test directories are removed.
+    watcher.on('error', (_error) => undefined)
+
     this.watchers.set(key, watcher)
 
     return () => {

@@ -4,6 +4,8 @@ import { McpModule } from './mcp.module';
 import { PromptModule } from './prompt.module';
 import { GitModule } from './git.module';
 import { PageModule } from './page.module';
+import { AuthModule } from './auth.module';
+import { MarketplaceModule } from './marketplace.module';
 
 /**
  * AppModule - 根模块
@@ -16,6 +18,8 @@ import { PageModule } from './page.module';
     PromptModule,
     GitModule,
     PageModule,
+    AuthModule,
+    MarketplaceModule,
   ]
 })
 export class AppModule { }

@@ -7,6 +7,7 @@ declare namespace Cloudflare {
 	}
 	interface Env {
 		DB: D1Database;
+		APP_LOG_LEVEL: "summary";
 		ENVIRONMENT: "production";
 		MCP_SESSION: DurableObjectNamespace /* McpSessionDurableObject from sker-mcp-api */;
 	}

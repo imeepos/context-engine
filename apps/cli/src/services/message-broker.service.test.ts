@@ -14,7 +14,7 @@ describe('MessageBrokerService', () => {
   let testDir: string
 
   beforeEach(async () => {
-    testDir = path.join(os.tmpdir(), `sker-test-${Date.now()}`)
+    testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sker-test-'))
     storage = new JsonFileStorage(testDir)
     await storage.init()
     agentRegistry = new AgentRegistryService(storage)
@@ -69,6 +69,8 @@ describe('MessageBrokerService', () => {
           expect(message.from).toBe('agent-1')
           expect(message.to).toBe('agent-0')
           expect(message.content).toBe('Hello agent-0')
+          broker2.destroy()
+          void agentRegistry2.unregister()
           resolve()
         })
 
@@ -92,6 +94,8 @@ describe('MessageBrokerService', () => {
           await new Promise(r => setTimeout(r, 500))
           const queue = await storage.read<any>('messages/agent-0')
           expect(queue.messages[0].read).toBe(true)
+          broker2.destroy()
+          await agentRegistry2.unregister()
           resolve()
         })
 
@@ -128,6 +132,9 @@ describe('MessageBrokerService', () => {
       expect(history).toHaveLength(2)
       expect(history[0].content).toBe('Message 1')
       expect(history[1].content).toBe('Message 2')
+
+      broker2.destroy()
+      await agentRegistry2.unregister()
     }, 10000)
   })
 })
