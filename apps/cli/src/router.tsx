@@ -13,6 +13,60 @@ import { MarketDetailPage } from './pages/MarketDetailPage'
 import { MarketInstalledPage } from './pages/MarketInstalledPage'
 import { MarketPublishedPage } from './pages/MarketPublishedPage'
 
+/**
+ * 一级菜单配置
+ */
+export interface MenuItem {
+  /** 菜单标题 */
+  title: string
+  /** 路由路径 */
+  path: string
+  /** Tool 名称 */
+  toolName: string
+  /** Tool 描述 */
+  description: string
+  /** 是否在菜单中显示 */
+  showInMenu?: boolean
+}
+
+export const menuItems: MenuItem[] = [
+  {
+    title: '查看正在进行的任务',
+    path: '/',
+    toolName: 'navigate_dashboard',
+    description: '查看正在进行的任务和系统概览',
+    showInMenu: true
+  },
+  {
+    title: '任务管理',
+    path: '/tasks',
+    toolName: 'navigate_tasks',
+    description: '查看或创建待办任务',
+    showInMenu: true
+  },
+  {
+    title: '应用市场',
+    path: '/market',
+    toolName: 'navigate_market',
+    description: '浏览、搜索、安装和发布插件',
+    showInMenu: true
+  },
+  {
+    title: '插件管理',
+    path: '/plugins',
+    toolName: 'navigate_plugins',
+    description: '管理已安装的插件',
+    showInMenu: true
+  },
+  {
+    title: '系统信息',
+    path: '/base-info',
+    toolName: 'navigate_baseinfo',
+    description: '查看系统基础信息',
+    showInMenu: true
+  }
+]
+
 export const routes: Route[] = [
   { path: '/', component: DashboardComponent as any, params: {} },
   { path: '/base-info', component: BaseInfo as any, params: {} },
