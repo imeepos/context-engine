@@ -172,7 +172,20 @@ export function useAnimationFrame(
  */
 export function useKeyboardShortcuts() {
   const { zoomIn, zoomOut, resetZoom, toggleGrid } = useCanvasStore()
-  const { selectedTriangleId, deleteTriangle } = useShapeStore()
+  const {
+    selectedTriangleId,
+    selectedPointId,
+    selectedSegmentId,
+    selectedQuadrilateralId,
+    selectedCircleId,
+    selectedPolygonId,
+    deleteTriangle,
+    deletePoint,
+    deleteSegment,
+    deleteQuadrilateral,
+    deleteCircle,
+    deletePolygon,
+  } = useShapeStore()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -206,15 +219,35 @@ export function useKeyboardShortcuts() {
           break
         case 'Delete':
         case 'Backspace':
-          if (selectedTriangleId) {
-            e.preventDefault()
-            deleteTriangle(selectedTriangleId)
-          }
+          e.preventDefault()
+          if (selectedTriangleId) deleteTriangle(selectedTriangleId)
+          else if (selectedPointId) deletePoint(selectedPointId)
+          else if (selectedSegmentId) deleteSegment(selectedSegmentId)
+          else if (selectedQuadrilateralId) deleteQuadrilateral(selectedQuadrilateralId)
+          else if (selectedCircleId) deleteCircle(selectedCircleId)
+          else if (selectedPolygonId) deletePolygon(selectedPolygonId)
           break
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [zoomIn, zoomOut, resetZoom, toggleGrid, selectedTriangleId, deleteTriangle])
+  }, [
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    toggleGrid,
+    selectedTriangleId,
+    selectedPointId,
+    selectedSegmentId,
+    selectedQuadrilateralId,
+    selectedCircleId,
+    selectedPolygonId,
+    deleteTriangle,
+    deletePoint,
+    deleteSegment,
+    deleteQuadrilateral,
+    deleteCircle,
+    deletePolygon,
+  ])
 }
