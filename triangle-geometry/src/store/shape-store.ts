@@ -6,11 +6,12 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
 import type { Point, VertexLabel } from '../types/geometry-base'
-import type { PointShape, SegmentShape, QuadrilateralShape, CircleShape } from '../types/shapes'
+import type { PointShape, SegmentShape, QuadrilateralShape, CircleShape, PolygonShape } from '../types/shapes'
 import type { Triangle, AuxiliaryLine, Measurement } from '../types/geometry'
 import { calculateTriangleProperties } from '../engine/triangle-properties'
 import { calculateQuadProperties } from '../engine/shapes/quadrilateral'
 import { calculateCircleProperties } from '../engine/shapes/circle'
+import { calculatePolygonProperties } from '../engine/shapes/polygon'
 import { distance, midpoint } from '../engine/core/point'
 import { useCanvasStore } from './canvas-store'
 
@@ -28,6 +29,10 @@ interface ShapeState {
   // 圆形
   circles: CircleShape[]
   selectedCircleId: string | null
+
+  // 多边形
+  polygons: PolygonShape[]
+  selectedPolygonId: string | null
 
   // 三角形相关（保持向后兼容）
   triangles: Triangle[]
@@ -61,6 +66,13 @@ interface ShapeState {
   selectCircle: (id: string | null) => void
   deleteCircle: (id: string) => void
   getSelectedCircle: () => CircleShape | null
+
+  // Actions - 多边形
+  addPolygon: (vertices: Point[]) => PolygonShape
+  updatePolygonVertex: (polygonId: string, vertexIndex: number, newPos: Point) => void
+  selectPolygon: (id: string | null) => void
+  deletePolygon: (id: string) => void
+  getSelectedPolygon: () => PolygonShape | null
 
   // Actions - 三角形
   addTriangle: (vertices: [Point, Point, Point]) => Triangle | null
@@ -96,6 +108,10 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
   // 圆形状态
   circles: [],
   selectedCircleId: null,
+
+  // 多边形状态
+  polygons: [],
+  selectedPolygonId: null,
 
   // 三角形状态
   triangles: [],
@@ -419,6 +435,91 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
   getSelectedCircle: () => {
     const state = get()
     return state.circles.find((c) => c.id === state.selectedCircleId) || null
+  },
+
+  // 多边形的操作
+  addPolygon: (vertices) => {
+    const allLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const usedLabels = new Set<string>([
+      ...get().points.map((p) => p.label.text),
+      ...get().triangles.flatMap((t) => t.labels as string[]),
+      ...get().quadrilaterals.flatMap((q) => q.labels.map((l) => l.text)),
+      ...get().polygons.flatMap((p) => p.labels.map((l) => l.text)),
+    ])
+    const available = allLabels.split('').filter((l) => !usedLabels.has(l))
+    const nextLabels: VertexLabel[] = []
+    for (let i = 0; i < vertices.length; i++) {
+      nextLabels.push((available[i] || `P${i}`) as VertexLabel)
+    }
+
+    const properties = calculatePolygonProperties(vertices)
+
+    const newPolygon: PolygonShape = {
+      id: uuidv4(),
+      type: 'polygon',
+      vertices,
+      labels: nextLabels.map((text) => ({
+        text,
+        visible: true,
+        position: 'auto' as const,
+        offset: { x: 0, y: -15 },
+      })),
+      closed: true,
+      polygonType: properties.isRegular ? 'regular' : 'irregular',
+      properties,
+      color: '#10b981',
+      opacity: 0.3,
+      visible: true,
+      locked: false,
+      zIndex: 3,
+    }
+
+    set((state) => ({
+      polygons: [...state.polygons, newPolygon],
+      selectedPolygonId: newPolygon.id,
+    }))
+
+    useCanvasStore.getState().clearTempPoints()
+    return newPolygon
+  },
+
+  updatePolygonVertex: (polygonId, vertexIndex, newPos) =>
+    set((state) => ({
+      polygons: state.polygons.map((p) => {
+        if (p.id !== polygonId) return p
+        const newVertices = p.vertices.map((v, i) =>
+          i === vertexIndex ? newPos : v
+        )
+        const properties = calculatePolygonProperties(newVertices)
+
+        return {
+          ...p,
+          vertices: newVertices,
+          properties,
+          polygonType: properties.isRegular ? 'regular' : 'irregular',
+        }
+      }),
+    })),
+
+  selectPolygon: (id) =>
+    set({
+      selectedPolygonId: id,
+      selectedPointId: null,
+      selectedSegmentId: null,
+      selectedQuadrilateralId: null,
+      selectedCircleId: null,
+      selectedTriangleId: null,
+    }),
+
+  deletePolygon: (id) =>
+    set((state) => ({
+      polygons: state.polygons.filter((p) => p.id !== id),
+      selectedPolygonId: state.selectedPolygonId === id ? null : state.selectedPolygonId,
+    })),
+
+  getSelectedPolygon: () => {
+    const state = get()
+    return state.polygons.find((p) => p.id === state.selectedPolygonId) || null
   },
 
   addTriangle: (vertices) => {

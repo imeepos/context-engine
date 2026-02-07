@@ -92,3 +92,13 @@ export interface CircleShape extends BaseShape {
     showCenter: boolean
   }
 }
+
+/** 多边形图形 */
+export interface PolygonShape extends BaseShape {
+  type: 'polygon'
+  vertices: Point[]
+  labels: LabelConfig[]
+  closed: boolean
+  polygonType: 'regular' | 'irregular'
+  properties: PolygonProperties
+}

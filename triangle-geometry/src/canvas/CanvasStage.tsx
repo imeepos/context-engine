@@ -8,6 +8,7 @@ import { PointLayer } from './layers/PointLayer'
 import { SegmentLayer } from './layers/SegmentLayer'
 import { CircleLayer } from './layers/CircleLayer'
 import { QuadrilateralLayer } from './layers/QuadrilateralLayer'
+import { PolygonLayer } from './layers/PolygonLayer'
 import { TriangleLayer } from './layers/TriangleLayer'
 import { AuxiliaryLayer } from './layers/AuxiliaryLayer'
 import { AnnotationLayer } from './layers/AnnotationLayer'
@@ -31,7 +32,7 @@ export function CanvasStage() {
     setZoom,
   } = useCanvasStore()
 
-  const { addTriangle, selectTriangle, addPoint, addSegment, addQuadrilateral, addCircle } = useShapeStore()
+  const { addTriangle, selectTriangle, addPoint, addSegment, addQuadrilateral, addCircle, addPolygon } = useShapeStore()
 
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 })
 
@@ -108,6 +109,19 @@ export function CanvasStage() {
           addQuadrilateral([tempPoints[0], tempPoints[1], tempPoints[2], pos])
         }
         break
+      case 'polygon':
+        // 创建多边形模式：点击多次创建多边形，双击完成
+        addTempPoint(pos)
+        // 需要至少3个点才能形成多边形
+        if (tempPoints.length >= 2) {
+          // 检查是否双击（点击位置接近第一个点）
+          const distToFirst = distance(pos, tempPoints[0])
+          if (distToFirst < 20 / viewport.zoom) {
+            // 闭合多边形
+            addPolygon([...tempPoints])
+          }
+        }
+        break
       case 'triangle':
         // 创建三角形模式：点击三次创建一个三角形
         addTempPoint(pos)
@@ -182,12 +196,13 @@ export function CanvasStage() {
           <GridLayer />
         </Layer>
 
-        {/* Layer 2: 内容（点 + 线段 + 圆形 + 四边形 + 三角形 + 辅助线 + 标注 + 临时点） */}
+        {/* Layer 2: 内容（点 + 线段 + 圆形 + 四边形 + 多边形 + 三角形 + 辅助线 + 标注 + 临时点） */}
         <Layer>
           <PointLayer />
           <SegmentLayer />
           <CircleLayer />
           <QuadrilateralLayer />
+          <PolygonLayer />
           <TriangleLayer />
           <AuxiliaryLayer />
           <AnnotationLayer />
