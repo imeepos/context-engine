@@ -68,7 +68,7 @@ export const menuItems: MenuItem[] = [
     showInMenu: true
   },
   {
-    title: 'Skills 管理',
+    title: '经验管理',
     path: '/skills',
     toolName: 'navigate_skills',
     description: '查看和管理系统中的 Skills',

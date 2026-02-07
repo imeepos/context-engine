@@ -1,6 +1,7 @@
 // 自定义 Hooks：坐标转换和画布交互
 import { useCallback, useEffect, useRef } from 'react'
 import { useCanvasStore } from '../store/canvas-store'
+import { useShapeStore } from '../store/shape-store'
 import { screenToCanvas, canvasToScreen } from '../lib/coordinate-transform'
 import Konva from 'konva'
 
@@ -171,6 +172,7 @@ export function useAnimationFrame(
  */
 export function useKeyboardShortcuts() {
   const { zoomIn, zoomOut, resetZoom, toggleGrid } = useCanvasStore()
+  const { selectedTriangleId, deleteTriangle } = useShapeStore()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -202,10 +204,17 @@ export function useKeyboardShortcuts() {
         case 'g':
           toggleGrid()
           break
+        case 'Delete':
+        case 'Backspace':
+          if (selectedTriangleId) {
+            e.preventDefault()
+            deleteTriangle(selectedTriangleId)
+          }
+          break
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [zoomIn, zoomOut, resetZoom, toggleGrid])
+  }, [zoomIn, zoomOut, resetZoom, toggleGrid, selectedTriangleId, deleteTriangle])
 }
