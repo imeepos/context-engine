@@ -9,12 +9,24 @@ export class SkillLoaderService {
   private readonly SKILLS_DIR = path.join(process.cwd(), '.claude', 'skills')
 
   // 解析 YAML frontmatter 和 Markdown 内容
-  private parseFrontmatter(content: string): { metadata: SkillMetadata; body: string } {
+  private parseFrontmatter(
+    content: string,
+    skillId: string
+  ): { metadata: SkillMetadata; body: string } {
     const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/
     const match = content.match(frontmatterRegex)
 
     if (!match) {
-      throw new Error('Invalid SKILL.md format: missing frontmatter')
+      // 没有 frontmatter，从内容中提取信息
+      const firstLineMatch = content.match(/^#\s+(.+)/)
+      const name = firstLineMatch ? firstLineMatch[1] : skillId
+      const descMatch = content.match(/^#\s+.+\r?\n\r?\n(.+)/)
+      const description = descMatch ? descMatch[1].trim() : ''
+
+      return {
+        metadata: { name, description },
+        body: content,
+      }
     }
 
     const [, yamlContent, body] = match
@@ -57,7 +69,7 @@ export class SkillLoaderService {
 
       try {
         const content = await fs.readFile(skillFilePath, 'utf-8')
-        const { metadata } = this.parseFrontmatter(content)
+        const { metadata } = this.parseFrontmatter(content, entry.name)
 
         skills.push({
           id: entry.name,
@@ -81,7 +93,7 @@ export class SkillLoaderService {
 
     try {
       const content = await fs.readFile(skillFilePath, 'utf-8')
-      const { metadata, body } = this.parseFrontmatter(content)
+      const { metadata, body } = this.parseFrontmatter(content, skillId)
 
       const hasScripts = await this.dirExists(path.join(skillPath, 'scripts'))
       const hasReferences = await this.dirExists(path.join(skillPath, 'references'))
