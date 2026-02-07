@@ -1,20 +1,17 @@
-import { Inject, Injectable, Injector, Provider } from '@sker/core';
+import { Inject, Injectable, Injector, Provider, createInjector } from '@sker/core';
 import { Page, RenderResult, CURRENT_ROUTE, COMPONENT } from './browser';
 import { setCurrentFiber, resetCurrentFiber, getOrCreateFiberState, scheduler } from '../hooks/runtime';
 import React from 'react';
 import { renderToMarkdown } from '../reconciler/renderer';
 import { extractTools } from '../reconciler/extractor';
-import { createElement } from '../reconciler/dom';
-import { reconciler } from '../reconciler/host-config';
-import { createInjector } from '@sker/core';
-import { interval, Subscription } from 'rxjs';
+import { directRenderAsync } from '../reconciler/direct-render-async';
 
 @Injectable()
 export class ReactivePage extends Page {
   private renderListeners = new Set<(result: RenderResult) => void>();
   private currentResult: RenderResult | null = null;
   private fiber: any = null;
-  private keepAliveSubscription: Subscription | null = null;
+  private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(@Inject(Injector) parent: Injector) {
     super(parent);
@@ -28,22 +25,22 @@ export class ReactivePage extends Page {
   }
 
   keepAlive(): void {
-    if (!this.keepAliveSubscription) {
-      this.keepAliveSubscription = interval(1000).subscribe(() => {
+    if (!this.keepAliveTimer) {
+      this.keepAliveTimer = setInterval(() => {
         // Keep event loop alive
-      });
+      }, 1000);
     }
   }
 
   dispose(): void {
-    if (this.keepAliveSubscription) {
-      this.keepAliveSubscription.unsubscribe();
-      this.keepAliveSubscription = null;
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
     }
     scheduler.dispose();
   }
 
-  render(providers: Provider[] = []): RenderResult {
+  async render(providers: Provider[] = []): Promise<RenderResult> {
     const currentRoute = (this as any).parent.get(CURRENT_ROUTE);
     if (!currentRoute) {
       throw new Error('No route matched');
@@ -59,34 +56,40 @@ export class ReactivePage extends Page {
     getOrCreateFiberState(this.fiber, component, { injector });
 
     scheduler.subscribe(this.fiber, () => {
-      this.refresh();
+      void this.refresh();
     });
 
     return this.refresh();
   }
 
-  refresh(): RenderResult {
+  async refresh(): Promise<RenderResult> {
     if (!this.fiber) {
       throw new Error('Page not initialized. Call render() first.');
     }
 
-    const state = getOrCreateFiberState(this.fiber, this.fiber.component, this.fiber.props);
-
-    const container = createElement('root', {}, []);
-    const root = reconciler.createContainer(container, 0, null, false, null, '', () => {}, null);
+    const state = getOrCreateFiberState(
+      this.fiber, this.fiber.component, this.fiber.props
+    );
 
     setCurrentFiber(this.fiber);
     const element = React.createElement(state.component, state.props);
-    reconciler.updateContainer(element, root, null, () => {});
+    const vnode = await directRenderAsync(element);
     resetCurrentFiber();
 
-    const vnode = container.children[0] || container;
+    if (!vnode) {
+      const empty: RenderResult = { prompt: '', tools: [] };
+      this.currentResult = empty;
+      return empty;
+    }
+
     const prompt = renderToMarkdown(vnode);
-    const { tools, executors } = extractTools(vnode);
+    const tools = extractTools(vnode);
 
-    this.currentResult = { prompt, tools, executors };
+    this.currentResult = { prompt, tools };
 
-    this.renderListeners.forEach(callback => callback(this.currentResult!));
+    for (const callback of this.renderListeners) {
+      callback(this.currentResult);
+    }
 
     return this.currentResult;
   }

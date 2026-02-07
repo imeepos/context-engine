@@ -16,6 +16,8 @@ export const COLORS = {
     altitude: '#22c55e',    // 高线 - 绿色
     bisector: '#f59e0b',    // 角平分线 - 橙色
     midline: '#8b5cf6',     // 中位线 - 紫色
+    transversal: '#06b6d4', // 截线 - 青色
+    parallelLine: '#0ea5e9', // 平行线 - 天蓝色
   },
 
   // 特殊点颜色

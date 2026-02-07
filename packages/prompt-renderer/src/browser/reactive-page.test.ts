@@ -6,7 +6,7 @@ import { CURRENT_ROUTE } from './browser';
 import { useState } from '../hooks/useState';
 
 describe('ReactivePage', () => {
-  it('should render component', () => {
+  it('should render component', async () => {
     const Component = () => React.createElement('text', {}, 'Hello World');
 
     const injector = createInjector([
@@ -17,7 +17,7 @@ describe('ReactivePage', () => {
     ]);
 
     const page = new ReactivePage(injector);
-    const result = page.render();
+    const result = await page.render();
 
     expect(result.prompt).toContain('Hello World');
   });
@@ -42,7 +42,7 @@ describe('ReactivePage', () => {
     const listener = vi.fn();
     page.onRender(listener);
 
-    page.render();
+    await page.render();
     expect(listener).toHaveBeenCalledTimes(1);
 
     (globalThis as any).__testSetCount(1);
@@ -53,7 +53,7 @@ describe('ReactivePage', () => {
     expect(page.getCurrentPrompt()).toContain('Count: 1');
   });
 
-  it('should unsubscribe render listener', () => {
+  it('should unsubscribe render listener', async () => {
     const Component = () => React.createElement('text', {}, 'Test');
 
     const injector = createInjector([
@@ -67,15 +67,15 @@ describe('ReactivePage', () => {
     const listener = vi.fn();
     const unsubscribe = page.onRender(listener);
 
-    page.render();
+    await page.render();
     expect(listener).toHaveBeenCalledTimes(1);
 
     unsubscribe();
-    page.refresh();
+    await page.refresh();
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it('should get current prompt and tools', () => {
+  it('should get current prompt and tools', async () => {
     const Component = () => React.createElement('text', {}, 'Test Content');
 
     const injector = createInjector([
@@ -86,7 +86,7 @@ describe('ReactivePage', () => {
     ]);
 
     const page = new ReactivePage(injector);
-    page.render();
+    await page.render();
 
     expect(page.getCurrentPrompt()).toContain('Test Content');
     expect(page.getCurrentTools()).toEqual([]);

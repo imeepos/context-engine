@@ -23,6 +23,14 @@ export function AnimationLayer() {
       {animationState.type === 'congruence' && (
         <CongruenceAnimation progress={animationState.progress} triangles={triangles} />
       )}
+
+      {animationState.type === 'vertical-angles' && (
+        <VerticalAnglesAnimation progress={animationState.progress} />
+      )}
+
+      {animationState.type === 'parallel-lines' && (
+        <ParallelLinesAnimation progress={animationState.progress} />
+      )}
     </Group>
   )
 }
@@ -146,6 +154,8 @@ function CongruenceAnimation({ progress, triangles }: { progress: number; triang
 
   // 第二个三角形淡入并移动到第一个三角形位置
   const offsetX = 50 + (1 - progress) * 200
+  const label1 = `△${t1.labels.join('')}`
+  const label2 = `△${t2.labels.join('')}`
 
   return (
     <Group>
@@ -162,7 +172,7 @@ function CongruenceAnimation({ progress, triangles }: { progress: number; triang
       <Text
         x={t1.vertices[0].x - 20}
         y={t1.vertices[0].y - 30}
-        text="△ABC"
+        text={label1}
         fontSize={16}
         fill="#3b82f6"
       />
@@ -172,7 +182,7 @@ function CongruenceAnimation({ progress, triangles }: { progress: number; triang
         <Text
           x={t2.vertices[0].x - 20}
           y={t2.vertices[0].y - 30}
-          text="△A'B'C'"
+          text={label2}
           fontSize={16}
           fill="#ef4444"
           opacity={progress > 0.5 ? 1 : (progress - 0.5) * 2}
@@ -186,6 +196,156 @@ function CongruenceAnimation({ progress, triangles }: { progress: number; triang
           text="全等！"
           fontSize={24}
           fill="#22c55e"
+          fontStyle="bold"
+        />
+      )}
+    </Group>
+  )
+}
+
+// 对顶角动画
+function VerticalAnglesAnimation({ progress }: { progress: number }) {
+  // 两条相交线的端点坐标
+  const cx = 400
+  const cy = 300
+  const len = 200
+
+  const line1 = [cx - len, cy - 80, cx + len, cy + 80]
+  const line2 = [cx - len, cy + 80, cx + len, cy - 80]
+
+  // 对顶角对：∠1=∠3, ∠2=∠4
+  const pairs = [
+    { label: '∠1=∠3', color: '#ef4444', threshold: 0.25 },
+    { label: '∠2=∠4', color: '#3b82f6', threshold: 0.55 },
+  ]
+
+  return (
+    <Group>
+      <Text
+        x={50}
+        y={50}
+        text="对顶角相等"
+        fontSize={20}
+        fill="#333"
+        fontStyle="bold"
+      />
+
+      {/* 第一条线 */}
+      <Line points={line1} stroke="#333" strokeWidth={2} />
+      {/* 第二条线 */}
+      <Line points={line2} stroke="#333" strokeWidth={2} />
+      {/* 交点 */}
+      <Circle x={cx} y={cy} radius={4} fill="#333" />
+
+      {pairs.map((pair, i) => {
+        const active = progress > pair.threshold
+        return (
+          <Text
+            key={pair.label}
+            x={cx + (i === 0 ? -120 : 40)}
+            y={cy + (i === 0 ? -60 : -60)}
+            text={pair.label}
+            fontSize={18}
+            fill={pair.color}
+            opacity={active ? 1 : 0.2}
+            fontStyle={active ? 'bold' : 'normal'}
+          />
+        )
+      })}
+
+      {progress > 0.85 && (
+        <Text
+          x={50}
+          y={90}
+          text="对顶角相等！"
+          fontSize={24}
+          fill="#8b5cf6"
+          fontStyle="bold"
+        />
+      )}
+    </Group>
+  )
+}
+
+// 平行线截线动画
+function ParallelLinesAnimation({ progress }: { progress: number }) {
+  // 两条平行线
+  const line1Y = 200
+  const line2Y = 400
+  const lineLeft = 100
+  const lineRight = 700
+
+  // 截线（斜线穿过两条平行线）
+  const transX1 = 250
+  const transY1 = 100
+  const transX2 = 500
+  const transY2 = 500
+
+  // 三个阶段的角关系
+  const phases = [
+    { label: '同位角相等', color: '#ef4444', threshold: 0.15 },
+    { label: '内错角相等', color: '#22c55e', threshold: 0.4 },
+    { label: '同旁内角互补', color: '#3b82f6', threshold: 0.65 },
+  ]
+
+  return (
+    <Group>
+      <Text
+        x={50}
+        y={50}
+        text="平行线被截线所截"
+        fontSize={20}
+        fill="#333"
+        fontStyle="bold"
+      />
+
+      {/* 平行线 1 */}
+      <Line
+        points={[lineLeft, line1Y, lineRight, line1Y]}
+        stroke="#0ea5e9"
+        strokeWidth={2}
+      />
+      {/* 平行线 2 */}
+      <Line
+        points={[lineLeft, line2Y, lineRight, line2Y]}
+        stroke="#0ea5e9"
+        strokeWidth={2}
+      />
+      {/* 截线 */}
+      <Line
+        points={[transX1, transY1, transX2, transY2]}
+        stroke="#06b6d4"
+        strokeWidth={2}
+      />
+
+      {/* 平行标记 */}
+      <Text x={lineRight + 10} y={line1Y - 10} text="l₁" fontSize={16} fill="#0ea5e9" />
+      <Text x={lineRight + 10} y={line2Y - 10} text="l₂" fontSize={16} fill="#0ea5e9" />
+      <Text x={transX2 + 10} y={transY2 - 10} text="t" fontSize={16} fill="#06b6d4" />
+
+      {phases.map((phase, i) => {
+        const active = progress > phase.threshold
+        return (
+          <Text
+            key={phase.label}
+            x={50}
+            y={90 + i * 30}
+            text={phase.label}
+            fontSize={16}
+            fill={phase.color}
+            opacity={active ? 1 : 0.2}
+            fontStyle={active ? 'bold' : 'normal'}
+          />
+        )
+      })}
+
+      {progress > 0.9 && (
+        <Text
+          x={300}
+          y={line2Y + 50}
+          text="l₁ ∥ l₂"
+          fontSize={28}
+          fill="#8b5cf6"
           fontStyle="bold"
         />
       )}

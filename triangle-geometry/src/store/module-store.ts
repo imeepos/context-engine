@@ -162,6 +162,35 @@ const QUIZ_QUESTIONS: Record<ModuleId, QuizQuestion[]> = {
       difficulty: 'medium',
     },
   ],
+  'intersecting-parallel-lines': [
+    {
+      id: 'ipl1',
+      type: 'choice',
+      question: '两条直线相交形成的对顶角有什么关系？',
+      options: ['互补', '相等', '互余', '没有关系'],
+      correctAnswer: '相等',
+      explanation: '对顶角相等：两条直线相交时，对顶角相等。',
+      difficulty: 'easy',
+    },
+    {
+      id: 'ipl2',
+      type: 'choice',
+      question: '以下哪个条件可以判定两直线平行？',
+      options: ['对顶角相等', '同位角相等', '邻补角互补', '以上都不对'],
+      correctAnswer: '同位角相等',
+      explanation: '平行线判定：同位角相等，两直线平行。',
+      difficulty: 'medium',
+    },
+    {
+      id: 'ipl3',
+      type: 'choice',
+      question: '两直线平行时，同旁内角的关系是？',
+      options: ['相等', '互余', '互补', '没有关系'],
+      correctAnswer: '互补',
+      explanation: '平行线性质：两直线平行，同旁内角互补（和为180°）。',
+      difficulty: 'medium',
+    },
+  ],
 }
 
 export const useModuleStore = create<ModuleState>((set, get) => ({
@@ -259,6 +288,29 @@ export const useModuleStore = create<ModuleState>((set, get) => ({
           name: '中位线演示',
           description: '演示中位线的性质',
           animationType: 'midline-demo',
+        },
+      ],
+    },
+    'intersecting-parallel-lines': {
+      id: 'intersecting-parallel-lines',
+      name: '相交线与平行线',
+      description: '学习对顶角、同位角、内错角、同旁内角及平行线判定与性质',
+      grade: '初一',
+      icon: 'scissors',
+      demos: [
+        {
+          id: 'demo-vertical-angles',
+          moduleId: 'intersecting-parallel-lines',
+          name: '对顶角演示',
+          description: '演示两直线相交形成的对顶角相等',
+          animationType: 'vertical-angles',
+        },
+        {
+          id: 'demo-parallel-lines',
+          moduleId: 'intersecting-parallel-lines',
+          name: '平行线截线演示',
+          description: '演示平行线被截线所截形成的角的关系',
+          animationType: 'parallel-lines',
         },
       ],
     },

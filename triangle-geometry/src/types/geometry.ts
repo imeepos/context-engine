@@ -5,7 +5,12 @@ export interface Point {
   y: number
 }
 
-export type VertexLabel = 'A' | 'B' | 'C'
+export type VertexLabel =
+  | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
+  | 'G' | 'H' | 'I' | 'J' | 'K' | 'L'
+  | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R'
+  | 'S' | 'T' | 'U' | 'V' | 'W' | 'X'
+  | 'Y' | 'Z'
 
 export interface Triangle {
   id: string

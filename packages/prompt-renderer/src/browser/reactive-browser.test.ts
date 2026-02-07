@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { ReactiveBrowser } from './reactive-browser';
 import { createInjector } from '@sker/core';

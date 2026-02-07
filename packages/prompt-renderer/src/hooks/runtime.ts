@@ -1,6 +1,3 @@
-import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
-
 interface HookState {
   value: any;
   queue: Array<any>;
@@ -18,23 +15,29 @@ let currentFiber: any = null;
 let currentHookIndex = 0;
 
 export class UpdateScheduler {
-  private updateSubject = new Subject<any>();
+  private pending = new Set<any>();
   private listeners = new Map<any, Set<() => void>>();
-  private subscription: any;
-
-  constructor() {
-    this.subscription = this.updateSubject
-      .pipe(debounceTime(0))
-      .subscribe((fiber) => {
-        const listeners = this.listeners.get(fiber);
-        if (listeners) {
-          listeners.forEach(callback => callback());
-        }
-      });
-  }
+  private timer: ReturnType<typeof setTimeout> | null = null;
 
   schedule(fiber: any): void {
-    this.updateSubject.next(fiber);
+    this.pending.add(fiber);
+    if (!this.timer) {
+      this.timer = setTimeout(() => {
+        this.flush();
+      }, 0);
+    }
+  }
+
+  private flush(): void {
+    this.timer = null;
+    const fibers = [...this.pending];
+    this.pending.clear();
+    for (const fiber of fibers) {
+      const listeners = this.listeners.get(fiber);
+      if (listeners) {
+        listeners.forEach(callback => callback());
+      }
+    }
   }
 
   subscribe(fiber: any, callback: () => void): () => void {
@@ -55,9 +58,11 @@ export class UpdateScheduler {
   }
 
   dispose(): void {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
     }
+    this.pending.clear();
   }
 }
 

@@ -17,6 +17,7 @@ export function AppHeader() {
     { id: 'similar-triangles', label: '相似三角形' },
     { id: 'trigonometric-functions', label: '三角函数' },
     { id: 'auxiliary-lines', label: '辅助线' },
+    { id: 'intersecting-parallel-lines', label: '相交线' },
   ]
 
   return (

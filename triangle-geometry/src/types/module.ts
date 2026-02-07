@@ -7,6 +7,7 @@ export type ModuleId =
   | 'similar-triangles'
   | 'trigonometric-functions'
   | 'auxiliary-lines'
+  | 'intersecting-parallel-lines'
 
 export interface DemoConfig {
   id: string
@@ -24,6 +25,8 @@ export type AnimationType =
   | 'similarity-scale'
   | 'bisector-demo'
   | 'midline-demo'
+  | 'vertical-angles'
+  | 'parallel-lines'
 
 export interface ModuleInfo {
   id: ModuleId

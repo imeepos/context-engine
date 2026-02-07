@@ -1,7 +1,7 @@
 // 三角形状态管理
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
-import { Point, Triangle, TriangleProperties, AuxiliaryLine, Measurement } from '../types/geometry'
+import { Point, Triangle, TriangleProperties, AuxiliaryLine, Measurement, VertexLabel } from '../types/geometry'
 import { calculateTriangleProperties } from '../engine/triangle-properties'
 import { calculateAuxiliaryLine, AuxiliaryLineResult } from '../engine/auxiliary-lines'
 import { useCanvasStore } from './canvas-store'
@@ -60,10 +60,23 @@ export const useTriangleStore = create<TriangleState>((set, get) => ({
       return null // 不满足三角形不等式
     }
 
+    // 根据已有三角形分配不重复的顶点标签
+    const allLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const usedLabels = new Set<string>(
+      get().triangles.flatMap((t) => t.labels as string[]),
+    )
+    const available = allLabels
+      .split('')
+      .filter((l) => !usedLabels.has(l))
+    const nextLabels: [VertexLabel, VertexLabel, VertexLabel] =
+      available.length >= 3
+        ? [available[0] as VertexLabel, available[1] as VertexLabel, available[2] as VertexLabel]
+        : ['A' as VertexLabel, 'B' as VertexLabel, 'C' as VertexLabel]
+
     const newTriangle: Triangle = {
       id: uuidv4(),
       vertices,
-      labels: ['A', 'B', 'C'],
+      labels: nextLabels,
       auxiliaryLines: [],
       color: '#3b82f6',
       opacity: 0.3,

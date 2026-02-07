@@ -49,7 +49,7 @@ function TriangleShape({
       triangleId={triangle.id}
       onClick={onSelect}
       draggable={isSelected}
-      onDragEnd={(e) => {
+      onDragMove={(e) => {
         const node = e.target
         const dx = node.x()
         const dy = node.y()
@@ -89,13 +89,15 @@ function TriangleShape({
           stroke={isSelected ? '#1d4ed8' : color}
           strokeWidth={isSelected ? 3 : 2}
           draggable
-          onDragEnd={(e) => {
-            // 阻止事件冒泡到父 Group 的 onDragEnd
+          onDragMove={(e) => {
             e.cancelBubble = true
             const node = e.target
-            const newX = node.x()
-            const newY = node.y()
-            onVertexDrag(index, { x: newX, y: newY })
+            onVertexDrag(index, { x: node.x(), y: node.y() })
+          }}
+          onDragEnd={(e) => {
+            e.cancelBubble = true
+            const node = e.target
+            onVertexDrag(index, { x: node.x(), y: node.y() })
           }}
         />
       ))}
