@@ -65,9 +65,9 @@ export class SkillLoaderService {
           description: metadata.description || '',
           path: skillPath,
         })
-      } catch {
+      } catch (error) {
         // 跳过无效的 skill
-        console.warn(`Skipping invalid skill: ${entry.name}`)
+        console.warn(`Skipping invalid skill: ${entry.name}`, error)
       }
     }
 
