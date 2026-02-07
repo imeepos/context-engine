@@ -582,7 +582,15 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
       ),
     })),
 
-  selectTriangle: (id) => set({ selectedTriangleId: id }),
+  selectTriangle: (id) =>
+    set({
+      selectedTriangleId: id,
+      selectedPointId: null,
+      selectedSegmentId: null,
+      selectedQuadrilateralId: null,
+      selectedCircleId: null,
+      selectedPolygonId: null,
+    }),
 
   deleteTriangle: (id) =>
     set((state) => ({
