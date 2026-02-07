@@ -10,7 +10,7 @@ export class SkillLoaderService {
 
   // 解析 YAML frontmatter 和 Markdown 内容
   private parseFrontmatter(content: string): { metadata: SkillMetadata; body: string } {
-    const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/
+    const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/
     const match = content.match(frontmatterRegex)
 
     if (!match) {
