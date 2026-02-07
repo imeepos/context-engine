@@ -6,10 +6,11 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
 import type { Point, VertexLabel } from '../types/geometry-base'
-import type { PointShape, SegmentShape, QuadrilateralShape } from '../types/shapes'
+import type { PointShape, SegmentShape, QuadrilateralShape, CircleShape } from '../types/shapes'
 import type { Triangle, AuxiliaryLine, Measurement } from '../types/geometry'
 import { calculateTriangleProperties } from '../engine/triangle-properties'
 import { calculateQuadProperties } from '../engine/shapes/quadrilateral'
+import { calculateCircleProperties } from '../engine/shapes/circle'
 import { distance, midpoint } from '../engine/core/point'
 import { useCanvasStore } from './canvas-store'
 
@@ -23,6 +24,10 @@ interface ShapeState {
   // 四边形
   quadrilaterals: QuadrilateralShape[]
   selectedQuadrilateralId: string | null
+
+  // 圆形
+  circles: CircleShape[]
+  selectedCircleId: string | null
 
   // 三角形相关（保持向后兼容）
   triangles: Triangle[]
@@ -49,6 +54,13 @@ interface ShapeState {
   selectQuadrilateral: (id: string | null) => void
   deleteQuadrilateral: (id: string) => void
   getSelectedQuadrilateral: () => QuadrilateralShape | null
+
+  // Actions - 圆形
+  addCircle: (center: Point, radius: number) => CircleShape
+  updateCircle: (circleId: string, center: Point, radius: number) => void
+  selectCircle: (id: string | null) => void
+  deleteCircle: (id: string) => void
+  getSelectedCircle: () => CircleShape | null
 
   // Actions - 三角形
   addTriangle: (vertices: [Point, Point, Point]) => Triangle | null
@@ -80,6 +92,10 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
   // 四边形状态
   quadrilaterals: [],
   selectedQuadrilateralId: null,
+
+  // 圆形状态
+  circles: [],
+  selectedCircleId: null,
 
   // 三角形状态
   triangles: [],
@@ -327,6 +343,82 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
   getSelectedQuadrilateral: () => {
     const state = get()
     return state.quadrilaterals.find((q) => q.id === state.selectedQuadrilateralId) || null
+  },
+
+  // 圆形的操作
+  addCircle: (center, radius) => {
+    const properties = calculateCircleProperties(center, radius)
+
+    const newCircle: CircleShape = {
+      id: uuidv4(),
+      type: 'circle',
+      center,
+      radius,
+      label: {
+        text: 'O',
+        visible: true,
+        position: 'auto',
+        offset: { x: 0, y: -15 },
+      },
+      style: {
+        fill: '#f59e0b',
+        stroke: '#d97706',
+        strokeWidth: 2,
+      },
+      properties,
+      annotations: {
+        showRadius: true,
+        showDiameter: false,
+        showCenter: true,
+      },
+      color: '#f59e0b',
+      opacity: 0.2,
+      visible: true,
+      locked: false,
+      zIndex: 2,
+    }
+
+    set((state) => ({
+      circles: [...state.circles, newCircle],
+      selectedCircleId: newCircle.id,
+    }))
+
+    useCanvasStore.getState().clearTempPoints()
+    return newCircle
+  },
+
+  updateCircle: (circleId, center, radius) =>
+    set((state) => ({
+      circles: state.circles.map((c) => {
+        if (c.id !== circleId) return c
+        const properties = calculateCircleProperties(center, radius)
+        return {
+          ...c,
+          center,
+          radius,
+          properties,
+        }
+      }),
+    })),
+
+  selectCircle: (id) =>
+    set({
+      selectedCircleId: id,
+      selectedPointId: null,
+      selectedSegmentId: null,
+      selectedQuadrilateralId: null,
+      selectedTriangleId: null,
+    }),
+
+  deleteCircle: (id) =>
+    set((state) => ({
+      circles: state.circles.filter((c) => c.id !== id),
+      selectedCircleId: state.selectedCircleId === id ? null : state.selectedCircleId,
+    })),
+
+  getSelectedCircle: () => {
+    const state = get()
+    return state.circles.find((c) => c.id === state.selectedCircleId) || null
   },
 
   addTriangle: (vertices) => {

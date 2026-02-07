@@ -73,3 +73,22 @@ export interface QuadrilateralShape extends BaseShape {
     intersection: Point | null
   }
 }
+
+/** 圆形图形 */
+export interface CircleShape extends BaseShape {
+  type: 'circle'
+  center: Point
+  radius: number
+  label: LabelConfig
+  style: {
+    fill: string
+    stroke: string
+    strokeWidth: number
+  }
+  properties: CircleProperties
+  annotations?: {
+    showRadius: boolean
+    showDiameter: boolean
+    showCenter: boolean
+  }
+}

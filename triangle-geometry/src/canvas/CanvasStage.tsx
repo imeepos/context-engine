@@ -6,11 +6,13 @@ import { useShapeStore } from '../store/shape-store'
 import { GridLayer } from './layers/GridLayer'
 import { PointLayer } from './layers/PointLayer'
 import { SegmentLayer } from './layers/SegmentLayer'
+import { CircleLayer } from './layers/CircleLayer'
 import { QuadrilateralLayer } from './layers/QuadrilateralLayer'
 import { TriangleLayer } from './layers/TriangleLayer'
 import { AuxiliaryLayer } from './layers/AuxiliaryLayer'
 import { AnnotationLayer } from './layers/AnnotationLayer'
 import { calculateSnappedPoint } from '../lib/coordinate-transform'
+import { distance } from '../engine/core/point'
 
 export function CanvasStage() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -29,7 +31,7 @@ export function CanvasStage() {
     setZoom,
   } = useCanvasStore()
 
-  const { addTriangle, selectTriangle, addPoint, addSegment, addQuadrilateral } = useShapeStore()
+  const { addTriangle, selectTriangle, addPoint, addSegment, addQuadrilateral, addCircle } = useShapeStore()
 
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 })
 
@@ -89,6 +91,14 @@ export function CanvasStage() {
         addTempPoint(pos)
         if (tempPoints.length >= 1) {
           addSegment(tempPoints[0], pos)
+        }
+        break
+      case 'circle':
+        // 创建圆模式：点击圆心，拖动确定半径
+        addTempPoint(pos)
+        if (tempPoints.length >= 1) {
+          const radius = distance(tempPoints[0], pos)
+          addCircle(tempPoints[0], radius)
         }
         break
       case 'quadrilateral':
@@ -172,10 +182,11 @@ export function CanvasStage() {
           <GridLayer />
         </Layer>
 
-        {/* Layer 2: 内容（点 + 线段 + 四边形 + 三角形 + 辅助线 + 标注 + 临时点） */}
+        {/* Layer 2: 内容（点 + 线段 + 圆形 + 四边形 + 三角形 + 辅助线 + 标注 + 临时点） */}
         <Layer>
           <PointLayer />
           <SegmentLayer />
+          <CircleLayer />
           <QuadrilateralLayer />
           <TriangleLayer />
           <AuxiliaryLayer />

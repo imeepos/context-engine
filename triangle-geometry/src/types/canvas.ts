@@ -3,7 +3,7 @@ import type { Point } from './geometry'
 
 export type { Point } from './geometry'
 
-export type CanvasMode = 'select' | 'point' | 'segment' | 'triangle' | 'quadrilateral' | 'measure'
+export type CanvasMode = 'select' | 'point' | 'segment' | 'triangle' | 'quadrilateral' | 'circle' | 'measure'
 
 export type LayerName = 'grid' | 'auxiliary' | 'triangle' | 'annotation' | 'animation' | 'ui'
 
