@@ -12,6 +12,8 @@ import { MarketPage } from './pages/MarketPage'
 import { MarketDetailPage } from './pages/MarketDetailPage'
 import { MarketInstalledPage } from './pages/MarketInstalledPage'
 import { MarketPublishedPage } from './pages/MarketPublishedPage'
+import { SkillsListPage } from './pages/SkillsListPage'
+import { SkillDetailPage } from './pages/SkillDetailPage'
 
 /**
  * 一级菜单配置
@@ -64,6 +66,13 @@ export const menuItems: MenuItem[] = [
     toolName: 'navigate_baseinfo',
     description: '查看系统基础信息',
     showInMenu: true
+  },
+  {
+    title: 'Skills 管理',
+    path: '/skills',
+    toolName: 'navigate_skills',
+    description: '查看和管理系统中的 Skills',
+    showInMenu: true
   }
 ]
 
@@ -79,7 +88,9 @@ export const routes: Route[] = [
   { path: '/market/:id', component: MarketDetailPage as any, params: {} },
   { path: '/plugins', component: PluginManagerPage as any, params: {} },
   { path: '/plugins/develop', component: PluginDevelopPage as any, params: {} },
-  { path: '/plugin/:id/*', component: PluginContainerPage as any, params: {} }
+  { path: '/plugin/:id/*', component: PluginContainerPage as any, params: {} },
+  { path: '/skills', component: SkillsListPage as any, params: {} },
+  { path: '/skills/:skillId', component: SkillDetailPage as any, params: {} }
 ]
 
 export function createRouter(injector: Injector) {
