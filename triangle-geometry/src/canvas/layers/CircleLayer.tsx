@@ -5,6 +5,8 @@
 
 import { Circle, Line, Text, Group } from 'react-konva'
 import { useShapeStore } from '../../store/shape-store'
+import { useCanvasStore } from '../../store/canvas-store'
+import { useRef } from 'react'
 
 export function CircleLayer() {
   const circles = useShapeStore((state) => state.circles)
@@ -16,9 +18,42 @@ export function CircleLayer() {
     <>
       {circles.map((circle) => {
         const isSelected = circle.id === selectedCircleId
+        const dragStartPos = useRef<{ x: number; y: number } | null>(null)
 
         return (
-          <Group key={circle.id}>
+          <Group
+            key={circle.id}
+            draggable={isSelected}
+            onDragStart={() => {
+              dragStartPos.current = { x: 0, y: 0 }
+            }}
+            onDragMove={(e) => {
+              if (!dragStartPos.current) return
+              const node = e.target
+              const dx = node.x() - dragStartPos.current.x
+              const dy = node.y() - dragStartPos.current.y
+              dragStartPos.current = { x: node.x(), y: node.y() }
+              node.position({ x: 0, y: 0 })
+              if (dx !== 0 || dy !== 0) {
+                const gridConfig = useCanvasStore.getState().gridConfig
+                let newCenter = {
+                  x: circle.center.x + dx,
+                  y: circle.center.y + dy,
+                }
+                if (gridConfig.snapEnabled) {
+                  const gridSize = gridConfig.gridSize
+                  newCenter = {
+                    x: Math.round(newCenter.x / gridSize) * gridSize,
+                    y: Math.round(newCenter.y / gridSize) * gridSize,
+                  }
+                }
+                updateCircle(circle.id, newCenter, circle.radius)
+              }
+            }}
+            onDragEnd={() => {
+              dragStartPos.current = null
+            }}
+          >
             {/* 圆形 */}
             <Circle
               x={circle.center.x}
@@ -42,6 +77,7 @@ export function CircleLayer() {
                 strokeWidth={2}
                 draggable
                 onDragMove={(e) => {
+                  e.cancelBubble = true
                   const newCenter = { x: e.target.x(), y: e.target.y() }
                   updateCircle(circle.id, newCenter, circle.radius)
                 }}
@@ -71,6 +107,7 @@ export function CircleLayer() {
                   strokeWidth={2}
                   draggable
                   onDragMove={(e) => {
+                    e.cancelBubble = true
                     const dx = e.target.x() - circle.center.x
                     const dy = e.target.y() - circle.center.y
                     const newRadius = Math.sqrt(dx * dx + dy * dy)

@@ -5,6 +5,8 @@
 
 import { Line, Circle, Text, Group } from 'react-konva'
 import { useShapeStore } from '../../store/shape-store'
+import { useCanvasStore } from '../../store/canvas-store'
+import { useRef } from 'react'
 
 export function QuadrilateralLayer() {
   const quadrilaterals = useShapeStore((state) => state.quadrilaterals)
@@ -17,9 +19,44 @@ export function QuadrilateralLayer() {
       {quadrilaterals.map((quad) => {
         const isSelected = quad.id === selectedQuadId
         const [A, B, C, D] = quad.vertices
+        const dragStartPos = useRef<{ x: number; y: number } | null>(null)
 
         return (
-          <Group key={quad.id}>
+          <Group
+            key={quad.id}
+            draggable={isSelected}
+            onDragStart={() => {
+              dragStartPos.current = { x: 0, y: 0 }
+            }}
+            onDragMove={(e) => {
+              if (!dragStartPos.current) return
+              const node = e.target
+              const dx = node.x() - dragStartPos.current.x
+              const dy = node.y() - dragStartPos.current.y
+              dragStartPos.current = { x: node.x(), y: node.y() }
+              node.position({ x: 0, y: 0 })
+              if (dx !== 0 || dy !== 0) {
+                const gridConfig = useCanvasStore.getState().gridConfig
+                quad.vertices.forEach((_, index) => {
+                  let newPos = {
+                    x: quad.vertices[index].x + dx,
+                    y: quad.vertices[index].y + dy,
+                  }
+                  if (gridConfig.snapEnabled) {
+                    const gridSize = gridConfig.gridSize
+                    newPos = {
+                      x: Math.round(newPos.x / gridSize) * gridSize,
+                      y: Math.round(newPos.y / gridSize) * gridSize,
+                    }
+                  }
+                  updateQuadVertex(quad.id, index, newPos)
+                })
+              }
+            }}
+            onDragEnd={() => {
+              dragStartPos.current = null
+            }}
+          >
             {/* 四边形填充 */}
             <Line
               points={[A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y]}
@@ -50,6 +87,7 @@ export function QuadrilateralLayer() {
                 strokeWidth={2}
                 draggable
                 onDragMove={(e) => {
+                  e.cancelBubble = true
                   const newPos = { x: e.target.x(), y: e.target.y() }
                   updateQuadVertex(quad.id, index, newPos)
                 }}
