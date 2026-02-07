@@ -97,7 +97,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   addTempPoint: (point) =>
     set((state) => ({
-      tempPoints: [...state.tempPoints, point].slice(-3), // 最多保留3个点
+      tempPoints: [...state.tempPoints, point], // 支持任意数量的临时点
     })),
 
   clearTempPoints: () => set({ tempPoints: [] }),

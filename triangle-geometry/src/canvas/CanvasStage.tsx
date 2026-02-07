@@ -110,26 +110,32 @@ export function CanvasStage() {
         }
         break
       case 'polygon':
-        // 创建多边形模式：点击多次创建多边形，双击完成
-        addTempPoint(pos)
+        // 创建多边形模式：点击多次创建多边形，点击接近第一个点闭合
         // 需要至少3个点才能形成多边形
         if (tempPoints.length >= 2) {
-          // 检查是否双击（点击位置接近第一个点）
+          // 检查是否点击接近第一个点（闭合多边形）
           const distToFirst = distance(pos, tempPoints[0])
           if (distToFirst < 20 / viewport.zoom) {
             // 闭合多边形
             addPolygon([...tempPoints])
+          } else {
+            // 继续添加点
+            addTempPoint(pos)
           }
+        } else {
+          // 前两个点直接添加
+          addTempPoint(pos)
         }
         break
       case 'triangle':
         // 创建三角形模式：点击三次创建一个三角形
-        addTempPoint(pos)
         if (tempPoints.length >= 2) {
           const newTriangle = addTriangle([tempPoints[0], tempPoints[1], pos])
           if (!newTriangle) {
             clearTempPoints()
           }
+        } else {
+          addTempPoint(pos)
         }
         break
       case 'select':
