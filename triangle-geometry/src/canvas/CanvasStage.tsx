@@ -130,10 +130,8 @@ export function CanvasStage() {
       case 'triangle':
         // 创建三角形模式：点击三次创建一个三角形
         if (tempPoints.length >= 2) {
-          const newTriangle = addTriangle([tempPoints[0], tempPoints[1], pos])
-          if (!newTriangle) {
-            clearTempPoints()
-          }
+          addTriangle([tempPoints[0], tempPoints[1], pos])
+          // addTriangle 内部会调用 clearTempPoints()
         } else {
           addTempPoint(pos)
         }

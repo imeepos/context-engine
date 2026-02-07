@@ -535,6 +535,7 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
       sides[0] + sides[2] <= sides[1] ||
       sides[1] + sides[2] <= sides[0]
     ) {
+      useCanvasStore.getState().clearTempPoints()
       return null
     }
 
