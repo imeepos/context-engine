@@ -1,12 +1,15 @@
 // 三角形图层（返回 Fragment，由父组件统一包裹 Layer）
 import React, { useRef } from 'react'
 import { Line, Circle, Group, Text } from 'react-konva'
-import { useTriangleStore } from '../../store/triangle-store'
+import { useShapeStore } from '../../store/shape-store'
 import { calculateTriangleProperties } from '../../engine/triangle-properties'
 import { Point } from '../../types/geometry'
 
 export function TriangleLayer() {
-  const { triangles, selectTriangle, updateVertex, measurements } = useTriangleStore()
+  const triangles = useShapeStore((state) => state.triangles)
+  const selectTriangle = useShapeStore((state) => state.selectTriangle)
+  const updateVertex = useShapeStore((state) => state.updateVertex)
+  const measurements = useShapeStore((state) => state.measurements)
 
   return (
     <>

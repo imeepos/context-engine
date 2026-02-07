@@ -25,7 +25,7 @@ export function AppHeader() {
       <header className="h-14 border-b bg-white flex items-center px-4 gap-4">
         <div className="flex items-center gap-2">
           <Triangle className="h-6 w-6 text-blue-500" />
-          <h1 className="text-lg font-bold text-gray-800">三角形几何学习</h1>
+          <h1 className="text-lg font-bold text-gray-800">几何学习</h1>
         </div>
 
         <Tabs value={activeModule} onValueChange={(v) => setModule(v as any)}>
