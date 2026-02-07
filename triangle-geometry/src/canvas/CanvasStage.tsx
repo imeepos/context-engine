@@ -2,8 +2,10 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { Stage, Layer, Line, Circle } from 'react-konva'
 import { useCanvasStore } from '../store/canvas-store'
-import { useTriangleStore } from '../store/triangle-store'
+import { useShapeStore } from '../store/shape-store'
 import { GridLayer } from './layers/GridLayer'
+import { PointLayer } from './layers/PointLayer'
+import { SegmentLayer } from './layers/SegmentLayer'
 import { TriangleLayer } from './layers/TriangleLayer'
 import { AuxiliaryLayer } from './layers/AuxiliaryLayer'
 import { AnnotationLayer } from './layers/AnnotationLayer'
@@ -26,7 +28,7 @@ export function CanvasStage() {
     setZoom,
   } = useCanvasStore()
 
-  const { addTriangle, selectTriangle } = useTriangleStore()
+  const { addTriangle, selectTriangle, addPoint, addSegment } = useShapeStore()
 
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 })
 
@@ -78,6 +80,18 @@ export function CanvasStage() {
 
     switch (mode) {
       case 'point':
+        // 创建点模式：点击一次创建一个点
+        addPoint(pos)
+        break
+      case 'segment':
+        // 创建线段模式：点击两次创建一条线段
+        addTempPoint(pos)
+        if (tempPoints.length >= 1) {
+          addSegment(tempPoints[0], pos)
+        }
+        break
+      case 'triangle':
+        // 创建三角形模式：点击三次创建一个三角形
         addTempPoint(pos)
         if (tempPoints.length >= 2) {
           const newTriangle = addTriangle([tempPoints[0], tempPoints[1], pos])
@@ -85,13 +99,6 @@ export function CanvasStage() {
             clearTempPoints()
           }
         }
-        break
-      case 'triangle':
-        addTriangle([
-          { x: pos.x - 50, y: pos.y + 50 * Math.sqrt(3) / 2 },
-          { x: pos.x + 50, y: pos.y + 50 * Math.sqrt(3) / 2 },
-          { x: pos.x, y: pos.y - 50 * Math.sqrt(3) / 2 },
-        ])
         break
       case 'select':
         break
@@ -157,8 +164,10 @@ export function CanvasStage() {
           <GridLayer />
         </Layer>
 
-        {/* Layer 2: 内容（三角形 + 辅助线 + 标注 + 临时点） */}
+        {/* Layer 2: 内容（点 + 线段 + 三角形 + 辅助线 + 标注 + 临时点） */}
         <Layer>
+          <PointLayer />
+          <SegmentLayer />
           <TriangleLayer />
           <AuxiliaryLayer />
           <AnnotationLayer />

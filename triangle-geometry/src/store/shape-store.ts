@@ -5,17 +5,38 @@
 
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
-import type { Point, ShapeType, VertexLabel } from '../types/geometry-base'
+import type { Point, VertexLabel } from '../types/geometry-base'
+import type { PointShape, SegmentShape } from '../types/shapes'
 import type { Triangle, AuxiliaryLine, Measurement } from '../types/geometry'
 import { calculateTriangleProperties } from '../engine/triangle-properties'
-import { distance } from '../engine/core/point'
+import { distance, midpoint } from '../engine/core/point'
 import { useCanvasStore } from './canvas-store'
 
 interface ShapeState {
+  // 点和线段
+  points: PointShape[]
+  segments: SegmentShape[]
+  selectedPointId: string | null
+  selectedSegmentId: string | null
+
   // 三角形相关（保持向后兼容）
   triangles: Triangle[]
   selectedTriangleId: string | null
   measurements: Measurement
+
+  // Actions - 点
+  addPoint: (position: Point) => PointShape
+  updatePoint: (pointId: string, position: Point) => void
+  selectPoint: (id: string | null) => void
+  deletePoint: (id: string) => void
+  getSelectedPoint: () => PointShape | null
+
+  // Actions - 线段
+  addSegment: (start: Point, end: Point) => SegmentShape
+  updateSegmentEnd: (segmentId: string, endIndex: 0 | 1, newPos: Point) => void
+  selectSegment: (id: string | null) => void
+  deleteSegment: (id: string) => void
+  getSelectedSegment: () => SegmentShape | null
 
   // Actions - 三角形
   addTriangle: (vertices: [Point, Point, Point]) => Triangle | null
@@ -38,6 +59,13 @@ interface ShapeState {
 }
 
 export const useShapeStore = create<ShapeState>((set, get) => ({
+  // 点和线段状态
+  points: [],
+  segments: [],
+  selectedPointId: null,
+  selectedSegmentId: null,
+
+  // 三角形状态
   triangles: [],
   selectedTriangleId: null,
   measurements: {
@@ -47,6 +75,147 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
     area: true,
     type: true,
     specialPoints: false,
+  },
+
+  // 点的操作
+  addPoint: (position) => {
+    const allLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const usedLabels = new Set<string>([
+      ...get().points.map((p) => p.label.text),
+      ...get().triangles.flatMap((t) => t.labels as string[]),
+    ])
+    const available = allLabels.split('').filter((l) => !usedLabels.has(l))
+    const label = available.length > 0 ? available[0] : 'P'
+
+    const newPoint: PointShape = {
+      id: uuidv4(),
+      type: 'point',
+      position,
+      label: {
+        text: label,
+        visible: true,
+        position: 'auto',
+        offset: { x: 0, y: -15 },
+      },
+      style: {
+        radius: 6,
+        fill: '#ef4444',
+        stroke: '#dc2626',
+      },
+      visible: true,
+      locked: false,
+      color: '#ef4444',
+      opacity: 1,
+      zIndex: 10,
+    }
+
+    set((state) => ({
+      points: [...state.points, newPoint],
+      selectedPointId: newPoint.id,
+    }))
+
+    useCanvasStore.getState().clearTempPoints()
+    return newPoint
+  },
+
+  updatePoint: (pointId, position) =>
+    set((state) => ({
+      points: state.points.map((p) =>
+        p.id === pointId ? { ...p, position } : p
+      ),
+    })),
+
+  selectPoint: (id) =>
+    set({
+      selectedPointId: id,
+      selectedSegmentId: null,
+      selectedTriangleId: null,
+    }),
+
+  deletePoint: (id) =>
+    set((state) => ({
+      points: state.points.filter((p) => p.id !== id),
+      selectedPointId: state.selectedPointId === id ? null : state.selectedPointId,
+    })),
+
+  getSelectedPoint: () => {
+    const state = get()
+    return state.points.find((p) => p.id === state.selectedPointId) || null
+  },
+
+  // 线段的操作
+  addSegment: (start, end) => {
+    const len = distance(start, end)
+    const mid = midpoint(start, end)
+
+    const newSegment: SegmentShape = {
+      id: uuidv4(),
+      type: 'segment',
+      start,
+      end,
+      label: {
+        text: '',
+        visible: false,
+        position: 'auto',
+        offset: { x: 0, y: 0 },
+      },
+      style: {
+        strokeWidth: 2,
+      },
+      measurements: {
+        length: len,
+        midpoint: mid,
+      },
+      visible: true,
+      locked: false,
+      color: '#6b7280',
+      opacity: 1,
+      zIndex: 5,
+    }
+
+    set((state) => ({
+      segments: [...state.segments, newSegment],
+      selectedSegmentId: newSegment.id,
+    }))
+
+    useCanvasStore.getState().clearTempPoints()
+    return newSegment
+  },
+
+  updateSegmentEnd: (segmentId, endIndex, newPos) =>
+    set((state) => ({
+      segments: state.segments.map((s) => {
+        if (s.id !== segmentId) return s
+        const start = endIndex === 0 ? newPos : s.start
+        const end = endIndex === 1 ? newPos : s.end
+        return {
+          ...s,
+          start,
+          end,
+          measurements: {
+            length: distance(start, end),
+            midpoint: midpoint(start, end),
+          },
+        }
+      }),
+    })),
+
+  selectSegment: (id) =>
+    set({
+      selectedSegmentId: id,
+      selectedPointId: null,
+      selectedTriangleId: null,
+    }),
+
+  deleteSegment: (id) =>
+    set((state) => ({
+      segments: state.segments.filter((s) => s.id !== id),
+      selectedSegmentId: state.selectedSegmentId === id ? null : state.selectedSegmentId,
+    })),
+
+  getSelectedSegment: () => {
+    const state = get()
+    return state.segments.find((s) => s.id === state.selectedSegmentId) || null
   },
 
   addTriangle: (vertices) => {
