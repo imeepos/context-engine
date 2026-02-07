@@ -171,7 +171,7 @@ export function useAnimationFrame(
  * 键盘快捷键 Hook
  */
 export function useKeyboardShortcuts() {
-  const { zoomIn, zoomOut, resetZoom, toggleGrid } = useCanvasStore()
+  const { zoomIn, zoomOut, resetZoom, toggleGrid, setMode } = useCanvasStore()
   const {
     selectedTriangleId,
     selectedPointId,
@@ -185,6 +185,9 @@ export function useKeyboardShortcuts() {
     deleteQuadrilateral,
     deleteCircle,
     deletePolygon,
+    copyShape,
+    pasteShape,
+    cutShape,
   } = useShapeStore()
 
   useEffect(() => {
@@ -194,27 +197,72 @@ export function useKeyboardShortcuts() {
         return
       }
 
+      // 编辑操作快捷键
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault()
+        copyShape()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault()
+        pasteShape()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+        e.preventDefault()
+        cutShape()
+        return
+      }
+
+      // 缩放快捷键
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+        e.preventDefault()
+        zoomIn()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+        e.preventDefault()
+        zoomOut()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault()
+        resetZoom()
+        return
+      }
+
+      // 工具选择快捷键
       switch (e.key) {
-        case '+':
-        case '=':
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault()
-            zoomIn()
-          }
+        case ' ':
+          e.preventDefault()
+          setMode('select')
           break
-        case '-':
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault()
-            zoomOut()
-          }
+        case 'p':
+        case 'P':
+          setMode('point')
           break
-        case '0':
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault()
-            resetZoom()
-          }
+        case 'l':
+        case 'L':
+          setMode('segment')
+          break
+        case 't':
+        case 'T':
+          setMode('triangle')
+          break
+        case 's':
+        case 'S':
+          setMode('quadrilateral')
+          break
+        case 'm':
+        case 'M':
+          setMode('polygon')
+          break
+        case 'r':
+        case 'R':
+          setMode('measure')
           break
         case 'g':
+        case 'G':
           toggleGrid()
           break
         case 'Delete':
@@ -237,6 +285,7 @@ export function useKeyboardShortcuts() {
     zoomOut,
     resetZoom,
     toggleGrid,
+    setMode,
     selectedTriangleId,
     selectedPointId,
     selectedSegmentId,
@@ -249,5 +298,8 @@ export function useKeyboardShortcuts() {
     deleteQuadrilateral,
     deleteCircle,
     deletePolygon,
+    copyShape,
+    pasteShape,
+    cutShape,
   ])
 }

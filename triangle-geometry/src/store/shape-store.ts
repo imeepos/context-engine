@@ -39,6 +39,9 @@ interface ShapeState {
   selectedTriangleId: string | null
   measurements: Measurement
 
+  // 剪贴板
+  clipboard: any | null
+
   // Actions - 点
   addPoint: (position: Point) => PointShape
   updatePoint: (pointId: string, position: Point) => void
@@ -92,6 +95,11 @@ interface ShapeState {
   // 工具函数
   getSelectedTriangle: () => Triangle | null
   getSelectedTriangleProperties: () => ReturnType<typeof calculateTriangleProperties> | null
+
+  // 剪贴板操作
+  copyShape: () => void
+  pasteShape: () => void
+  cutShape: () => void
 }
 
 export const useShapeStore = create<ShapeState>((set, get) => ({
@@ -124,6 +132,9 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
     type: true,
     specialPoints: false,
   },
+
+  // 剪贴板状态
+  clipboard: null,
 
   // 点的操作
   addPoint: (position) => {
@@ -661,6 +672,68 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
     const triangle = get().getSelectedTriangle()
     if (!triangle) return null
     return calculateTriangleProperties(triangle.vertices)
+  },
+
+  copyShape: () => {
+    const state = get()
+    if (state.selectedTriangleId) {
+      const triangle = state.triangles.find((t) => t.id === state.selectedTriangleId)
+      if (triangle) set({ clipboard: { type: 'triangle', data: triangle } })
+    } else if (state.selectedPointId) {
+      const point = state.points.find((p) => p.id === state.selectedPointId)
+      if (point) set({ clipboard: { type: 'point', data: point } })
+    } else if (state.selectedSegmentId) {
+      const segment = state.segments.find((s) => s.id === state.selectedSegmentId)
+      if (segment) set({ clipboard: { type: 'segment', data: segment } })
+    } else if (state.selectedQuadrilateralId) {
+      const quad = state.quadrilaterals.find((q) => q.id === state.selectedQuadrilateralId)
+      if (quad) set({ clipboard: { type: 'quadrilateral', data: quad } })
+    } else if (state.selectedCircleId) {
+      const circle = state.circles.find((c) => c.id === state.selectedCircleId)
+      if (circle) set({ clipboard: { type: 'circle', data: circle } })
+    } else if (state.selectedPolygonId) {
+      const polygon = state.polygons.find((p) => p.id === state.selectedPolygonId)
+      if (polygon) set({ clipboard: { type: 'polygon', data: polygon } })
+    }
+  },
+
+  pasteShape: () => {
+    const state = get()
+    if (!state.clipboard) return
+
+    const offset = 30
+    const { type, data } = state.clipboard
+
+    if (type === 'triangle') {
+      const newVertices = data.vertices.map((v: Point) => ({ x: v.x + offset, y: v.y + offset })) as [Point, Point, Point]
+      get().addTriangle(newVertices)
+    } else if (type === 'point') {
+      get().addPoint({ x: data.position.x + offset, y: data.position.y + offset })
+    } else if (type === 'segment') {
+      get().addSegment(
+        { x: data.start.x + offset, y: data.start.y + offset },
+        { x: data.end.x + offset, y: data.end.y + offset }
+      )
+    } else if (type === 'quadrilateral') {
+      const newVertices = data.vertices.map((v: Point) => ({ x: v.x + offset, y: v.y + offset })) as [Point, Point, Point, Point]
+      get().addQuadrilateral(newVertices)
+    } else if (type === 'circle') {
+      get().addCircle({ x: data.center.x + offset, y: data.center.y + offset }, data.radius)
+    } else if (type === 'polygon') {
+      const newVertices = data.vertices.map((v: Point) => ({ x: v.x + offset, y: v.y + offset }))
+      get().addPolygon(newVertices)
+    }
+  },
+
+  cutShape: () => {
+    const state = get()
+    get().copyShape()
+    if (state.selectedTriangleId) get().deleteTriangle(state.selectedTriangleId)
+    else if (state.selectedPointId) get().deletePoint(state.selectedPointId)
+    else if (state.selectedSegmentId) get().deleteSegment(state.selectedSegmentId)
+    else if (state.selectedQuadrilateralId) get().deleteQuadrilateral(state.selectedQuadrilateralId)
+    else if (state.selectedCircleId) get().deleteCircle(state.selectedCircleId)
+    else if (state.selectedPolygonId) get().deletePolygon(state.selectedPolygonId)
   },
 }))
 
