@@ -59,3 +59,17 @@ export interface LineShape extends BaseShape {
     standard: string
   }
 }
+
+/** 四边形图形 */
+export interface QuadrilateralShape extends BaseShape {
+  type: 'quadrilateral'
+  vertices: [Point, Point, Point, Point]
+  labels: [LabelConfig, LabelConfig, LabelConfig, LabelConfig]
+  quadType: 'parallelogram' | 'rectangle' | 'rhombus' | 'square' | 'trapezoid' | 'general'
+  properties: QuadrilateralProperties
+  diagonals?: {
+    AC: { visible: boolean; length: number }
+    BD: { visible: boolean; length: number }
+    intersection: Point | null
+  }
+}

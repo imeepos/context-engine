@@ -6,9 +6,10 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
 import type { Point, VertexLabel } from '../types/geometry-base'
-import type { PointShape, SegmentShape } from '../types/shapes'
+import type { PointShape, SegmentShape, QuadrilateralShape } from '../types/shapes'
 import type { Triangle, AuxiliaryLine, Measurement } from '../types/geometry'
 import { calculateTriangleProperties } from '../engine/triangle-properties'
+import { calculateQuadProperties } from '../engine/shapes/quadrilateral'
 import { distance, midpoint } from '../engine/core/point'
 import { useCanvasStore } from './canvas-store'
 
@@ -18,6 +19,10 @@ interface ShapeState {
   segments: SegmentShape[]
   selectedPointId: string | null
   selectedSegmentId: string | null
+
+  // 四边形
+  quadrilaterals: QuadrilateralShape[]
+  selectedQuadrilateralId: string | null
 
   // 三角形相关（保持向后兼容）
   triangles: Triangle[]
@@ -37,6 +42,13 @@ interface ShapeState {
   selectSegment: (id: string | null) => void
   deleteSegment: (id: string) => void
   getSelectedSegment: () => SegmentShape | null
+
+  // Actions - 四边形
+  addQuadrilateral: (vertices: [Point, Point, Point, Point]) => QuadrilateralShape
+  updateQuadVertex: (quadId: string, vertexIndex: number, newPos: Point) => void
+  selectQuadrilateral: (id: string | null) => void
+  deleteQuadrilateral: (id: string) => void
+  getSelectedQuadrilateral: () => QuadrilateralShape | null
 
   // Actions - 三角形
   addTriangle: (vertices: [Point, Point, Point]) => Triangle | null
@@ -64,6 +76,10 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
   segments: [],
   selectedPointId: null,
   selectedSegmentId: null,
+
+  // 四边形状态
+  quadrilaterals: [],
+  selectedQuadrilateralId: null,
 
   // 三角形状态
   triangles: [],
@@ -216,6 +232,101 @@ export const useShapeStore = create<ShapeState>((set, get) => ({
   getSelectedSegment: () => {
     const state = get()
     return state.segments.find((s) => s.id === state.selectedSegmentId) || null
+  },
+
+  // 四边形的操作
+  addQuadrilateral: (vertices) => {
+    const allLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const usedLabels = new Set<string>([
+      ...get().points.map((p) => p.label.text),
+      ...get().triangles.flatMap((t) => t.labels as string[]),
+      ...get().quadrilaterals.flatMap((q) => q.labels.map((l) => l.text)),
+    ])
+    const available = allLabels.split('').filter((l) => !usedLabels.has(l))
+    const nextLabels: [VertexLabel, VertexLabel, VertexLabel, VertexLabel] =
+      available.length >= 4
+        ? [available[0] as VertexLabel, available[1] as VertexLabel, available[2] as VertexLabel, available[3] as VertexLabel]
+        : ['A' as VertexLabel, 'B' as VertexLabel, 'C' as VertexLabel, 'D' as VertexLabel]
+
+    const properties = calculateQuadProperties(vertices)
+
+    let quadType: QuadrilateralShape['quadType'] = 'general'
+    if (properties.isSquare) quadType = 'square'
+    else if (properties.isRectangle) quadType = 'rectangle'
+    else if (properties.isRhombus) quadType = 'rhombus'
+    else if (properties.isParallelogram) quadType = 'parallelogram'
+    else if (properties.isTrapezoid) quadType = 'trapezoid'
+
+    const newQuad: QuadrilateralShape = {
+      id: uuidv4(),
+      type: 'quadrilateral',
+      vertices,
+      labels: nextLabels.map((text) => ({
+        text,
+        visible: true,
+        position: 'auto' as const,
+        offset: { x: 0, y: -15 },
+      })) as [any, any, any, any],
+      quadType,
+      properties,
+      color: '#8b5cf6',
+      opacity: 0.3,
+      visible: true,
+      locked: false,
+      zIndex: 3,
+    }
+
+    set((state) => ({
+      quadrilaterals: [...state.quadrilaterals, newQuad],
+      selectedQuadrilateralId: newQuad.id,
+    }))
+
+    useCanvasStore.getState().clearTempPoints()
+    return newQuad
+  },
+
+  updateQuadVertex: (quadId, vertexIndex, newPos) =>
+    set((state) => ({
+      quadrilaterals: state.quadrilaterals.map((q) => {
+        if (q.id !== quadId) return q
+        const newVertices = q.vertices.map((v, i) =>
+          i === vertexIndex ? newPos : v
+        ) as [Point, Point, Point, Point]
+        const properties = calculateQuadProperties(newVertices)
+
+        let quadType: QuadrilateralShape['quadType'] = 'general'
+        if (properties.isSquare) quadType = 'square'
+        else if (properties.isRectangle) quadType = 'rectangle'
+        else if (properties.isRhombus) quadType = 'rhombus'
+        else if (properties.isParallelogram) quadType = 'parallelogram'
+        else if (properties.isTrapezoid) quadType = 'trapezoid'
+
+        return {
+          ...q,
+          vertices: newVertices,
+          properties,
+          quadType,
+        }
+      }),
+    })),
+
+  selectQuadrilateral: (id) =>
+    set({
+      selectedQuadrilateralId: id,
+      selectedPointId: null,
+      selectedSegmentId: null,
+      selectedTriangleId: null,
+    }),
+
+  deleteQuadrilateral: (id) =>
+    set((state) => ({
+      quadrilaterals: state.quadrilaterals.filter((q) => q.id !== id),
+      selectedQuadrilateralId: state.selectedQuadrilateralId === id ? null : state.selectedQuadrilateralId,
+    })),
+
+  getSelectedQuadrilateral: () => {
+    const state = get()
+    return state.quadrilaterals.find((q) => q.id === state.selectedQuadrilateralId) || null
   },
 
   addTriangle: (vertices) => {

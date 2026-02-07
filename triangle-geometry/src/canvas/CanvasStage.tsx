@@ -6,6 +6,7 @@ import { useShapeStore } from '../store/shape-store'
 import { GridLayer } from './layers/GridLayer'
 import { PointLayer } from './layers/PointLayer'
 import { SegmentLayer } from './layers/SegmentLayer'
+import { QuadrilateralLayer } from './layers/QuadrilateralLayer'
 import { TriangleLayer } from './layers/TriangleLayer'
 import { AuxiliaryLayer } from './layers/AuxiliaryLayer'
 import { AnnotationLayer } from './layers/AnnotationLayer'
@@ -28,7 +29,7 @@ export function CanvasStage() {
     setZoom,
   } = useCanvasStore()
 
-  const { addTriangle, selectTriangle, addPoint, addSegment } = useShapeStore()
+  const { addTriangle, selectTriangle, addPoint, addSegment, addQuadrilateral } = useShapeStore()
 
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 })
 
@@ -88,6 +89,13 @@ export function CanvasStage() {
         addTempPoint(pos)
         if (tempPoints.length >= 1) {
           addSegment(tempPoints[0], pos)
+        }
+        break
+      case 'quadrilateral':
+        // 创建四边形模式：点击四次创建一个四边形
+        addTempPoint(pos)
+        if (tempPoints.length >= 3) {
+          addQuadrilateral([tempPoints[0], tempPoints[1], tempPoints[2], pos])
         }
         break
       case 'triangle':
@@ -164,10 +172,11 @@ export function CanvasStage() {
           <GridLayer />
         </Layer>
 
-        {/* Layer 2: 内容（点 + 线段 + 三角形 + 辅助线 + 标注 + 临时点） */}
+        {/* Layer 2: 内容（点 + 线段 + 四边形 + 三角形 + 辅助线 + 标注 + 临时点） */}
         <Layer>
           <PointLayer />
           <SegmentLayer />
+          <QuadrilateralLayer />
           <TriangleLayer />
           <AuxiliaryLayer />
           <AnnotationLayer />
