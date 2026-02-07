@@ -75,6 +75,20 @@ export function CanvasStage() {
   const handleClick = (e: any) => {
     const stage = e.target.getStage()
     if (!stage) return
+
+    // 在 select 模式下，如果点击的是 Stage 本身（空白区域），清除所有选中状态
+    if (mode === 'select') {
+      if (e.target === stage) {
+        useShapeStore.getState().selectTriangle(null)
+        useShapeStore.getState().selectPoint(null)
+        useShapeStore.getState().selectSegment(null)
+        useShapeStore.getState().selectQuadrilateral(null)
+        useShapeStore.getState().selectCircle(null)
+        useShapeStore.getState().selectPolygon(null)
+      }
+      return
+    }
+
     const point = stage.getPointerPosition()
     if (!point) return
 
@@ -135,8 +149,6 @@ export function CanvasStage() {
         } else {
           addTempPoint(pos)
         }
-        break
-      case 'select':
         break
     }
   }
