@@ -14,11 +14,13 @@ export class ChatSession {
   private inputHandler: InputHandler
   private rl: readline.Interface | null = null
   private version: number = new Date().getTime();
+  private llmInjector: Injector
   constructor(config: ChatSessionConfig) {
+    this.llmInjector = config.llmInjector
     this.llmService = config.llmInjector.get(LLMService)
     this.renderer = config.llmInjector.get(UIRenderer)
     console.log(`current chat session version: ${this.version}, current renderer version: ${this.renderer.version}`)
-    this.inputHandler = new InputHandler(this.llmService, this.renderer)
+    this.inputHandler = new InputHandler(this.llmService, this.renderer, this.llmInjector)
   }
 
   async start(): Promise<void> {

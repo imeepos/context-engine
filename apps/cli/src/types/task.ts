@@ -1,3 +1,5 @@
+import { ExecutionHistory } from './execution-history'
+
 export enum TaskStatus {
   PENDING = 'pending',
   BLOCKED = 'blocked',
@@ -21,6 +23,7 @@ export interface Task {
   completedAt: number | null
   dependencies: string[]
   metadata: Record<string, any>
+  executionHistory?: ExecutionHistory
 }
 
 export interface TaskRegistry {
