@@ -5,10 +5,13 @@ import {
   Circle,
   Triangle,
   Ruler,
-  Eraser,
   ZoomIn,
   ZoomOut,
   Grid3X3,
+  Minus,
+  Square,
+  Pentagon,
+  Dot,
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/tooltip'
@@ -19,13 +22,17 @@ interface ToolButton {
   id: string
   icon: React.ReactNode
   label: string
-  mode: 'select' | 'point' | 'triangle' | 'measure'
+  mode: 'select' | 'point' | 'segment' | 'triangle' | 'quadrilateral' | 'circle' | 'polygon' | 'measure'
 }
 
 const tools: ToolButton[] = [
   { id: 'select', icon: <MousePointer2 className="h-5 w-5" />, label: '选择', mode: 'select' },
-  { id: 'point', icon: <Circle className="h-5 w-5" />, label: '添加点', mode: 'point' },
+  { id: 'point', icon: <Dot className="h-5 w-5" />, label: '添加点', mode: 'point' },
+  { id: 'segment', icon: <Minus className="h-5 w-5" />, label: '创建线段', mode: 'segment' },
   { id: 'triangle', icon: <Triangle className="h-5 w-5" />, label: '创建三角形', mode: 'triangle' },
+  { id: 'quadrilateral', icon: <Square className="h-5 w-5" />, label: '创建四边形', mode: 'quadrilateral' },
+  { id: 'circle', icon: <Circle className="h-5 w-5" />, label: '创建圆形', mode: 'circle' },
+  { id: 'polygon', icon: <Pentagon className="h-5 w-5" />, label: '创建多边形', mode: 'polygon' },
   { id: 'measure', icon: <Ruler className="h-5 w-5" />, label: '测量', mode: 'measure' },
 ]
 
