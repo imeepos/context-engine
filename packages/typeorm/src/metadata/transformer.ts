@@ -70,7 +70,7 @@ export function fromDatabaseValue(column: ColumnMetadata | undefined, value: unk
   const transformers = normalizeTransformers(column.transformer)
   for (let i = transformers.length - 1; i >= 0; i -= 1) {
     const transformer = transformers[i]
-    if (!transformer.from) {
+    if (!transformer?.from) {
       continue
     }
 

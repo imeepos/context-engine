@@ -4,7 +4,7 @@
  * @version 2.0
  */
 import 'reflect-metadata';
-import { root, ToolMetadataKey, Type } from '@sker/core'
+import { root, ToolMetadataKey, Type, Injector } from '@sker/core'
 import { ToolMetadata, TOOL_METADATA_KEY } from '@sker/core'
 import { AnthropicTool, OpenAITool, GoogleTool, GoogleToolFunctionDeclaration, UnifiedTool } from '../ast'
 import { zodToJsonSchema, isOptionalParam } from '../utils/zod-to-json-schema'
