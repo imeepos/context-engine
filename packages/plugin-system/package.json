@@ -1,0 +1,24 @@
+{
+  "name": "@sker/plugin-system",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sker/core": "workspace:*",
+    "@sker/prompt-renderer": "workspace:*",
+    "react": "^18.3.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@sker/typescript-config": "workspace:*",
+    "@types/react": "^18.3.27",
+    "typescript": "^5.9.2",
+    "vitest": "^2.0.0"
+  }
+}

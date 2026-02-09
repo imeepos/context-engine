@@ -378,6 +378,34 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@25.1.0)(jsdom@27.4.0(@noble/hashes@2.0.1))
 
+  packages/plugin-system:
+    dependencies:
+      '@sker/core':
+        specifier: workspace:*
+        version: link:../core
+      '@sker/prompt-renderer':
+        specifier: workspace:*
+        version: link:../prompt-renderer
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@sker/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/react':
+        specifier: ^18.3.27
+        version: 18.3.27
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@25.1.0)(jsdom@27.4.0(@noble/hashes@2.0.1))
+
   packages/prompt-renderer:
     dependencies:
       '@sker/compiler':
