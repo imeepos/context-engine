@@ -3,6 +3,7 @@ import { Injector } from '@sker/core'
 import { LLMService } from '@sker/compiler'
 import { InputHandler } from '../handlers/input-handler'
 import { UIRenderer } from '@sker/prompt-renderer'
+import { TaskRecoveryService } from '../services/task-recovery.service'
 
 export interface ChatSessionConfig {
   llmInjector: Injector
@@ -12,21 +13,26 @@ export class ChatSession {
   private llmService: LLMService
   private renderer: UIRenderer
   private inputHandler: InputHandler
+  private taskRecoveryService: TaskRecoveryService | null
   private rl: readline.Interface | null = null
-  private version: number = new Date().getTime();
+
   constructor(config: ChatSessionConfig) {
     this.llmService = config.llmInjector.get(LLMService)
     this.renderer = config.llmInjector.get(UIRenderer)
-    console.log(`current chat session version: ${this.version}, current renderer version: ${this.renderer.version}`)
     this.inputHandler = new InputHandler(this.llmService, this.renderer)
+    try {
+      this.taskRecoveryService = config.llmInjector.get(TaskRecoveryService)
+    } catch {
+      this.taskRecoveryService = null
+    }
   }
 
   async start(): Promise<void> {
-    // 初始渲染
-    const result = await this.renderer.render()
+    this.taskRecoveryService?.start()
 
+    const result = await this.renderer.render()
     console.log(result.prompt + '\n\n')
-    // 创建 readline 接口
+
     this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -41,6 +47,7 @@ export class ChatSession {
     })
 
     this.rl.on('close', async () => {
+      this.taskRecoveryService?.stop()
       process.exit(0)
     })
   }

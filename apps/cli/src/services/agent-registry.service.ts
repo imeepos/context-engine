@@ -9,6 +9,9 @@ export class AgentRegistryService {
   private heartbeatInterval: NodeJS.Timeout | null = null
   private agentListChangeCallbacks: Array<(agents: Agent[]) => void> = []
   private unwatchRegistry: (() => void) | null = null
+  private readonly HEARTBEAT_INTERVAL_MS = 3000
+  private readonly OFFLINE_HEARTBEAT_MULTIPLIER = 3
+  private readonly OFFLINE_GRACE_MS = 2000
 
   constructor(@Inject(STORAGE_TOKEN) private storage: Storage) { }
 
@@ -67,11 +70,31 @@ export class AgentRegistryService {
   async getOnlineAgents(): Promise<Agent[]> {
     const registry = await this.getRegistry()
     const now = Date.now()
-    const timeout = 10000
+    const timeout = this.getOfflineThresholdMs()
 
     return Object.values(registry.agents).filter(agent => {
       return agent.status === 'online' && (now - agent.lastHeartbeat) < timeout
     })
+  }
+
+  async getAgent(agentId: string): Promise<Agent | null> {
+    const registry = await this.getRegistry()
+    return registry.agents[agentId] || null
+  }
+
+  async isAgentOffline(agentId: string): Promise<boolean> {
+    const agent = await this.getAgent(agentId)
+    if (!agent) return true
+    if (agent.status === 'offline') return true
+    return (Date.now() - agent.lastHeartbeat) >= this.getOfflineThresholdMs()
+  }
+
+  getHeartbeatIntervalMs(): number {
+    return this.HEARTBEAT_INTERVAL_MS
+  }
+
+  getOfflineThresholdMs(): number {
+    return this.HEARTBEAT_INTERVAL_MS * this.OFFLINE_HEARTBEAT_MULTIPLIER + this.OFFLINE_GRACE_MS
   }
 
   getCurrentAgent(): Agent | null {
@@ -97,7 +120,7 @@ export class AgentRegistryService {
         agent.lastHeartbeat = Date.now()
         await this.storage.write('agents', registry)
       }
-    }, 3000)
+    }, this.HEARTBEAT_INTERVAL_MS)
   }
 
   private watchRegistry(): void {
