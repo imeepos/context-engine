@@ -1,7 +1,7 @@
 import { Module, DynamicModule, Type, Provider } from '@sker/core'
 import type { DatabaseDriver } from './driver/types.js'
 import { DataSource } from './data-source/DataSource.js'
-import { DB_DRIVER } from './tokens.js'
+import { DB_DRIVER, ENTITIES } from './tokens.js'
 
 /**
  * TypeORM 模块配置选项
@@ -13,7 +13,7 @@ export interface TypeOrmModuleOptions {
   driver: DatabaseDriver
 
   /**
-   * 实体类列表（可选，用于预加载）
+   * 实体类列表（使用 multi: true 注入）
    */
   entities?: Type<any>[]
 }
@@ -50,8 +50,22 @@ export class TypeOrmModule {
         provide: DB_DRIVER,
         useValue: options.driver
       },
-      { provide: DataSource, useClass: DataSource }
+      {
+        provide: DataSource,
+        useClass: DataSource
+      }
     ]
+
+    // 使用 multi: true 注册实体
+    if (options.entities && options.entities.length > 0) {
+      for (const entity of options.entities) {
+        providers.push({
+          provide: ENTITIES,
+          useValue: entity,
+          multi: true
+        })
+      }
+    }
 
     return {
       module: TypeOrmModule,
@@ -61,9 +75,23 @@ export class TypeOrmModule {
 
   /**
    * 配置 TypeORM 模块（用于功能模块）
-   * 与 forRoot 相同，但语义上用于功能模块
+   * 只注册实体，不注册 DataSource 和 DB_DRIVER
    */
-  static forFeature(options: TypeOrmModuleOptions): DynamicModule {
-    return TypeOrmModule.forRoot(options)
+  static forFeature(entities: Type<any>[]): DynamicModule {
+    const providers: Provider[] = []
+
+    // 使用 multi: true 注册实体
+    for (const entity of entities) {
+      providers.push({
+        provide: ENTITIES,
+        useValue: entity,
+        multi: true
+      })
+    }
+
+    return {
+      module: TypeOrmModule,
+      providers
+    }
   }
 }

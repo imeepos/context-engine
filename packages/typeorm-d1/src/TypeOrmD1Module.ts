@@ -24,22 +24,23 @@ export interface TypeOrmD1ModuleOptions {
  * ```typescript
  * // 在 Cloudflare Workers 中使用
  * @Module({
- *   imports: [TypeOrmD1Module.forRoot({
- *     database: env.DB,
- *     entities: [User, Post]
- *   })]
+ *   imports: [
+ *     TypeOrmD1Module.forRoot({
+ *       database: env.DB,
+ *       entities: [User, Post]
+ *     })
+ *   ]
  * })
  * class AppModule {}
  *
- * // 启动应用
- * const platform = createPlatform();
- * const app = platform.bootstrapApplication();
- * await app.bootstrap(AppModule);
- *
- * // 使用 DataSource
- * const dataSource = app.injector.get(DataSource);
- * const userRepo = dataSource.getRepository(User);
- * const users = await userRepo.find();
+ * // 或者分离配置
+ * @Module({
+ *   imports: [
+ *     TypeOrmD1Module.forRoot({ database: env.DB }),
+ *     TypeOrmD1Module.forFeature([User, Post])
+ *   ]
+ * })
+ * class AppModule {}
  * ```
  */
 @Module({})
@@ -58,8 +59,9 @@ export class TypeOrmD1Module {
 
   /**
    * 配置 TypeORM D1 模块（用于功能模块）
+   * 只注册实体，不注册 DataSource 和 DB_DRIVER
    */
-  static forFeature(options: TypeOrmD1ModuleOptions): DynamicModule {
-    return TypeOrmD1Module.forRoot(options)
+  static forFeature(entities: Type<any>[]): DynamicModule {
+    return TypeOrmModule.forFeature(entities)
   }
 }
