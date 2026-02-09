@@ -21,7 +21,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@sker/typeorm": "workspace:*"
+    "@sker/typeorm": "workspace:*",
+    "@sker/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "mysql2": "^3.0.0"
   },
   "devDependencies": {
     "@sker/eslint-config": "workspace:*",

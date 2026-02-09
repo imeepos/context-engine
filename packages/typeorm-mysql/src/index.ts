@@ -6,6 +6,9 @@ import {
   type QueryRows,
   type QueryRunResult
 } from '@sker/typeorm'
+import { Module, DynamicModule, Type } from '@sker/core'
+import { TypeOrmModule } from '@sker/typeorm'
+import { createPool, type PoolOptions } from 'mysql2/promise'
 
 export interface MysqlExecuteHeaderLike {
   affectedRows?: number
@@ -16,6 +19,30 @@ export interface MysqlExecutorLike {
   execute(sql: string, params?: any[]): Promise<[unknown, unknown]>
   query(sql: string, params?: any[]): Promise<[unknown, unknown]>
   end?(): Promise<unknown>
+}
+
+export type MysqlConnectOptions = string | PoolOptions
+
+export class Mysql implements MysqlExecutorLike {
+  private readonly executor: any
+
+  constructor(options: MysqlConnectOptions) {
+    this.executor = typeof options === 'string'
+      ? createPool(options)
+      : createPool(options)
+  }
+
+  execute(sql: string, params?: any[]): Promise<[unknown, unknown]> {
+    return this.executor.execute(sql, params) as Promise<[unknown, unknown]>
+  }
+
+  query(sql: string, params?: any[]): Promise<[unknown, unknown]> {
+    return this.executor.query(sql, params) as Promise<[unknown, unknown]>
+  }
+
+  end(): Promise<unknown> {
+    return this.executor.end?.() ?? Promise.resolve()
+  }
 }
 
 class MysqlPreparedStatement implements PreparedStatement {
@@ -92,4 +119,50 @@ export class MysqlDriver implements DatabaseDriver {
 
 export function createMysqlDriver(executor: MysqlExecutorLike): MysqlDriver {
   return new MysqlDriver(executor)
+}
+
+export interface TypeOrmMysqlModuleOptions {
+  connection: MysqlExecutorLike | Mysql | MysqlConnectOptions
+  entities?: Type<any>[]
+}
+
+function isMysqlExecutorLike(input: unknown): input is MysqlExecutorLike {
+  return Boolean(
+    input &&
+    typeof input === 'object' &&
+    typeof (input as MysqlExecutorLike).execute === 'function' &&
+    typeof (input as MysqlExecutorLike).query === 'function'
+  )
+}
+
+function resolveMysqlExecutor(source: TypeOrmMysqlModuleOptions['connection']): MysqlExecutorLike {
+  if (source instanceof Mysql) {
+    return source
+  }
+
+  if (typeof source === 'string') {
+    return new Mysql(source)
+  }
+
+  if (isMysqlExecutorLike(source)) {
+    return source
+  }
+
+  return new Mysql(source)
+}
+
+@Module({})
+export class TypeOrmMysqlModule {
+  static forRoot(options: TypeOrmMysqlModuleOptions): DynamicModule {
+    const driver = new MysqlDriver(resolveMysqlExecutor(options.connection))
+
+    return TypeOrmModule.forRoot({
+      driver,
+      entities: options.entities
+    })
+  }
+
+  static forFeature(entities: Type<any>[]): DynamicModule {
+    return TypeOrmModule.forFeature(entities)
+  }
 }

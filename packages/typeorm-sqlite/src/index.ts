@@ -6,6 +6,9 @@ import {
   type QueryRows,
   type QueryRunResult
 } from '@sker/typeorm'
+import { Module, DynamicModule, Type } from '@sker/core'
+import { TypeOrmModule } from '@sker/typeorm'
+import BetterSqlite3 from 'better-sqlite3'
 
 export interface SqliteStatementLike {
   all(...params: any[]): any[]
@@ -18,6 +21,25 @@ export interface SqliteDatabaseLike {
   exec(sql: string): unknown
   close(): unknown
 }
+
+export interface SqlLiteOptions extends Record<string, unknown> {}
+
+type SqliteDatabaseCtor = new (path: string, options?: SqlLiteOptions) => SqliteDatabaseLike
+
+export class SqlLite {
+  readonly database: SqliteDatabaseLike
+
+  constructor(path: string, options?: SqlLiteOptions) {
+    const SqliteCtor = BetterSqlite3 as unknown as SqliteDatabaseCtor
+    this.database = new SqliteCtor(path, options)
+  }
+
+  close(): unknown {
+    return this.database.close()
+  }
+}
+
+export class Sqlite extends SqlLite {}
 
 class SqlitePreparedStatement implements PreparedStatement {
   constructor(private statement: SqliteStatementLike) {}
@@ -78,4 +100,37 @@ export class SqliteDriver implements DatabaseDriver {
 
 export function createSqliteDriver(db: SqliteDatabaseLike): SqliteDriver {
   return new SqliteDriver(db)
+}
+
+export interface TypeOrmSqliteModuleOptions {
+  database: SqliteDatabaseLike | SqlLite | string
+  entities?: Type<any>[]
+}
+
+function resolveSqliteDatabase(source: TypeOrmSqliteModuleOptions['database']): SqliteDatabaseLike {
+  if (typeof source === 'string') {
+    return new SqlLite(source).database
+  }
+
+  if (source instanceof SqlLite) {
+    return source.database
+  }
+
+  return source
+}
+
+@Module({})
+export class TypeOrmSqliteModule {
+  static forRoot(options: TypeOrmSqliteModuleOptions): DynamicModule {
+    const driver = new SqliteDriver(resolveSqliteDatabase(options.database))
+
+    return TypeOrmModule.forRoot({
+      driver,
+      entities: options.entities
+    })
+  }
+
+  static forFeature(entities: Type<any>[]): DynamicModule {
+    return TypeOrmModule.forFeature(entities)
+  }
 }
