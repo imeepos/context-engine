@@ -1,4 +1,31 @@
-### 2026-02-09 - 阶段 2 实现（Plugin 通配路由支持）
+### 2026-02-09 - 阶段 3 实现（工具执行作用域修正）
+
+#### 11. TDD 实现作用域隔离
+- ✅ 创建 `packages/compiler/src/unified/tool-scope.test.ts` - 3 个测试用例
+- ✅ 修改 `buildUnifiedTool` 使用传入的 `injector` 而非 `root`
+- ✅ 测试通过（RED → GREEN）
+
+**实现内容**:
+- 修改 `tool-builder.ts` 的 `execute` 函数，使用传入的 `injector` 参数
+- 从 `const instance = root.get(tool)` 改为 `const instance = injector.get(tool)`
+- 确保工具执行使用正确的作用域注入器
+
+**修改文件**:
+- `packages/compiler/src/unified/tool-builder.ts` - 修正作用域泄漏
+- `packages/compiler/src/unified/tool-scope.test.ts` - 新增作用域隔离测试
+
+**测试覆盖**:
+- 作用域隔离：1 个测试
+- 参数传递：1 个测试
+- 并发执行隔离：1 个测试
+- 总计新增：3 个测试用例
+
+**验收标准达成**:
+- ✅ 工具执行时使用正确的作用域注入器
+- ✅ 不同 Agent 的工具执行互不干扰
+- ✅ 页面级依赖能正确注入到工具中
+
+
 
 #### 9. TDD 实现通配符路由匹配
 - ✅ 创建 `packages/prompt-renderer/src/browser/matchPath.test.ts` - 13 个测试用例

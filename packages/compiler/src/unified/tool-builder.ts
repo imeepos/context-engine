@@ -36,8 +36,8 @@ export function buildUnifiedTool(tool: Type<any>, propertyKey: string | symbol):
             properties,
             required: required.length > 0 ? required : undefined
         },
-        execute: async (params: Record<string, any>) => {
-            const instance = root.get(tool)
+        execute: async (params: Record<string, any>, injector: Injector) => {
+            const instance = injector.get(tool)
             const args = toolMetadata.parameters
 
             const callArgs: any[] = []

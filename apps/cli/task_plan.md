@@ -106,7 +106,7 @@
 - `packages/prompt-renderer/src/browser/browser.ts`
 - 新增测试文件
 
-### 阶段 3: 工具执行作用域修正 [P1-1] ⏳ pending
+### 阶段 3: 工具执行作用域修正 [P1-1] ✅ completed
 **目标**: 避免工具执行时使用 root 级注入器
 
 **任��**:
