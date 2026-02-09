@@ -1,6 +1,8 @@
 import type { DatabaseDriver } from '../driver/types.js'
 import { extractRows } from '../driver/utils.js'
-import { TableMetadata } from '../metadata/types.js'
+import { ColumnMetadata, TableMetadata } from '../metadata/types.js'
+import { fromDatabaseValue, toDatabaseValue } from '../metadata/transformer.js'
+import { randomUUID } from 'node:crypto'
 import { QueryState } from './types.js'
 import { Operator } from '../operators/types.js'
 
@@ -65,12 +67,14 @@ export class QueryBuilder<T> {
   async execute(): Promise<T[]> {
     const { sql, bindings } = this.buildSQL()
     const result = await this.db.prepare(sql).bind(...bindings).all()
-    return extractRows(result) as T[]
+    const rows = extractRows(result) as Record<string, unknown>[]
+    return rows.map((row) => this.applyFromDatabaseTransform(row)) as T[]
   }
 
   async raw<R = T>(sql: string, bindings: any[] = []): Promise<R[]> {
     const result = await this.db.prepare(sql).bind(...bindings).all()
-    return extractRows(result) as R[]
+    const rows = extractRows(result) as Record<string, unknown>[]
+    return rows.map((row) => this.applyFromDatabaseTransform(row)) as R[]
   }
 
   async count(column: keyof T | string = '*'): Promise<number> {
@@ -108,18 +112,23 @@ export class QueryBuilder<T> {
       return
     }
 
-    const columns = Object.keys(rows[0]!)
+    const normalizedRows = rows.map((row) => this.prepareInsertRow(row))
+    const columns = Object.keys(normalizedRows[0]!)
     const placeholders = columns.map(() => '?').join(', ')
     const sql = `INSERT INTO ${this.metadata.name} (${columns.join(', ')}) VALUES (${placeholders})`
 
     if (this.db.batch) {
-      const statements = rows.map(row => this.db.prepare(sql).bind(...columns.map(column => (row as any)[column])))
+      const statements = normalizedRows.map((row) => this.db.prepare(sql).bind(
+        ...columns.map((column) => this.transformToDatabase(column, (row as any)[column]))
+      ))
       await this.db.batch(statements)
       return
     }
 
-    for (const row of rows) {
-      await this.db.prepare(sql).bind(...columns.map(column => (row as any)[column])).run()
+    for (const row of normalizedRows) {
+      await this.db.prepare(sql).bind(
+        ...columns.map((column) => this.transformToDatabase(column, (row as any)[column]))
+      ).run()
     }
   }
 
@@ -135,8 +144,8 @@ export class QueryBuilder<T> {
       const filters = whereColumns.map(column => `${column} = ?`).join(' AND ')
       const sql = `UPDATE ${this.metadata.name} SET ${updates} WHERE ${filters}`
       const bindings = [
-        ...valueColumns.map(column => (item.values as any)[column]),
-        ...whereColumns.map(column => (item.where as any)[column])
+        ...valueColumns.map((column) => this.transformToDatabase(column, (item.values as any)[column])),
+        ...whereColumns.map((column) => this.transformToDatabase(column, (item.where as any)[column]))
       ]
       return this.db.prepare(sql).bind(...bindings)
     })
@@ -205,11 +214,13 @@ export class QueryBuilder<T> {
       return this.buildOperatorClause(where as Operator<T>, bindings)
     }
 
-    const conditions = Object.entries(where)
+    const entries = Object.entries(where)
+    const conditions = entries
       .map(([key]) => `${key} = ?`)
       .join(' AND ')
-
-    bindings.push(...Object.values(where))
+    for (const [key, value] of entries) {
+      bindings.push(this.transformToDatabase(key, value))
+    }
     return conditions
   }
 
@@ -220,36 +231,41 @@ export class QueryBuilder<T> {
   private buildOperatorClause(op: Operator<T>, bindings: any[]): string {
     switch (op.type) {
       case 'eq':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} = ?`
       case 'gt':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} > ?`
       case 'lt':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} < ?`
       case 'gte':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} >= ?`
       case 'lte':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} <= ?`
       case 'ne':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} != ?`
       case 'like':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} LIKE ?`
       case 'ilike':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} LIKE ?`
       case 'in': {
         const placeholders = op.values!.map(() => '?').join(', ')
-        bindings.push(...op.values!)
+        bindings.push(
+          ...op.values!.map((value) => this.transformToDatabase(String(op.column), value))
+        )
         return `${String(op.column)} IN (${placeholders})`
       }
       case 'between':
-        bindings.push(op.min, op.max)
+        bindings.push(
+          this.transformToDatabase(String(op.column), op.min),
+          this.transformToDatabase(String(op.column), op.max)
+        )
         return `${String(op.column)} BETWEEN ? AND ?`
       case 'isNull':
         return `${String(op.column)} IS NULL`
@@ -268,5 +284,36 @@ export class QueryBuilder<T> {
       default:
         throw new Error(`Unknown operator type: ${(op as any).type}`)
     }
+  }
+
+  private getColumnMetadata(name: string): ColumnMetadata | undefined {
+    return this.metadata.columns.find((column) => column.name === name)
+  }
+
+  private transformToDatabase(columnName: string, value: unknown): unknown {
+    return toDatabaseValue(this.getColumnMetadata(columnName), value)
+  }
+
+  private applyFromDatabaseTransform(row: Record<string, unknown>): Record<string, unknown> {
+    const result: Record<string, unknown> = { ...row }
+    for (const [key, value] of Object.entries(row)) {
+      const column = this.getColumnMetadata(key)
+      if (!column) {
+        continue
+      }
+      result[key] = fromDatabaseValue(column, value)
+    }
+    return result
+  }
+
+  private prepareInsertRow(row: Partial<T>): Partial<T> {
+    const output: Record<string, unknown> = { ...(row as Record<string, unknown>) }
+    for (const column of this.metadata.columns) {
+      if (column.generated === 'uuid' && output[column.name] === undefined) {
+        output[column.name] = randomUUID()
+      }
+    }
+
+    return output as Partial<T>
   }
 }

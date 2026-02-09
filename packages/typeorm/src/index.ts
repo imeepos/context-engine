@@ -1,7 +1,7 @@
 // Decorators
 export { Entity } from './decorators/Entity.js'
 export { Column } from './decorators/Column.js'
-export { PrimaryColumn } from './decorators/PrimaryColumn.js'
+export { PrimaryColumn, PrimaryGeneratedColumn } from './decorators/PrimaryColumn.js'
 export { ManyToOne, OneToOne, OneToMany, ManyToMany } from './decorators/Relations.js'
 export { JoinColumn } from './decorators/JoinColumn.js'
 export { JoinTable } from './decorators/JoinTable.js'
@@ -28,12 +28,19 @@ export type {
   TableMetadata,
   ColumnMetadata,
   ColumnType,
+  ColumnOptions,
+  ColumnGenerationStrategy,
+  ColumnTransformer,
+  LogicalColumnType,
+  SqliteColumnType,
+  MysqlColumnType,
   RelationMetadata,
   RelationType,
   TransactionIsolationLevel,
   RelationOptions,
   JoinColumnMetadata,
-  JoinTableMetadata
+  JoinTableMetadata,
+  PrimaryGeneratedColumnOptions
 } from './metadata/types.js'
 
 // DI Tokens
