@@ -25,7 +25,8 @@ describe('Repository', () => {
         { name: 'id', type: 'INTEGER', primary: true },
         { name: 'name', type: 'TEXT', primary: false },
         { name: 'email', type: 'TEXT', primary: false }
-      ]
+      ],
+      relations: []
     }
 
     repository = new Repository(mockDb, metadata)
@@ -101,7 +102,8 @@ describe('Repository', () => {
     it('findOne 应该在没有主键时抛出错误', async () => {
       const repoWithoutPrimary = new Repository(mockDb, {
         name: 'test',
-        columns: []
+        columns: [],
+        relations: []
       })
 
       await expect(repoWithoutPrimary.findOne(1)).rejects.toThrow(
@@ -112,7 +114,8 @@ describe('Repository', () => {
     it('update 应该在没有主键时抛出错误', async () => {
       const repoWithoutPrimary = new Repository(mockDb, {
         name: 'test',
-        columns: []
+        columns: [],
+        relations: []
       })
 
       await expect(repoWithoutPrimary.update(1, { name: 'test' })).rejects.toThrow(
@@ -123,7 +126,8 @@ describe('Repository', () => {
     it('remove 应该在没有主键时抛出错误', async () => {
       const repoWithoutPrimary = new Repository(mockDb, {
         name: 'test',
-        columns: []
+        columns: [],
+        relations: []
       })
 
       await expect(repoWithoutPrimary.remove(1)).rejects.toThrow(

@@ -27,7 +27,8 @@ describe('QueryBuilder', () => {
         { name: 'email', type: 'TEXT', primary: false },
         { name: 'age', type: 'INTEGER', primary: false },
         { name: 'status', type: 'TEXT', primary: false }
-      ]
+      ],
+      relations: []
     }
   })
 

@@ -10,7 +10,8 @@ export function Entity(name?: string): ClassDecorator {
     if (!storage.hasTable(target)) {
       storage.addTable(target, {
         name: name || target.name.toLowerCase(),
-        columns: []
+        columns: [],
+        relations: []
       })
     }
   }

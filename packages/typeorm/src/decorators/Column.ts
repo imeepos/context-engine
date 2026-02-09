@@ -7,7 +7,7 @@ export function Column(type?: string): PropertyDecorator {
 
     let metadata = storage.getTable(constructor)
     if (!metadata) {
-      metadata = { name: constructor.name.toLowerCase(), columns: [] }
+      metadata = { name: constructor.name.toLowerCase(), columns: [], relations: [] }
       storage.addTable(constructor, metadata)
     }
 

@@ -1,3 +1,6 @@
 export { Entity } from './Entity.js'
 export { Column } from './Column.js'
 export { PrimaryColumn } from './PrimaryColumn.js'
+export { ManyToOne, OneToOne, OneToMany, ManyToMany } from './Relations.js'
+export { JoinColumn } from './JoinColumn.js'
+export { JoinTable } from './JoinTable.js'
