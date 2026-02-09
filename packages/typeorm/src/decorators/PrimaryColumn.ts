@@ -1,6 +1,6 @@
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
 
-export function PrimaryColumn(): PropertyDecorator {
+export function PrimaryColumn(type?: string): PropertyDecorator {
   return (target: any, propertyKey: string | symbol) => {
     const storage = MetadataStorage.getInstance()
     const constructor = target.constructor
@@ -13,7 +13,7 @@ export function PrimaryColumn(): PropertyDecorator {
 
     metadata.columns.push({
       name: propertyKey.toString(),
-      type: 'INTEGER',
+      type: type || 'INTEGER',
       primary: true
     })
   }
