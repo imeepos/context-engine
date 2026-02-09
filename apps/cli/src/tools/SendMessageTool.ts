@@ -8,18 +8,18 @@ export class SendMessageTool {
 
   @Tool({
     name: 'send_message',
-    description: '向指定的agent发送消息'
+    description: 'Send a direct message to a target agent'
   })
   async execute(
-    @ToolArg({ zod: z.string().describe('目标agent的ID'), paramName: 'targetAgent' })
+    @ToolArg({ zod: z.string().describe('Target agent ID'), paramName: 'targetAgent' })
     targetAgent: string,
-    @ToolArg({ zod: z.string().describe('消息内容'), paramName: 'content' })
+    @ToolArg({ zod: z.string().describe('Message content'), paramName: 'content' })
     content: string
   ) {
     await this.messageBroker.sendMessage(targetAgent, content)
     return {
       success: true,
-      message: `消息已发送到 ${targetAgent}`
+      message: `Message sent to ${targetAgent}`
     }
   }
 }

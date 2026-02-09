@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@sker/core'
-import { JsonFileStorage } from '../storage/json-file-storage'
 import {
   Task,
   TaskMutationErrorCode,
@@ -8,14 +7,14 @@ import {
   TaskStatus
 } from '../types/task'
 import { v4 as uuidv4 } from 'uuid'
-import { STORAGE_TOKEN } from '../storage/storage.interface'
+import { STORAGE_TOKEN, type Storage } from '../storage/storage.interface'
 
 @Injectable({ providedIn: 'auto' })
 export class TaskManagerService {
   private readonly STORAGE_KEY = 'tasks'
   private readonly MAX_RETRIES = 3
 
-  constructor(@Inject(STORAGE_TOKEN) private storage: JsonFileStorage) { }
+  constructor(@Inject(STORAGE_TOKEN) private storage: Storage) { }
 
   async init(): Promise<void> {
     const registry = await this.storage.read<TaskRegistry>(this.STORAGE_KEY)
@@ -67,7 +66,7 @@ export class TaskManagerService {
         }
       }
 
-      const success = await this.storage.writeIfVersion(
+      const success = await this.writeRegistryIfVersion(
         this.STORAGE_KEY,
         updatedRegistry,
         fromVersion
@@ -230,7 +229,7 @@ export class TaskManagerService {
         version: registry.version + 1
       }
 
-      const success = await this.storage.writeIfVersion(
+      const success = await this.writeRegistryIfVersion(
         this.STORAGE_KEY,
         updatedRegistry,
         registry.version
@@ -357,7 +356,7 @@ export class TaskManagerService {
         }
       }
 
-      const success = await this.storage.writeIfVersion(
+      const success = await this.writeRegistryIfVersion(
         this.STORAGE_KEY,
         updatedRegistry,
         registry.version
@@ -426,6 +425,60 @@ export class TaskManagerService {
       ...registry,
       tasks
     }
+  }
+
+  async listAllTasks(): Promise<Task[]> {
+    const registry = await this.getRegistry()
+    return Object.values(registry.tasks)
+  }
+
+  async transitionTaskToPendingIfUnblocked(taskId: string, expectedVersion?: number): Promise<TaskMutationResult> {
+    const task = await this.getTask(taskId)
+    if (!task) {
+      return {
+        success: false,
+        code: TaskMutationErrorCode.TASK_NOT_FOUND,
+        message: 'Task not found',
+        taskId
+      }
+    }
+
+    if (task.status !== TaskStatus.BLOCKED) {
+      return {
+        success: false,
+        code: TaskMutationErrorCode.INVALID_STATE,
+        message: 'Task is not blocked',
+        taskId
+      }
+    }
+
+    return this.updateTaskStatus(taskId, TaskStatus.PENDING, {}, expectedVersion, 'transitionTaskToPendingIfUnblocked')
+  }
+
+  private async writeRegistryIfVersion<T extends { version: number }>(
+    key: string,
+    data: T,
+    expectedVersion: number
+  ): Promise<boolean> {
+    if (this.storage.writeIfVersion) {
+      return this.storage.writeIfVersion(key, data, expectedVersion)
+    }
+
+    const current = await this.storage.read<T>(key)
+    if (!current) {
+      if (expectedVersion !== 0) {
+        return false
+      }
+      await this.storage.write(key, data)
+      return true
+    }
+
+    if (current.version !== expectedVersion) {
+      return false
+    }
+
+    await this.storage.write(key, data)
+    return true
   }
 
   private logWrite(params: {

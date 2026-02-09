@@ -102,9 +102,11 @@ describe('TaskDependencyResolverService', () => {
         dependencies: [task1.id]
       })
 
-      await taskManager['updateTaskStatus'](task1.id, TaskStatus.BLOCKED, {
+      const updateResult = await taskManager.updateTask(task1.id, {
+        status: TaskStatus.BLOCKED,
         dependencies: [task2.id]
       })
+      expect(updateResult.success).toBe(true)
 
       const result = await resolver.validateDependencies([task1.id, task2.id])
 

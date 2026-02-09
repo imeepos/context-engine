@@ -22,6 +22,9 @@
     "@sker/core": "workspace:*",
     "@sker/plugin-runtime": "workspace:*",
     "@sker/prompt-renderer": "workspace:*",
+    "@sker/typeorm": "workspace:*",
+    "@sker/typeorm-sqlite": "workspace:*",
+    "better-sqlite3": "^12.6.2",
     "chokidar": "^5.0.0",
     "commander": "^12.1.0",
     "dotenv": "^17.2.3",
@@ -34,6 +37,7 @@
   },
   "devDependencies": {
     "@sker/eslint-config": "workspace:*",
+    "@vitest/coverage-v8": "^4.0.18",
     "@types/node": "^22.10.5",
     "@types/react": "^18.3.12",
     "eslint": "^9.39.2",

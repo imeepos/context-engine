@@ -26,8 +26,7 @@ export class ListTasksTool {
     } else if (agentId) {
       tasks = await this.taskManager.getTasksByAgent(agentId)
     } else {
-      const registry = await this.taskManager['getRegistry']()
-      tasks = Object.values(registry.tasks)
+      tasks = await this.taskManager.listAllTasks()
     }
 
     return { success: true, tasks, count: tasks.length }

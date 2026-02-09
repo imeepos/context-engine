@@ -1,6 +1,10 @@
 import 'reflect-metadata'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { MessageBrokerService } from './message-broker.service'
+import {
+  ERR_AGENT_NOT_REGISTERED,
+  ERR_TARGET_AGENT_OFFLINE,
+  MessageBrokerService
+} from './message-broker.service'
 import { AgentRegistryService } from './agent-registry.service'
 import { JsonFileStorage } from '../storage/json-file-storage'
 import * as path from 'path'
@@ -45,13 +49,12 @@ describe('MessageBrokerService', () => {
     })
 
     it('throws error if current agent not registered', async () => {
-      await expect(broker.sendMessage('agent-1', 'Hello')).rejects.toThrow('当前agent未注册')
+      await expect(broker.sendMessage('agent-1', 'Hello')).rejects.toThrow(ERR_AGENT_NOT_REGISTERED)
     })
 
     it('throws error if target agent not online', async () => {
       await agentRegistry.register('test-agent-unique')
-
-      await expect(broker.sendMessage('agent-999', 'Hello')).rejects.toThrow('Agent agent-999 不在线')
+      await expect(broker.sendMessage('agent-999', 'Hello')).rejects.toThrow(ERR_TARGET_AGENT_OFFLINE)
     })
   })
 
@@ -90,7 +93,6 @@ describe('MessageBrokerService', () => {
 
       await new Promise<void>((resolve) => {
         broker.onMessageReceived(async () => {
-          // Wait a bit for the file to be updated
           await new Promise(r => setTimeout(r, 500))
           const queue = await storage.read<any>('messages/agent-0')
           expect(queue.messages[0].read).toBe(true)

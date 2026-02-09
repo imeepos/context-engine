@@ -12,7 +12,7 @@ export class TaskDependencyResolverService {
     for (const task of blockedTasks) {
       const allDepsCompleted = await this.areAllDependenciesCompleted(task)
       if (allDepsCompleted) {
-        await this.taskManager['updateTaskStatus'](task.id, TaskStatus.PENDING)
+        await this.taskManager.transitionTaskToPendingIfUnblocked(task.id, task.version)
       }
     }
   }
