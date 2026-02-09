@@ -28,6 +28,9 @@ describe.skipIf(!sqliteAvailable)('SqliteStorage', () => {
   })
 
   afterEach(async () => {
+    if (storage.close) {
+      await storage.close()
+    }
     await fs.rm(testDir, { recursive: true, force: true })
   })
 

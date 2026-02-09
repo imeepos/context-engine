@@ -15,6 +15,15 @@ export class DualStorage implements Storage {
     }
   }
 
+  async close(): Promise<void> {
+    if (this.primary.close) {
+      await this.primary.close()
+    }
+    if (this.secondary.close) {
+      await this.secondary.close()
+    }
+  }
+
   getBaseDir(): string {
     return this.primary.getBaseDir?.()
       || this.secondary.getBaseDir?.()

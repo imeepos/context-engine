@@ -39,6 +39,22 @@ export class SqliteStorage implements Storage {
     `)
   }
 
+  async close(): Promise<void> {
+    for (const interval of this.pollIntervals.values()) {
+      clearInterval(interval)
+    }
+    this.pollIntervals.clear()
+
+    for (const watcher of this.fileWatchers.values()) {
+      await watcher.close()
+    }
+    this.fileWatchers.clear()
+
+    if (this.driver.close) {
+      await this.driver.close()
+    }
+  }
+
   getBaseDir(): string {
     return this.baseDir
   }

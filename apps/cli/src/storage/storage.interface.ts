@@ -2,6 +2,7 @@ import { InjectionToken } from '@sker/core'
 
 export interface Storage {
   init?(): Promise<void>
+  close?(): Promise<void>
   read<T>(key: string): Promise<T | null>
   write<T>(key: string, data: T): Promise<void>
   writeIfVersion?<T extends { version: number }>(
