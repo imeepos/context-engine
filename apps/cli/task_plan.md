@@ -88,7 +88,7 @@
 - `apps/cli/src/config/constants.ts`
 - `apps/cli/src/components/SystemPrompt.tsx`
 
-### 阶段 2: Plugin 通配路由支持 [P0-2] ⏳ pending
+### 阶段 2: Plugin 通配路由支持 [P0-2] ✅ completed
 **目标**: 修复插件子页面路由匹配问题
 
 **任务**:

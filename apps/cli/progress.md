@@ -1,4 +1,37 @@
-### 2026-02-09 - 阶段 1 实现（Provider 参数化）
+### 2026-02-09 - 阶段 2 实现（Plugin 通配路由支持）
+
+#### 9. TDD 实现通配符路由匹配
+- ✅ 创建 `packages/prompt-renderer/src/browser/matchPath.test.ts` - 13 个测试用例
+- ✅ 实现支持 `*` 通配符的 `matchPath` 函数
+- ✅ 测试通过（RED → GREEN）
+
+**实现内容**:
+- 支持 `/plugin/:id/*` 格式的通配符路由
+- 通配符匹配剩余路径部分，存储在 `params['*']` 中
+- 保持向后兼容：精确路由仍然正常工作
+- 边界情况处理：空路径、多参数、深层嵌套
+
+#### 10. 集成到 Browser 路由系统
+- ✅ 修改 `packages/prompt-renderer/src/browser/browser.ts` 的 `matchPath` 函数
+- ✅ 所有测试通过（prompt-renderer: 206 个测试，cli: 126 个测试）
+- ✅ Lint 检查通过
+
+**修改文件**:
+- `packages/prompt-renderer/src/browser/browser.ts` - 更新 matchPath 函数
+- `packages/prompt-renderer/src/browser/matchPath.test.ts` - 新增测试
+
+**测试覆盖**:
+- 精确匹配：4 个测试
+- 通配符匹配：6 个测试
+- 边界情况：3 个测试
+- 总计新增：13 个测试用例
+
+**验收标准达成**:
+- ✅ `/plugin/foo/bar/baz` 能正确匹配 `/plugin/:id/*` 路由
+- ✅ 插件子页面的工具能被正确抽取（通过现有测试验证）
+- ✅ 路由参数正确传递（`{ id: 'foo', '*': 'bar/baz' }`）
+
+
 
 #### 6. TDD 实现 Provider 配置模块
 - ✅ 创建 `src/config/provider-config.test.ts` - 7 个测试用例
