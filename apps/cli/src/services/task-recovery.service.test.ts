@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createInjector } from '@sker/core'
 import { TaskRecoveryService } from './task-recovery.service'
 import { TaskManagerService } from './task-manager.service'
 import { AgentRegistryService } from './agent-registry.service'
@@ -73,5 +74,25 @@ describe('TaskRecoveryService', () => {
     const updated = await taskManager.getTask(task.id)
     expect(updated?.status).toBe(TaskStatus.IN_PROGRESS)
     expect(updated?.assignedTo).toBe('worker-2')
+  })
+
+  it('resolves dependencies via injector without undefined taskManager', async () => {
+    const taskManagerMock = {
+      getTasksByStatus: vi.fn().mockResolvedValue([])
+    } as unknown as TaskManagerService
+
+    const agentRegistryMock = {
+      isAgentOffline: vi.fn()
+    } as unknown as AgentRegistryService
+
+    const injector = createInjector([
+      { provide: TaskManagerService, useValue: taskManagerMock },
+      { provide: AgentRegistryService, useValue: agentRegistryMock },
+      { provide: TaskRecoveryService, useClass: TaskRecoveryService }
+    ])
+
+    const recovery = injector.get(TaskRecoveryService)
+    await expect(recovery.recoverStaleTasks()).resolves.toBeUndefined()
+    expect(taskManagerMock.getTasksByStatus).toHaveBeenCalledWith(TaskStatus.IN_PROGRESS)
   })
 })

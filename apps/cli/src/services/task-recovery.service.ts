@@ -1,4 +1,4 @@
-import { Injectable } from '@sker/core'
+import { Inject, Injectable } from '@sker/core'
 import { AgentRegistryService } from './agent-registry.service'
 import { TaskManagerService } from './task-manager.service'
 import { TaskStatus } from '../types/task'
@@ -9,8 +9,8 @@ export class TaskRecoveryService {
   private readonly RECOVERY_INTERVAL_MS = 30000
 
   constructor(
-    private taskManager: TaskManagerService,
-    private agentRegistry: AgentRegistryService
+    @Inject(TaskManagerService) private taskManager: TaskManagerService,
+    @Inject(AgentRegistryService) private agentRegistry: AgentRegistryService
   ) { }
 
   start(): void {
