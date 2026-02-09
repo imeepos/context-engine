@@ -35,10 +35,39 @@ describe.skipIf(!sqliteAvailable)('SqliteStorage', () => {
   })
 
   it('reads and writes key-value payloads', async () => {
-    await storage.write('tasks', { version: 1, tasks: { a: { id: 'a' } } })
-    const value = await storage.read<any>('tasks')
+    await storage.write('registry', { version: 1, tasks: { a: { id: 'a' } } })
+    const value = await storage.read<any>('registry')
     expect(value?.version).toBe(1)
     expect(value?.tasks?.a?.id).toBe('a')
+  })
+
+  it('creates and tracks schema via migrations table', async () => {
+    const migrationRows = await (storage as any).driver
+      .prepare('SELECT name, timestamp FROM migrations ORDER BY timestamp ASC')
+      .bind()
+      .all()
+    const rows = Array.isArray(migrationRows) ? migrationRows : (migrationRows.results || [])
+
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows[0]?.name).toBe('InitStorageSchema')
+  })
+
+  it('does not re-run migration on repeated init', async () => {
+    const beforeRaw = await (storage as any).driver
+      .prepare('SELECT COUNT(1) as count FROM migrations')
+      .bind()
+      .first()
+    const before = beforeRaw?.count ?? 0
+
+    await storage.init()
+
+    const afterRaw = await (storage as any).driver
+      .prepare('SELECT COUNT(1) as count FROM migrations')
+      .bind()
+      .first()
+    const after = afterRaw?.count ?? 0
+
+    expect(after).toBe(before)
   })
 
   it('supports optimistic writeIfVersion', async () => {
@@ -57,6 +86,55 @@ describe.skipIf(!sqliteAvailable)('SqliteStorage', () => {
     expect(exists).toBe(true)
     const content = await storage.read<string>('plugins/demo/src/index.ts')
     expect(content).toContain('export const x = 1')
+  })
+
+  it('reads and writes agents via structured tables', async () => {
+    await storage.write('agents', {
+      agents: {
+        'agent-1': {
+          id: 'agent-1',
+          pid: 1234,
+          startTime: 1000,
+          lastHeartbeat: 2000,
+          status: 'online'
+        }
+      },
+      nextId: 2
+    })
+
+    const value = await storage.read<any>('agents')
+    expect(value?.nextId).toBe(2)
+    expect(value?.agents?.['agent-1']?.lastHeartbeat).toBe(2000)
+  })
+
+  it('reads and writes tasks via structured tables with dependencies', async () => {
+    const now = Date.now()
+    await storage.write('tasks', {
+      version: 3,
+      tasks: {
+        task1: {
+          id: 'task1',
+          parentId: null,
+          title: 'Task 1',
+          description: 'Desc 1',
+          version: 1,
+          status: 'pending',
+          assignedTo: null,
+          createdBy: 'agent-1',
+          createdAt: now,
+          updatedAt: now,
+          claimedAt: null,
+          completedAt: null,
+          dependencies: ['dep-a', 'dep-b'],
+          metadata: { priority: 'high' }
+        }
+      }
+    })
+
+    const value = await storage.read<any>('tasks')
+    expect(value?.version).toBe(3)
+    expect(value?.tasks?.task1?.dependencies).toEqual(['dep-a', 'dep-b'])
+    expect(value?.tasks?.task1?.metadata?.priority).toBe('high')
   })
 
   it('notifies watchers for kv changes', async () => {
