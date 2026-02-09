@@ -2,6 +2,7 @@ import { Injectable, Tool, ToolArg } from '@sker/core'
 import { z } from 'zod'
 import { TaskManagerService } from '../services/task-manager.service'
 import { TaskDependencyResolverService } from '../services/task-dependency-resolver.service'
+import { TaskMutationErrorCode } from '../types/task'
 
 @Injectable()
 export class CompleteTaskTool {
@@ -16,17 +17,21 @@ export class CompleteTaskTool {
   })
   async execute(
     @ToolArg({ zod: z.string().describe('Task ID to complete'), paramName: 'taskId' })
-    taskId: string
+    taskId: string,
+    @ToolArg({ zod: z.number().int().nonnegative().optional().describe('Expected task version for optimistic locking'), paramName: 'expectedVersion' })
+    expectedVersion?: number
   ) {
-    const success = await this.taskManager.completeTask(taskId)
+    const result = await this.taskManager.completeTask(taskId, expectedVersion)
 
-    if (!success) {
-      return { success: false, error: 'Task not found' }
+    if (!result.success) {
+      const error = result.code === TaskMutationErrorCode.VERSION_CONFLICT
+        ? 'Task changed by another agent, please refresh and retry'
+        : (result.message || 'Task update failed')
+      return { success: false, error, code: result.code, details: result }
     }
 
     await this.dependencyResolver.updateTaskStatuses()
 
-    const task = await this.taskManager.getTask(taskId)
-    return { success: true, task }
+    return { success: true, task: result.task }
   }
 }

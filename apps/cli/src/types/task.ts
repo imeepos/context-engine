@@ -12,6 +12,7 @@ export interface Task {
   parentId: string | null
   title: string
   description: string
+  version: number
   status: TaskStatus
   assignedTo: string | null
   createdBy: string
@@ -26,4 +27,22 @@ export interface Task {
 export interface TaskRegistry {
   tasks: Record<string, Task>
   version: number
+}
+
+export enum TaskMutationErrorCode {
+  TASK_NOT_FOUND = 'TASK_NOT_FOUND',
+  INVALID_STATE = 'INVALID_STATE',
+  AGENT_HAS_ACTIVE_TASK = 'AGENT_HAS_ACTIVE_TASK',
+  VERSION_CONFLICT = 'VERSION_CONFLICT',
+  INTERNAL_ERROR = 'INTERNAL_ERROR'
+}
+
+export interface TaskMutationResult {
+  success: boolean
+  task?: Task
+  code?: TaskMutationErrorCode
+  message?: string
+  taskId?: string
+  expectedVersion?: number
+  currentVersion?: number
 }

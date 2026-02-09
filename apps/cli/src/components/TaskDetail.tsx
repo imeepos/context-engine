@@ -154,8 +154,8 @@ export async function TaskDetailComponent({ task, injector }: TaskDetailProps) {
           if (task.assignedTo) {
             return `认领失败：任务已分配给 ${task.assignedTo}`
           }
-          const success = await taskManager.claimTask(task.id, agentId)
-          return success ? `任务已认领: ${task.id}` : `认领失败: 您已有正在进行的任务，请先完成或取消当前任务`
+          const result = await taskManager.claimTask(task.id, agentId)
+          return result.success ? `任务已认领: ${task.id}` : `认领失败: 您已有正在进行的任务，请先完成或取消当前任务`
         }}>
           {getClaimTaskDescription(task, currentAgentId)}
         </Tool>
@@ -168,8 +168,8 @@ export async function TaskDetailComponent({ task, injector }: TaskDetailProps) {
           if (task.assignedTo !== currentAgentId) {
             return `完成失败：任务分配给 ${task.assignedTo || '无'}，只有任务执行者可以完成任务`
           }
-          const success = await taskManager.completeTask(task.id)
-          return success ? `任务已完成: ${task.id}` : `完成失败: ${task.id}`
+          const result = await taskManager.completeTask(task.id)
+          return result.success ? `任务已完成: ${task.id}` : `完成失败: ${task.id}`
         }}>
           {getCompleteTaskDescription(task, currentAgentId)}
         </Tool>
@@ -182,8 +182,8 @@ export async function TaskDetailComponent({ task, injector }: TaskDetailProps) {
           if (task.assignedTo !== currentAgentId) {
             return `取消失败：任务分配给 ${task.assignedTo || '无'}，只有任务执行者可以取消任务`
           }
-          const success = await taskManager.cancelTask(task.id)
-          return success ? `任务已取消: ${task.id}` : `取消失败: ${task.id}`
+          const result = await taskManager.cancelTask(task.id)
+          return result.success ? `任务已取消: ${task.id}` : `取消失败: ${task.id}`
         }}>
           {getCancelTaskDescription(task, currentAgentId)}
         </Tool>
@@ -197,8 +197,8 @@ export async function TaskDetailComponent({ task, injector }: TaskDetailProps) {
           if (task.createdBy !== currentAgentId) {
             return `编辑失败：只有任务创建者（${task.createdBy}）可以编辑任务`
           }
-          const success = await taskManager.updateTask(task.id, params)
-          return success ? `任务已更新: ${task.id}` : `更新失败: ${task.id}`
+          const result = await taskManager.updateTask(task.id, params)
+          return result.success ? `任务已更新: ${task.id}` : `更新失败: ${task.id}`
         }}>
           {getEditTaskDescription(task, currentAgentId)}
         </Tool>
@@ -208,8 +208,8 @@ export async function TaskDetailComponent({ task, injector }: TaskDetailProps) {
           if (task.createdBy !== currentAgentId) {
             return `删除失败：只有任务创建者（${task.createdBy}）可以删除任务`
           }
-          const success = await taskManager.deleteTask(task.id)
-          if (success) {
+          const result = await taskManager.deleteTask(task.id)
+          if (result.success) {
             const renderer = injector.get(UIRenderer)
             await renderer.navigate('prompt:///tasks')
             return `任务已删除: ${task.id}，已返回任务列表`

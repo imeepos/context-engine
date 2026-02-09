@@ -1,6 +1,12 @@
 import { Inject, Injectable } from '@sker/core'
 import { JsonFileStorage } from '../storage/json-file-storage'
-import { Task, TaskRegistry, TaskStatus } from '../types/task'
+import {
+  Task,
+  TaskMutationErrorCode,
+  TaskMutationResult,
+  TaskRegistry,
+  TaskStatus
+} from '../types/task'
 import { v4 as uuidv4 } from 'uuid'
 import { STORAGE_TOKEN } from '../storage/storage.interface'
 
@@ -15,6 +21,11 @@ export class TaskManagerService {
     const registry = await this.storage.read<TaskRegistry>(this.STORAGE_KEY)
     if (!registry) {
       await this.storage.write(this.STORAGE_KEY, { tasks: {}, version: 0 })
+      return
+    }
+    const normalized = this.normalizeRegistry(registry)
+    if (normalized !== registry) {
+      await this.storage.write(this.STORAGE_KEY, normalized)
     }
   }
 
@@ -26,53 +37,94 @@ export class TaskManagerService {
     dependencies?: string[]
     metadata?: Record<string, any>
   }): Promise<Task> {
+    const now = Date.now()
     const task: Task = {
       id: uuidv4(),
       parentId: params.parentId || null,
       title: params.title,
       description: params.description,
+      version: 0,
       status: params.dependencies?.length ? TaskStatus.BLOCKED : TaskStatus.PENDING,
       assignedTo: null,
       createdBy: params.createdBy,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: now,
+      updatedAt: now,
       claimedAt: null,
       completedAt: null,
       dependencies: params.dependencies || [],
       metadata: params.metadata || {}
     }
 
-    const registry = await this.getRegistry()
-    registry.tasks[task.id] = task
-    registry.version++
-    await this.storage.write(this.STORAGE_KEY, registry)
-
-    return task
-  }
-
-  async claimTask(taskId: string, agentId: string): Promise<boolean> {
-    const agentTasks = await this.getTasksByAgent(agentId)
-    const hasInProgressTask = agentTasks.some(t => t.status === TaskStatus.IN_PROGRESS)
-
-    if (hasInProgressTask) {
-      return false
-    }
-
     for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
       const registry = await this.getRegistry()
-      const task = registry.tasks[taskId]
-
-      if (!task || task.status !== TaskStatus.PENDING || task.assignedTo) {
-        return false
-      }
-
-      const updatedRegistry = {
+      const fromVersion = registry.version
+      const updatedRegistry: TaskRegistry = {
         ...registry,
         version: registry.version + 1,
         tasks: {
           ...registry.tasks,
-          [taskId]: {
+          [task.id]: task
+        }
+      }
+
+      const success = await this.storage.writeIfVersion(
+        this.STORAGE_KEY,
+        updatedRegistry,
+        fromVersion
+      )
+
+      if (success) {
+        this.logWrite({
+          operation: 'createTask',
+          taskId: task.id,
+          fromVersion,
+          toVersion: updatedRegistry.version,
+          actor: params.createdBy
+        })
+        return task
+      }
+
+      await this.sleep(100 * Math.pow(2, attempt))
+    }
+
+    throw new Error(`Failed to create task due to repeated version conflicts: ${task.id}`)
+  }
+
+  async claimTask(
+    taskId: string,
+    agentId: string,
+    expectedVersion?: number
+  ): Promise<TaskMutationResult> {
+    const agentTasks = await this.getTasksByAgent(agentId)
+    const hasInProgressTask = agentTasks.some(t => t.status === TaskStatus.IN_PROGRESS)
+    if (hasInProgressTask) {
+      return {
+        success: false,
+        code: TaskMutationErrorCode.AGENT_HAS_ACTIVE_TASK,
+        message: 'Agent already has a task in progress',
+        taskId
+      }
+    }
+
+    const result = await this.withTaskMutation(
+      'claimTask',
+      taskId,
+      expectedVersion,
+      agentId,
+      task => {
+        if (task.status !== TaskStatus.PENDING || task.assignedTo) {
+          return {
+            success: false,
+            code: TaskMutationErrorCode.INVALID_STATE,
+            message: 'Task is not claimable'
+          }
+        }
+
+        return {
+          success: true,
+          nextTask: {
             ...task,
+            version: task.version + 1,
             status: TaskStatus.IN_PROGRESS,
             assignedTo: agentId,
             claimedAt: Date.now(),
@@ -80,36 +132,26 @@ export class TaskManagerService {
           }
         }
       }
+    )
 
-      const success = await this.storage.writeIfVersion(
-        this.STORAGE_KEY,
-        updatedRegistry,
-        registry.version
-      )
-
-      if (success) return true
-
-      await this.sleep(100 * Math.pow(2, attempt))
-    }
-
-    return false
+    return result
   }
 
-  async completeTask(taskId: string): Promise<boolean> {
+  async completeTask(taskId: string, expectedVersion?: number): Promise<TaskMutationResult> {
     return this.updateTaskStatus(taskId, TaskStatus.COMPLETED, {
       completedAt: Date.now()
-    })
+    }, expectedVersion, 'completeTask')
   }
 
-  async failTask(taskId: string): Promise<boolean> {
-    return this.updateTaskStatus(taskId, TaskStatus.FAILED)
+  async failTask(taskId: string, expectedVersion?: number): Promise<TaskMutationResult> {
+    return this.updateTaskStatus(taskId, TaskStatus.FAILED, {}, expectedVersion, 'failTask')
   }
 
-  async cancelTask(taskId: string): Promise<boolean> {
+  async cancelTask(taskId: string, expectedVersion?: number): Promise<TaskMutationResult> {
     return this.updateTaskStatus(taskId, TaskStatus.PENDING, {
       assignedTo: null,
       claimedAt: null
-    })
+    }, expectedVersion, 'cancelTask')
   }
 
   async getTask(taskId: string): Promise<Task | null> {
@@ -132,61 +174,270 @@ export class TaskManagerService {
     return Object.values(registry.tasks).filter(t => t.parentId === parentId)
   }
 
-  async updateTask(taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<boolean> {
-    const registry = await this.getRegistry()
-    const task = registry.tasks[taskId]
-
-    if (!task) return false
-
-    registry.tasks[taskId] = {
-      ...task,
-      ...updates,
-      updatedAt: Date.now()
-    }
-    registry.version++
-
-    await this.storage.write(this.STORAGE_KEY, registry)
-    return true
+  async updateTask(
+    taskId: string,
+    updates: Partial<Omit<Task, 'id' | 'createdAt'>>,
+    expectedVersion?: number
+  ): Promise<TaskMutationResult> {
+    return this.withTaskMutation(
+      'updateTask',
+      taskId,
+      expectedVersion,
+      undefined,
+      task => ({
+        success: true,
+        nextTask: {
+          ...task,
+          ...updates,
+          version: task.version + 1,
+          updatedAt: Date.now()
+        }
+      })
+    )
   }
 
-  async deleteTask(taskId: string): Promise<boolean> {
-    const registry = await this.getRegistry()
+  async deleteTask(taskId: string, expectedVersion?: number): Promise<TaskMutationResult> {
+    const attempts = typeof expectedVersion === 'number' ? 1 : this.MAX_RETRIES
 
-    if (!registry.tasks[taskId]) return false
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      const registry = await this.getRegistry()
+      const task = registry.tasks[taskId]
+      if (!task) {
+        return {
+          success: false,
+          code: TaskMutationErrorCode.TASK_NOT_FOUND,
+          message: 'Task not found',
+          taskId
+        }
+      }
 
-    const { [taskId]: _, ...remainingTasks } = registry.tasks
-    registry.tasks = remainingTasks
-    registry.version++
+      if (typeof expectedVersion === 'number' && task.version !== expectedVersion) {
+        return {
+          success: false,
+          code: TaskMutationErrorCode.VERSION_CONFLICT,
+          message: 'Task version conflict',
+          taskId,
+          expectedVersion,
+          currentVersion: task.version
+        }
+      }
 
-    await this.storage.write(this.STORAGE_KEY, registry)
-    return true
+      const fromVersion = registry.version
+      const { [taskId]: _, ...remainingTasks } = registry.tasks
+      const updatedRegistry: TaskRegistry = {
+        ...registry,
+        tasks: remainingTasks,
+        version: registry.version + 1
+      }
+
+      const success = await this.storage.writeIfVersion(
+        this.STORAGE_KEY,
+        updatedRegistry,
+        registry.version
+      )
+
+      if (success) {
+        this.logWrite({
+          operation: 'deleteTask',
+          taskId,
+          fromVersion,
+          toVersion: updatedRegistry.version
+        })
+        return { success: true, taskId }
+      }
+
+      if (typeof expectedVersion === 'number') {
+        return {
+          success: false,
+          code: TaskMutationErrorCode.VERSION_CONFLICT,
+          message: 'Registry version conflict',
+          taskId
+        }
+      }
+
+      await this.sleep(100 * Math.pow(2, attempt))
+    }
+
+    return {
+      success: false,
+      code: TaskMutationErrorCode.VERSION_CONFLICT,
+      message: 'Unable to apply mutation after retries',
+      taskId
+    }
   }
 
   private async updateTaskStatus(
     taskId: string,
     status: TaskStatus,
-    updates: Partial<Task> = {}
-  ): Promise<boolean> {
-    const registry = await this.getRegistry()
-    const task = registry.tasks[taskId]
-
-    if (!task) return false
-
-    registry.tasks[taskId] = {
-      ...task,
-      ...updates,
-      status,
-      updatedAt: Date.now()
-    }
-    registry.version++
-
-    await this.storage.write(this.STORAGE_KEY, registry)
-    return true
+    updates: Partial<Task> = {},
+    expectedVersion?: number,
+    operation = 'updateTaskStatus'
+  ): Promise<TaskMutationResult> {
+    return this.withTaskMutation(
+      operation,
+      taskId,
+      expectedVersion,
+      undefined,
+      task => ({
+        success: true,
+        nextTask: {
+          ...task,
+          ...updates,
+          version: task.version + 1,
+          status,
+          updatedAt: Date.now()
+        }
+      })
+    )
   }
 
   async getRegistry(): Promise<TaskRegistry> {
     const registry = await this.storage.read<TaskRegistry>(this.STORAGE_KEY)
-    return registry || { tasks: {}, version: 0 }
+    return this.normalizeRegistry(registry || { tasks: {}, version: 0 })
+  }
+
+  private async withTaskMutation(
+    operation: string,
+    taskId: string,
+    expectedVersion: number | undefined,
+    actor: string | undefined,
+    mutator: (task: Task) => {
+      success: true
+      nextTask: Task
+    } | {
+      success: false
+      code: TaskMutationErrorCode
+      message: string
+    }
+  ): Promise<TaskMutationResult> {
+    const attempts = typeof expectedVersion === 'number' ? 1 : this.MAX_RETRIES
+
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      const registry = await this.getRegistry()
+      const task = registry.tasks[taskId]
+      if (!task) {
+        return {
+          success: false,
+          code: TaskMutationErrorCode.TASK_NOT_FOUND,
+          message: 'Task not found',
+          taskId
+        }
+      }
+
+      if (typeof expectedVersion === 'number' && task.version !== expectedVersion) {
+        return {
+          success: false,
+          code: TaskMutationErrorCode.VERSION_CONFLICT,
+          message: 'Task version conflict',
+          taskId,
+          expectedVersion,
+          currentVersion: task.version
+        }
+      }
+
+      const next = mutator(task)
+      if (!next.success) {
+        return {
+          success: false,
+          code: next.code,
+          message: next.message,
+          taskId,
+          currentVersion: task.version,
+          expectedVersion
+        }
+      }
+
+      const fromVersion = registry.version
+      const updatedRegistry: TaskRegistry = {
+        ...registry,
+        version: registry.version + 1,
+        tasks: {
+          ...registry.tasks,
+          [taskId]: next.nextTask
+        }
+      }
+
+      const success = await this.storage.writeIfVersion(
+        this.STORAGE_KEY,
+        updatedRegistry,
+        registry.version
+      )
+
+      if (success) {
+        this.logWrite({
+          operation,
+          taskId,
+          fromVersion,
+          toVersion: updatedRegistry.version,
+          actor
+        })
+        return {
+          success: true,
+          task: next.nextTask,
+          taskId,
+          expectedVersion,
+          currentVersion: next.nextTask.version
+        }
+      }
+
+      if (typeof expectedVersion === 'number') {
+        return {
+          success: false,
+          code: TaskMutationErrorCode.VERSION_CONFLICT,
+          message: 'Registry version conflict',
+          taskId,
+          expectedVersion,
+          currentVersion: task.version
+        }
+      }
+
+      await this.sleep(100 * Math.pow(2, attempt))
+    }
+
+    return {
+      success: false,
+      code: TaskMutationErrorCode.VERSION_CONFLICT,
+      message: 'Unable to apply mutation after retries',
+      taskId,
+      expectedVersion
+    }
+  }
+
+  private normalizeRegistry(registry: TaskRegistry): TaskRegistry {
+    let changed = false
+    const tasks: Record<string, Task> = {}
+
+    for (const [taskId, task] of Object.entries(registry.tasks || {})) {
+      const normalizedTask: Task = {
+        ...task,
+        version: typeof task.version === 'number' ? task.version : 0
+      }
+      if (normalizedTask.version !== task.version) {
+        changed = true
+      }
+      tasks[taskId] = normalizedTask
+    }
+
+    if (!changed) {
+      return registry
+    }
+
+    return {
+      ...registry,
+      tasks
+    }
+  }
+
+  private logWrite(params: {
+    operation: string
+    taskId: string
+    fromVersion: number
+    toVersion: number
+    actor?: string
+  }): void {
+    console.info(
+      `[task-write] op=${params.operation} taskId=${params.taskId} fromVersion=${params.fromVersion} toVersion=${params.toVersion} actor=${params.actor || 'unknown'}`
+    )
   }
 
   private sleep(ms: number): Promise<void> {
