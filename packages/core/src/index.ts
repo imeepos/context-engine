@@ -68,6 +68,16 @@ export {
   APP_INITIALIZER,
   type Initializer,
 } from './app-initializer';
+export {
+  extractParameterNames,
+  isTypeCompatible,
+  getTypeName,
+  getTokenName,
+  getParameterTypes,
+  getReturnType,
+  validateTokenTypes,
+  MetadataCache,
+} from './metadata-utils';
 
 
 export { NoRetryError } from './errors';
