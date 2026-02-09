@@ -4,7 +4,8 @@ import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { Command } from 'commander'
 import { createPlatform, Provider } from '@sker/core'
-import { LLM_ANTHROPIC_CONFIG } from '@sker/compiler'
+import { LLM_ANTHROPIC_CONFIG, LLM_OPENAI_CONFIG, LLM_GOOGLE_CONFIG } from '@sker/compiler'
+import { resolveProviderConfig, type ProviderType } from './config/provider-config'
 import { CliModule } from './cli.module'
 import { JsonFileStorage } from './storage/json-file-storage'
 import { STORAGE_TOKEN, type Storage } from './storage/storage.interface'
@@ -64,7 +65,10 @@ async function main() {
     .command('chat')
     .description('Start interactive chat with LLM and multi-agent support')
     .option('--id <agentId>', 'Specify custom agent ID (e.g., agent-0, alice)')
-    .option('--api-key <key>', 'Anthropic API key (or set ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN env var)')
+    .option('--provider <provider>', 'LLM provider: anthropic | openai | google', 'anthropic')
+    .option('--model <model>', 'Model name (e.g., claude-sonnet-4-5-20250929, gpt-4, gemini-pro)')
+    .option('--api-key <key>', 'API key for the selected provider')
+    .option('--base-url <url>', 'Custom base URL for the provider API')
     .option('--mcp-url <url>', 'Remote MCP server URL', process.env.MCP_API_URL || 'https://mcp.sker.us')
     .option('--no-mcp', 'Disable remote MCP connection')
     // eslint-disable-next-line turbo/no-undeclared-env-vars
@@ -72,17 +76,50 @@ async function main() {
     // eslint-disable-next-line turbo/no-undeclared-env-vars
     .option('--storage-dir <dir>', 'Override storage base directory', process.env.SKER_STORAGE_DIR)
     .action(async (options) => {
-      const apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN
+      const provider = (options.provider || 'anthropic').toLowerCase() as ProviderType
+
+      // 根据 provider 获取 API key
+      let apiKey = options.apiKey
+      if (!apiKey) {
+        if (provider === 'anthropic') {
+          apiKey = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN
+        } else if (provider === 'openai') {
+          // eslint-disable-next-line turbo/no-undeclared-env-vars
+          apiKey = process.env.OPENAI_API_KEY
+        } else if (provider === 'google') {
+          // eslint-disable-next-line turbo/no-undeclared-env-vars
+          apiKey = process.env.GOOGLE_API_KEY
+        }
+      }
 
       if (!apiKey) {
-        console.error('Error: Anthropic API key is required')
-        console.error('Use --api-key or set ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN')
+        console.error(`Error: API key is required for provider "${provider}"`)
+        console.error(`Use --api-key or set the appropriate environment variable`)
         process.exit(1)
       }
 
+      // 获取默认模型
+      let model = options.model
+      if (!model) {
+        if (provider === 'anthropic') {
+          model = 'claude-sonnet-4-5-20250929'
+        } else if (provider === 'openai') {
+          model = 'gpt-4'
+        } else if (provider === 'google') {
+          model = 'gemini-pro'
+        }
+      }
+
+      // 解析 provider 配置
+      const providerConfig = resolveProviderConfig({
+        provider,
+        apiKey,
+        model,
+        baseUrl: options.baseUrl
+      })
+
       const storageBackend = resolveStorageBackend(options.storageBackend)
       const storage = await createStorage(storageBackend, options.storageDir)
-      const baseUrl = process.env.ANTHROPIC_BASE_URL
 
       const agentRegistry = new AgentRegistryService(storage)
       const taskManager = new TaskManagerService(storage)
@@ -98,8 +135,20 @@ async function main() {
 
       const platform = createPlatform()
 
+      // 根据 provider 注入对应的配置
+      let llmConfigProvider: Provider
+      if (providerConfig.provider === 'anthropic') {
+        llmConfigProvider = { provide: LLM_ANTHROPIC_CONFIG, useValue: providerConfig.config }
+      } else if (providerConfig.provider === 'openai') {
+        llmConfigProvider = { provide: LLM_OPENAI_CONFIG, useValue: providerConfig.config }
+      } else if (providerConfig.provider === 'google') {
+        llmConfigProvider = { provide: LLM_GOOGLE_CONFIG, useValue: providerConfig.config }
+      } else {
+        throw new Error(`Unsupported provider: ${providerConfig.provider}`)
+      }
+
       const providers: Provider[] = [
-        { provide: LLM_ANTHROPIC_CONFIG, useValue: { apiKey, baseUrl } },
+        llmConfigProvider,
         { provide: STORAGE_TOKEN, useValue: storage },
         { provide: JsonFileStorage, useValue: storage },
         { provide: AgentRegistryService, useValue: agentRegistry },
