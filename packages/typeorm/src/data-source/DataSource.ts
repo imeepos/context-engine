@@ -27,6 +27,10 @@ export class DataSource {
     return DataSource.defaultDataSource
   }
 
+  getDriver(): DatabaseDriver {
+    return this.db
+  }
+
   getRepository<T>(entity: Type<T>): Repository<T> {
     if (this.repositories.has(entity)) {
       return this.repositories.get(entity)!
