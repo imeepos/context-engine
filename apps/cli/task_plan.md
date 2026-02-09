@@ -124,7 +124,7 @@
 - `packages/compiler/src/unified/tool-builder.ts`
 - 相关工具执行测试
 
-### 阶段 4: SystemPrompt 增强 [P1-2] ⏳ pending
+### 阶段 4: SystemPrompt 增强 [P1-2] ✅ completed
 **目标**: 将 SystemPrompt 改为页面状态驱动组件
 
 **任务**:

@@ -1,4 +1,29 @@
-### 2026-02-09 - 阶段 3 实现（工具执行作用域修正）
+### 2026-02-09 - 阶段 4 实现（SystemPrompt 增强）
+
+#### 12. 增强 SystemPrompt 为动态组件
+- ✅ 修改 `SystemPrompt.tsx` 接收 `injector` 参数
+- ✅ 从注入器获取 `CURRENT_AGENT_ID`
+- ✅ 显示 Agent 身份和能力说明
+- ✅ 修复测试文件添加 `CURRENT_AGENT_ID` Provider
+
+**实现内容**:
+- SystemPrompt 从静态文案改为动态组件
+- 显示当前 Agent ID
+- 列出系统能力：任务管理、插件管理、应用市场、多 Agent 协作
+- 提供清晰的使用指引
+
+**修改文件**:
+- `apps/cli/src/components/SystemPrompt.tsx` - 增强为动态组件
+- `apps/cli/src/components/Layout.tsx` - 传递 injector 参数
+- `apps/cli/src/router.market.test.ts` - 修复测试添加 CURRENT_AGENT_ID
+
+**验收标准达成**:
+- ✅ SystemPrompt 根据当前 Agent 动态生成
+- ✅ 包含 Agent 身份信息
+- ✅ 包含能力边界说明
+- ✅ 所有测试通过（126 个测试）
+
+
 
 #### 11. TDD 实现作用域隔离
 - ✅ 创建 `packages/compiler/src/unified/tool-scope.test.ts` - 3 个测试用例

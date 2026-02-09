@@ -17,7 +17,7 @@ export function Layout({ children, injector }: LayoutProps) {
 
   return (
     <div>
-      <SystemPrompt />
+      <SystemPrompt injector={injector} />
       <h1>你可以进行以下操作：</h1>
       <ul>
         {visibleMenuItems.map((item, index) => (
