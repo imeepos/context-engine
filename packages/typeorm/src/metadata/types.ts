@@ -1,6 +1,19 @@
+// SQLite column types
+export type ColumnType = 'TEXT' | 'INTEGER' | 'REAL' | 'BLOB' | 'NUMERIC'
+
+// TypeScript runtime constructor name to SQLite type mapping
+export const TypeMapping: Record<string, ColumnType> = {
+  String: 'TEXT',
+  Number: 'REAL',
+  Boolean: 'INTEGER',
+  Date: 'TEXT',
+  Object: 'TEXT',
+  Array: 'TEXT'
+}
+
 export interface ColumnMetadata {
   name: string
-  type?: string
+  type: ColumnType
   primary?: boolean
 }
 

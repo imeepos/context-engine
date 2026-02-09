@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { sqliteDialect } from '../driver/dialects.js'
 import { Repository } from './Repository.js'
 import { TableMetadata } from '../metadata/types.js'
 
@@ -22,7 +23,7 @@ describe('Repository pagination', () => {
       relations: []
     }
 
-    repository = new Repository<any>(mockDb, metadata)
+    repository = new Repository<any>(mockDb, metadata, sqliteDialect)
   })
 
   it('supports findAndCount', async () => {

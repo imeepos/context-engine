@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueryBuilder } from './QueryBuilder.js'
+import type { DatabaseDriver } from '../driver/types.js'
 import { TableMetadata } from '../metadata/types.js'
 
 describe('QueryBuilder advanced features', () => {
-  let mockDb: D1Database
+  let mockDb: DatabaseDriver
   let metadata: TableMetadata
 
   beforeEach(() => {

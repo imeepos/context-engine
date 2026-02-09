@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { sqliteDialect } from '../driver/dialects.js'
+import type { DatabaseDriver } from '../driver/types.js'
 import { Repository } from './Repository.js'
 import { TableMetadata } from '../metadata/types.js'
 
 describe('Repository', () => {
-  let mockDb: D1Database
+  let mockDb: DatabaseDriver
   let metadata: TableMetadata
   let repository: Repository<any>
 
@@ -29,7 +31,7 @@ describe('Repository', () => {
       relations: []
     }
 
-    repository = new Repository(mockDb, metadata)
+    repository = new Repository(mockDb, metadata, sqliteDialect)
   })
 
   describe('createQueryBuilder()', () => {
@@ -104,7 +106,7 @@ describe('Repository', () => {
         name: 'test',
         columns: [],
         relations: []
-      })
+      }, sqliteDialect)
 
       await expect(repoWithoutPrimary.findOne(1)).rejects.toThrow(
         'No primary column found'
@@ -116,7 +118,7 @@ describe('Repository', () => {
         name: 'test',
         columns: [],
         relations: []
-      })
+      }, sqliteDialect)
 
       await expect(repoWithoutPrimary.update(1, { name: 'test' })).rejects.toThrow(
         'No primary column found'
@@ -128,7 +130,7 @@ describe('Repository', () => {
         name: 'test',
         columns: [],
         relations: []
-      })
+      }, sqliteDialect)
 
       await expect(repoWithoutPrimary.remove(1)).rejects.toThrow(
         'No primary column found'

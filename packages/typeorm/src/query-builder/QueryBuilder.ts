@@ -1,14 +1,14 @@
+import type { DatabaseDriver } from '../driver/types.js'
+import { extractRows } from '../driver/utils.js'
 import { TableMetadata } from '../metadata/types.js'
 import { QueryState } from './types.js'
 import { Operator } from '../operators/types.js'
-
-type QueryExecutor = Pick<D1Database, 'prepare'> & Partial<Pick<D1Database, 'batch'>>
 
 export class QueryBuilder<T> {
   private query: QueryState = { joins: [] }
 
   constructor(
-    private db: QueryExecutor,
+    private db: DatabaseDriver,
     private metadata: TableMetadata
   ) {}
 
@@ -65,12 +65,12 @@ export class QueryBuilder<T> {
   async execute(): Promise<T[]> {
     const { sql, bindings } = this.buildSQL()
     const result = await this.db.prepare(sql).bind(...bindings).all()
-    return (result.results || []) as T[]
+    return extractRows(result) as T[]
   }
 
   async raw<R = T>(sql: string, bindings: any[] = []): Promise<R[]> {
     const result = await this.db.prepare(sql).bind(...bindings).all()
-    return (result.results || []) as R[]
+    return extractRows(result) as R[]
   }
 
   async count(column: keyof T | string = '*'): Promise<number> {

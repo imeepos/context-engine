@@ -1,7 +1,7 @@
 {
-  "name": "@sker/typeorm",
+  "name": "@sker/typeorm-sqlite",
   "version": "0.1.0",
-  "description": "Minimal TypeORM-style API with pluggable database drivers",
+  "description": "SQLite driver for @sker/typeorm",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -18,17 +18,14 @@
     "lint": "eslint src/",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "reflect-metadata": "^0.2.2"
+    "@sker/typeorm": "workspace:*"
   },
   "devDependencies": {
-    "@sker/typescript-config": "workspace:*",
-    "@sker/core": "workspace:*",
     "@sker/eslint-config": "workspace:*",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@sker/typescript-config": "workspace:*",
     "eslint": "^9.39.2",
     "tsup": "^8.3.5",
     "typescript": "^5.9.2",

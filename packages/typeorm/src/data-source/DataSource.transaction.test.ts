@@ -5,7 +5,9 @@ describe('DataSource transaction', () => {
   it('runs commit flow', async () => {
     const run = vi.fn().mockResolvedValue({ success: true })
     const mockDb = {
-      prepare: vi.fn().mockReturnValue({ run })
+      prepare: vi.fn().mockReturnValue({
+        bind: vi.fn().mockReturnValue({ run })
+      })
     } as any
 
     const dataSource = new DataSource(mockDb)
@@ -22,7 +24,9 @@ describe('DataSource transaction', () => {
   it('runs rollback flow on error', async () => {
     const run = vi.fn().mockResolvedValue({ success: true })
     const mockDb = {
-      prepare: vi.fn().mockReturnValue({ run })
+      prepare: vi.fn().mockReturnValue({
+        bind: vi.fn().mockReturnValue({ run })
+      })
     } as any
 
     const dataSource = new DataSource(mockDb)

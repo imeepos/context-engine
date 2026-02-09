@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { DataSource } from './DataSource.js'
 import { Entity, Column, PrimaryColumn } from '../decorators/index.js'
+import type { DatabaseDriver } from '../driver/types.js'
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
 
 describe('DataSource', () => {
-  let mockDb: D1Database
+  let mockDb: DatabaseDriver
   let dataSource: DataSource
 
   beforeEach(() => {

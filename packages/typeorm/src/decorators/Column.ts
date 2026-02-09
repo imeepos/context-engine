@@ -1,6 +1,15 @@
+import 'reflect-metadata'
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
+import { ColumnType, TypeMapping } from '../metadata/types.js'
 
-export function Column(type?: string): PropertyDecorator {
+function inferColumnType(designType: Function | undefined): ColumnType {
+  if (!designType) {
+    return 'TEXT'
+  }
+  return TypeMapping[designType.name] ?? 'TEXT'
+}
+
+export function Column(type?: ColumnType): PropertyDecorator {
   return (target: any, propertyKey: string | symbol) => {
     const storage = MetadataStorage.getInstance()
     const constructor = target.constructor
@@ -11,9 +20,14 @@ export function Column(type?: string): PropertyDecorator {
       storage.addTable(constructor, metadata)
     }
 
+    const designType = Reflect.getMetadata('design:type', target, propertyKey) as
+      | Function
+      | undefined
+    const columnType = type ?? inferColumnType(designType)
+
     metadata.columns.push({
       name: propertyKey.toString(),
-      type: type || 'TEXT'
+      type: columnType
     })
   }
 }

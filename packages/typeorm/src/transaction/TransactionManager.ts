@@ -1,19 +1,16 @@
 import { Type } from '@sker/core'
+import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
 import { TransactionIsolationLevel } from '../metadata/types.js'
 import { Repository } from '../repository/Repository.js'
-
-interface D1Executable {
-  prepare(sql: string): D1PreparedStatement
-  exec?(query: string): Promise<D1ExecResult>
-}
 
 export class TransactionManager {
   private repositories = new Map<Function, Repository<any>>()
   private active = false
 
   constructor(
-    private db: D1Executable,
+    private db: DatabaseDriver,
+    private dialect: SqlDialect,
     private isolationLevel?: TransactionIsolationLevel,
     private parent?: TransactionManager,
     private savepointName?: string
@@ -28,7 +25,7 @@ export class TransactionManager {
       await this.exec(`SAVEPOINT ${this.savepointName}`)
     } else {
       await this.applyIsolationLevel()
-      await this.exec('BEGIN TRANSACTION')
+      await this.exec(this.dialect.beginTransaction())
     }
 
     this.active = true
@@ -79,7 +76,7 @@ export class TransactionManager {
 
   createNestedManager(): TransactionManager {
     const savepointName = `sp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-    return new TransactionManager(this.db, this.isolationLevel, this, savepointName)
+    return new TransactionManager(this.db, this.dialect, this.isolationLevel, this, savepointName)
   }
 
   getRepository<T>(entity: Type<T>): Repository<T> {
@@ -92,7 +89,7 @@ export class TransactionManager {
       throw new Error(`Entity ${entity.name} is not registered. Did you use @Entity() decorator?`)
     }
 
-    const repository = new Repository<T>(this.db as any, metadata)
+    const repository = new Repository<T>(this.db, metadata, this.dialect)
     this.repositories.set(entity, repository)
     return repository
   }
@@ -103,7 +100,10 @@ export class TransactionManager {
     }
 
     if (this.isolationLevel === 'READ_UNCOMMITTED') {
-      await this.exec('PRAGMA read_uncommitted = 1')
+      const sql = this.dialect.readUncommitted?.()
+      if (sql) {
+        await this.exec(sql)
+      }
     }
   }
 
@@ -113,6 +113,6 @@ export class TransactionManager {
       return
     }
 
-    await this.db.prepare(sql).run()
+    await this.db.prepare(sql).bind().run()
   }
 }

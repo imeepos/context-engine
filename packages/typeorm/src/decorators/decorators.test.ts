@@ -1,16 +1,15 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { Entity, Column, PrimaryColumn } from '../decorators/index.js'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { Column, Entity, PrimaryColumn } from '../decorators/index.js'
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
 
 describe('Decorators', () => {
   beforeEach(() => {
-    // 清理元数据存储
     const storage = MetadataStorage.getInstance()
     ;(storage as any).tables = new Map()
   })
 
   describe('@Entity', () => {
-    it('应该注册实体元数据', () => {
+    it('registers entity metadata', () => {
       @Entity('test_users')
       class TestUser {
         @PrimaryColumn()
@@ -27,7 +26,7 @@ describe('Decorators', () => {
       expect(metadata?.name).toBe('testuser')
     })
 
-    it('应该使用类名作为默认表名（小写）', () => {
+    it('uses lowercase class name as default table name', () => {
       @Entity()
       class User {
         @PrimaryColumn()
@@ -42,7 +41,7 @@ describe('Decorators', () => {
   })
 
   describe('@Column', () => {
-    it('应该注册列元数据', () => {
+    it('registers column metadata and supports explicit type', () => {
       @Entity('users')
       class User {
         @PrimaryColumn()
@@ -51,38 +50,41 @@ describe('Decorators', () => {
         @Column()
         name!: string
 
-        @Column('TEXT')
-        email!: string
+        @Column('BLOB')
+        avatar!: Uint8Array
       }
 
       const storage = MetadataStorage.getInstance()
       const metadata = storage.getTable(User)
 
       expect(metadata?.columns).toHaveLength(3)
-      expect(metadata?.columns.find(c => c.name === 'name')).toBeDefined()
-      expect(metadata?.columns.find(c => c.name === 'email')?.type).toBe('TEXT')
+      expect(metadata?.columns.find(c => c.name === 'name')?.type).toBe('TEXT')
+      expect(metadata?.columns.find(c => c.name === 'avatar')?.type).toBe('BLOB')
     })
 
-    it('应该支持默认类型', () => {
-      @Entity('test')
-      class Test {
-        @PrimaryColumn()
-        id!: number
+    it('infers SQLite column types from reflect metadata', () => {
+      class Account {}
 
-        @Column()
-        data!: string
-      }
+      const column = Column()
+      Reflect.defineMetadata('design:type', String, Account.prototype, 'name')
+      Reflect.defineMetadata('design:type', Number, Account.prototype, 'balance')
+      Reflect.defineMetadata('design:type', Boolean, Account.prototype, 'active')
+
+      column(Account.prototype, 'name')
+      column(Account.prototype, 'balance')
+      column(Account.prototype, 'active')
 
       const storage = MetadataStorage.getInstance()
-      const metadata = storage.getTable(Test)
-      const dataColumn = metadata?.columns.find(c => c.name === 'data')
+      const metadata = storage.getTable(Account)
 
-      expect(dataColumn?.type).toBe('TEXT')
+      expect(metadata?.columns.find(c => c.name === 'name')?.type).toBe('TEXT')
+      expect(metadata?.columns.find(c => c.name === 'balance')?.type).toBe('REAL')
+      expect(metadata?.columns.find(c => c.name === 'active')?.type).toBe('INTEGER')
     })
   })
 
   describe('@PrimaryColumn', () => {
-    it('应该标记主键列', () => {
+    it('marks primary key and defaults number to INTEGER', () => {
       @Entity('users')
       class User {
         @PrimaryColumn()
@@ -98,6 +100,31 @@ describe('Decorators', () => {
       const primaryColumn = metadata?.columns.find(c => c.primary)
       expect(primaryColumn).toBeDefined()
       expect(primaryColumn?.name).toBe('id')
+      expect(primaryColumn?.type).toBe('INTEGER')
     })
+
+    it('infers primary key number as INTEGER from reflect metadata', () => {
+      class User {}
+
+      const primaryColumn = PrimaryColumn()
+      Reflect.defineMetadata('design:type', Number, User.prototype, 'id')
+      primaryColumn(User.prototype, 'id')
+
+      const storage = MetadataStorage.getInstance()
+      const metadata = storage.getTable(User)
+
+      expect(metadata?.columns.find(c => c.name === 'id')?.type).toBe('INTEGER')
+      expect(metadata?.columns.find(c => c.name === 'id')?.primary).toBe(true)
+    })
+  })
+
+  it('rejects invalid explicit column type at compile time', () => {
+    class CompileTypeCheck {
+      // @ts-expect-error INVALID is not a supported SQLite column type
+      @Column('INVALID')
+      invalid!: string
+    }
+
+    expect(CompileTypeCheck).toBeDefined()
   })
 })

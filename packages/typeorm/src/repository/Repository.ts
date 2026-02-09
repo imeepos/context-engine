@@ -1,14 +1,14 @@
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
+import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
 import { TableMetadata } from '../metadata/types.js'
 import type { CursorPage, CursorPageOptions, FindOptions, Page, Pageable } from '../index.js'
 import { QueryBuilder } from '../query-builder/QueryBuilder.js'
 
-type QueryExecutor = Pick<D1Database, 'prepare'> & Partial<Pick<D1Database, 'batch'>>
-
 export class Repository<T> {
   constructor(
-    private db: QueryExecutor,
-    private metadata: TableMetadata
+    private db: DatabaseDriver,
+    private metadata: TableMetadata,
+    private dialect: SqlDialect
   ) {}
 
   createQueryBuilder(): QueryBuilder<T> {
@@ -94,15 +94,12 @@ export class Repository<T> {
   async upsert(entity: Partial<T>): Promise<T> {
     const primaryColumn = this.getPrimaryColumn()
     const columns = Object.keys(entity)
-    const placeholders = columns.map(() => '?').join(', ')
     const values = Object.values(entity)
-
-    const updateClauses = columns
-      .filter(column => column !== primaryColumn.name)
-      .map(column => `${column} = excluded.${column}`)
-      .join(', ')
-
-    const sql = `INSERT INTO ${this.metadata.name} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${primaryColumn.name}) DO UPDATE SET ${updateClauses}`
+    const sql = this.dialect.buildUpsert({
+      table: this.metadata.name,
+      columns,
+      primaryColumn: primaryColumn.name
+    })
     await this.db.prepare(sql).bind(...values).run()
 
     return entity as T

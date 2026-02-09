@@ -1,6 +1,20 @@
+import 'reflect-metadata'
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
+import { ColumnType, TypeMapping } from '../metadata/types.js'
 
-export function PrimaryColumn(type?: string): PropertyDecorator {
+function inferPrimaryColumnType(designType: Function | undefined): ColumnType {
+  if (!designType) {
+    return 'INTEGER'
+  }
+
+  if (designType.name === 'Number') {
+    return 'INTEGER'
+  }
+
+  return TypeMapping[designType.name] ?? 'INTEGER'
+}
+
+export function PrimaryColumn(type?: ColumnType): PropertyDecorator {
   return (target: any, propertyKey: string | symbol) => {
     const storage = MetadataStorage.getInstance()
     const constructor = target.constructor
@@ -11,9 +25,14 @@ export function PrimaryColumn(type?: string): PropertyDecorator {
       storage.addTable(constructor, metadata)
     }
 
+    const designType = Reflect.getMetadata('design:type', target, propertyKey) as
+      | Function
+      | undefined
+    const columnType = type ?? inferPrimaryColumnType(designType)
+
     metadata.columns.push({
       name: propertyKey.toString(),
-      type: type || 'INTEGER',
+      type: columnType,
       primary: true
     })
   }
