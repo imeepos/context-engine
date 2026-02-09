@@ -23,7 +23,7 @@ describe('Decorators', () => {
       const metadata = storage.getTable(TestUser)
 
       expect(metadata).toBeDefined()
-      expect(metadata?.name).toBe('testuser')
+      expect(metadata?.name).toBe('test_users')
     })
 
     it('uses lowercase class name as default table name', () => {

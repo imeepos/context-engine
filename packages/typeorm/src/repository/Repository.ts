@@ -1,6 +1,8 @@
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
 import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
 import { TableMetadata } from '../metadata/types.js'
+import { toDatabaseValue } from '../metadata/transformer.js'
+import { createUuidV4 } from '../metadata/uuid.js'
 import type { CursorPage, CursorPageOptions, FindOptions, Page, Pageable } from '../index.js'
 import { QueryBuilder } from '../query-builder/QueryBuilder.js'
 
@@ -53,8 +55,9 @@ export class Repository<T> {
   }
 
   async save(entity: Partial<T>): Promise<T> {
-    await this.createQueryBuilder().batchInsert([entity])
-    return entity as T
+    const insertEntity = this.prepareInsertEntity(entity)
+    await this.createQueryBuilder().batchInsert([insertEntity])
+    return insertEntity as T
   }
 
   async update(id: number | string, entity: Partial<T>): Promise<void> {
@@ -93,8 +96,9 @@ export class Repository<T> {
 
   async upsert(entity: Partial<T>): Promise<T> {
     const primaryColumn = this.getPrimaryColumn()
-    const columns = Object.keys(entity)
-    const values = Object.values(entity)
+    const persistEntity = this.prepareInsertEntity(entity)
+    const columns = Object.keys(persistEntity)
+    const values = columns.map(column => this.transformToDatabase(column, (persistEntity as any)[column]))
     const sql = this.dialect.buildUpsert({
       table: this.metadata.name,
       columns,
@@ -102,7 +106,7 @@ export class Repository<T> {
     })
     await this.db.prepare(sql).bind(...values).run()
 
-    return entity as T
+    return persistEntity as T
   }
 
   async findAndCount(options?: FindOptions<T>): Promise<[T[], number]> {
@@ -142,7 +146,7 @@ export class Repository<T> {
     if (options.where && Object.keys(options.where).length > 0) {
       for (const [key, value] of Object.entries(options.where)) {
         whereParts.push(`${key} = ?`)
-        bindings.push(value)
+        bindings.push(this.transformToDatabase(key, value))
       }
     }
 
@@ -242,5 +246,21 @@ export class Repository<T> {
         `${alias}.${relatedPrimary} = ${joinAlias}.${targetJoinColumn}`
       )
     }
+  }
+
+  private prepareInsertEntity(entity: Partial<T>): Partial<T> {
+    const output: Record<string, unknown> = { ...(entity as Record<string, unknown>) }
+    for (const column of this.metadata.columns) {
+      if (column.generated === 'uuid' && output[column.name] === undefined) {
+        output[column.name] = createUuidV4()
+      }
+    }
+
+    return output as Partial<T>
+  }
+
+  private transformToDatabase(columnName: string, value: unknown): unknown {
+    const column = this.metadata.columns.find(item => item.name === columnName)
+    return toDatabaseValue(column, value)
   }
 }

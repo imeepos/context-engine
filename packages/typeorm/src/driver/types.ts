@@ -16,7 +16,10 @@ export interface PreparedStatement {
   bind(...params: any[]): BoundStatement
 }
 
+export type DialectName = 'sqlite' | 'd1' | 'mysql'
+
 export interface SqlDialect {
+  name?: DialectName
   buildUpsert(params: {
     table: string
     columns: string[]

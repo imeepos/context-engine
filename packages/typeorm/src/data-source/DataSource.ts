@@ -31,6 +31,10 @@ export class DataSource {
     return this.db
   }
 
+  getDialect(): SqlDialect {
+    return this.dialect
+  }
+
   getRepository<T>(entity: Type<T>): Repository<T> {
     if (this.repositories.has(entity)) {
       return this.repositories.get(entity)!

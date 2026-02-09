@@ -2,7 +2,7 @@ import type { DatabaseDriver } from '../driver/types.js'
 import { extractRows } from '../driver/utils.js'
 import { ColumnMetadata, TableMetadata } from '../metadata/types.js'
 import { fromDatabaseValue, toDatabaseValue } from '../metadata/transformer.js'
-import { randomUUID } from 'node:crypto'
+import { createUuidV4 } from '../metadata/uuid.js'
 import { QueryState } from './types.js'
 import { Operator } from '../operators/types.js'
 
@@ -310,7 +310,7 @@ export class QueryBuilder<T> {
     const output: Record<string, unknown> = { ...(row as Record<string, unknown>) }
     for (const column of this.metadata.columns) {
       if (column.generated === 'uuid' && output[column.name] === undefined) {
-        output[column.name] = randomUUID()
+        output[column.name] = createUuidV4()
       }
     }
 

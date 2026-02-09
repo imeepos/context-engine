@@ -49,6 +49,7 @@ export * from './tokens.js'
 // Module
 export { TypeOrmModule } from './TypeOrmModule.js'
 export type { TypeOrmModuleOptions } from './TypeOrmModule.js'
+export { buildCreateTableSql, synchronizeSchema } from './schema/synchronize.js'
 export * from './migration/index.js'
 
 // Types

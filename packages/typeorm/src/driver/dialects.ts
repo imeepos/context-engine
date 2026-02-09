@@ -1,6 +1,7 @@
 import type { SqlDialect } from './types.js'
 
 export const sqliteDialect: SqlDialect = {
+  name: 'sqlite',
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns
@@ -18,9 +19,13 @@ export const sqliteDialect: SqlDialect = {
   }
 }
 
-export const d1Dialect: SqlDialect = sqliteDialect
+export const d1Dialect: SqlDialect = {
+  ...sqliteDialect,
+  name: 'd1'
+}
 
 export const mysqlDialect: SqlDialect = {
+  name: 'mysql',
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns

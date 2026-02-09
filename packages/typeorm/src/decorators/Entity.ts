@@ -7,12 +7,16 @@ export function Entity(name?: string): ClassDecorator {
     root.set([{ provide: ENTITIES, useValue: target, multi: true }])
     const storage = MetadataStorage.getInstance()
 
-    if (!storage.hasTable(target)) {
-      storage.addTable(target, {
-        name: name || target.name.toLowerCase(),
-        columns: [],
-        relations: []
-      })
+    const existing = storage.getTable(target)
+    if (existing) {
+      existing.name = name || existing.name || target.name.toLowerCase()
+      return
     }
+
+    storage.addTable(target, {
+      name: name || target.name.toLowerCase(),
+      columns: [],
+      relations: []
+    })
   }
 }
