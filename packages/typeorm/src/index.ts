@@ -11,12 +11,23 @@ export { Transactional } from './transaction/Transactional.js'
 export { DataSource } from './data-source/DataSource.js'
 export { Repository } from './repository/Repository.js'
 export { TransactionManager } from './transaction/TransactionManager.js'
+export { sqliteDialect, d1Dialect, mysqlDialect } from './driver/dialects.js'
+export { extractRows } from './driver/utils.js'
+export type {
+  BoundStatement,
+  DatabaseDriver,
+  PreparedStatement,
+  QueryRows,
+  QueryRunResult,
+  SqlDialect
+} from './driver/types.js'
 
 // Metadata
 export { MetadataStorage } from './metadata/MetadataStorage.js'
 export type {
   TableMetadata,
   ColumnMetadata,
+  ColumnType,
   RelationMetadata,
   RelationType,
   TransactionIsolationLevel,
@@ -27,6 +38,10 @@ export type {
 
 // DI Tokens
 export * from './tokens.js'
+
+// Module
+export { TypeOrmModule } from './TypeOrmModule.js'
+export type { TypeOrmModuleOptions } from './TypeOrmModule.js'
 
 // Types
 export interface FindOptions<T = any> {
