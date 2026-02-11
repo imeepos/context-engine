@@ -11,6 +11,8 @@ export { Transactional } from './transaction/Transactional.js'
 export { DataSource } from './data-source/DataSource.js'
 export { NoSqlDataSource } from './data-source/NoSqlDataSource.js'
 export { Repository } from './repository/Repository.js'
+export { NoSqlRepository } from './repository/NoSqlRepository.js'
+export type { NoSqlFindOptions } from './repository/NoSqlRepository.js'
 export { TransactionManager } from './transaction/TransactionManager.js'
 // Dialects are now exported from their respective driver packages
 export { extractRows } from './driver/utils.js'
