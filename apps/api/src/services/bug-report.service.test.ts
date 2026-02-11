@@ -53,7 +53,7 @@ describe('BugReportService', () => {
       const { service, bugRepo } = createServiceHarness();
       const qb = bugRepo.createQueryBuilder();
 
-      qb.raw.mockResolvedValueOnce(undefined).mockResolvedValueOnce([
+      qb.execute.mockResolvedValue([
         {
           id: '1',
           title: 'Test Bug',
@@ -76,7 +76,6 @@ describe('BugReportService', () => {
         description: 'Test Description',
       });
 
-      expect(qb.raw).toHaveBeenCalled();
       expect(result.title).toBe('Test Bug');
     });
 
@@ -85,7 +84,7 @@ describe('BugReportService', () => {
       const qb = bugRepo.createQueryBuilder();
 
       const aiContext = { model: 'gpt-4', confidence: 0.95 };
-      qb.raw.mockResolvedValueOnce(undefined).mockResolvedValueOnce([
+      qb.execute.mockResolvedValue([
         {
           id: '1',
           title: 'AI Found Bug',
@@ -120,25 +119,24 @@ describe('BugReportService', () => {
       const { service, bugRepo } = createServiceHarness();
       const qb = bugRepo.createQueryBuilder();
 
-      qb.raw
-        .mockResolvedValueOnce([
-          {
-            id: '1',
-            title: 'Bug 1',
-            description: 'Desc 1',
-            severity: 'high',
-            status: 'open',
-            source: 'ai',
-            reporter_id: null,
-            ai_context: null,
-            stack_trace: null,
-            environment: null,
-            tags: null,
-            created_at: '2026-02-11T00:00:00Z',
-            updated_at: '2026-02-11T00:00:00Z',
-          },
-        ])
-        .mockResolvedValueOnce([{ total: 1 }]);
+      qb.execute.mockResolvedValue([
+        {
+          id: '1',
+          title: 'Bug 1',
+          description: 'Desc 1',
+          severity: 'high',
+          status: 'open',
+          source: 'ai',
+          reporter_id: null,
+          ai_context: null,
+          stack_trace: null,
+          environment: null,
+          tags: null,
+          created_at: '2026-02-11T00:00:00Z',
+          updated_at: '2026-02-11T00:00:00Z',
+        },
+      ]);
+      qb.count.mockResolvedValue(1);
 
       const result = await service.listBugs({
         status: 'open',
@@ -157,7 +155,7 @@ describe('BugReportService', () => {
       const { service, bugRepo } = createServiceHarness();
       const qb = bugRepo.createQueryBuilder();
 
-      qb.raw.mockResolvedValue([
+      qb.execute.mockResolvedValue([
         {
           id: '1',
           title: 'Bug 1',
@@ -185,7 +183,7 @@ describe('BugReportService', () => {
       const { service, bugRepo } = createServiceHarness();
       const qb = bugRepo.createQueryBuilder();
 
-      qb.raw.mockResolvedValue([]);
+      qb.execute.mockResolvedValue([]);
 
       await expect(service.getBugDetail('999')).rejects.toThrow(NotFoundError);
     });
@@ -196,7 +194,7 @@ describe('BugReportService', () => {
       const { service, bugRepo } = createServiceHarness();
       const qb = bugRepo.createQueryBuilder();
 
-      qb.raw
+      qb.execute
         .mockResolvedValueOnce([
           {
             id: '1',
@@ -214,7 +212,6 @@ describe('BugReportService', () => {
             updated_at: '2026-02-11T00:00:00Z',
           },
         ])
-        .mockResolvedValueOnce(undefined)
         .mockResolvedValueOnce([
           {
             id: '1',
@@ -246,7 +243,7 @@ describe('BugReportService', () => {
       const { service, bugRepo } = createServiceHarness();
       const qb = bugRepo.createQueryBuilder();
 
-      qb.raw.mockResolvedValue([
+      qb.execute.mockResolvedValue([
         {
           id: '1',
           title: 'Bug 1',
