@@ -1,10 +1,9 @@
 import { Inject, Injectable, Type } from '@sker/core'
-import { sqliteDialect } from '../driver/dialects.js'
 import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
 import { TransactionIsolationLevel } from '../metadata/types.js'
 import { Repository } from '../repository/Repository.js'
-import { DB_DRIVER } from '../tokens.js'
+import { DB_DRIVER, SQL_DIALECT } from '../tokens.js'
 import { TransactionManager } from '../transaction/TransactionManager.js'
 
 @Injectable({ providedIn: 'auto' })
@@ -12,12 +11,11 @@ export class DataSource {
   private static defaultDataSource?: DataSource
   private repositories = new Map<Function, Repository<any>>()
   private txStack: TransactionManager[] = []
-  private dialect: SqlDialect
 
   constructor(
-    @Inject(DB_DRIVER) private db: DatabaseDriver
+    @Inject(DB_DRIVER) private db: DatabaseDriver,
+    @Inject(SQL_DIALECT) private dialect: SqlDialect
   ) {
-    this.dialect = this.db.dialect ?? sqliteDialect
     if (!DataSource.defaultDataSource) {
       DataSource.defaultDataSource = this
     }

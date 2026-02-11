@@ -1,10 +1,25 @@
 import { createPlatform, Module, type DynamicModule } from '@sker/core'
 import { describe, expect, it } from 'vitest'
 import { TypeOrmModule } from '../TypeOrmModule.js'
-import type { DatabaseDriver } from '../driver/types.js'
+import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
 import { MigrationExecutor } from './MigrationExecutor.js'
 import { MigrationModule } from './MigrationModule.js'
 import type { MigrationRecord } from './types.js'
+
+const mockDialect: SqlDialect = {
+  
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = excluded.${column}`)
+      .join(', ')
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN TRANSACTION'
+  }
+}
 
 function createMockDriver() {
   const sqlLog: string[] = []
@@ -84,7 +99,7 @@ describe('MigrationModule integration', () => {
     const app = platform.bootstrapApplication()
 
     const imports: DynamicModule[] = [
-      TypeOrmModule.forRoot({ driver: mock.driver }),
+      TypeOrmModule.forRoot({ driver: mock.driver, dialect: mockDialect }),
       MigrationModule.forRoot(),
       MigrationModule.forFeature([CreateUsers1700000000000 as any])
     ]
@@ -112,7 +127,7 @@ describe('MigrationModule integration', () => {
     await expect(
       (() => {
         const imports: DynamicModule[] = [
-          TypeOrmModule.forRoot({ driver: mock.driver }),
+          TypeOrmModule.forRoot({ driver: mock.driver, dialect: mockDialect }),
           MigrationModule.forRoot(),
           MigrationModule.forFeature([
             CreateUsers1700000000000 as any,

@@ -1,6 +1,6 @@
 import { Module, DynamicModule, Type } from '@sker/core'
 import { TypeOrmModule } from '@sker/typeorm'
-import { D1Driver, type D1DatabaseLike } from './index.js'
+import { D1Driver, type D1DatabaseLike, d1Dialect } from './index.js'
 
 /**
  * TypeORM D1 模块配置选项
@@ -53,6 +53,7 @@ export class TypeOrmD1Module {
 
     return TypeOrmModule.forRoot({
       driver,
+      dialect: d1Dialect,
       entities: options.entities,
     })
   }

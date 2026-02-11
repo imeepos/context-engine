@@ -1,5 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
 import { DataSource } from './DataSource.js'
+import type { SqlDialect } from '../driver/types.js'
+
+const mockDialect: SqlDialect = {
+  
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = excluded.${column}`)
+      .join(', ')
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN TRANSACTION'
+  }
+}
 
 describe('DataSource transaction', () => {
   it('runs commit flow', async () => {
@@ -10,7 +26,7 @@ describe('DataSource transaction', () => {
       })
     } as any
 
-    const dataSource = new DataSource(mockDb)
+    const dataSource = new DataSource(mockDb, mockDialect)
 
     await dataSource.transaction(async () => {
       return 'ok'
@@ -29,7 +45,7 @@ describe('DataSource transaction', () => {
       })
     } as any
 
-    const dataSource = new DataSource(mockDb)
+    const dataSource = new DataSource(mockDb, mockDialect)
 
     await expect(
       dataSource.transaction(async () => {

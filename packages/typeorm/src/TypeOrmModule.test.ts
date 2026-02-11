@@ -4,7 +4,22 @@ import { TypeOrmModule } from './TypeOrmModule.js'
 import { DataSource } from './data-source/DataSource.js'
 import { Column, Entity, PrimaryColumn } from './decorators/index.js'
 import { ENTITIES } from './tokens.js'
-import type { DatabaseDriver } from './driver/types.js'
+import type { DatabaseDriver, SqlDialect } from './driver/types.js'
+
+const mockDialect: SqlDialect = {
+  
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = excluded.${column}`)
+      .join(', ')
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN TRANSACTION'
+  }
+}
 
 describe('TypeOrmModule', () => {
   let mockDb: DatabaseDriver
@@ -23,7 +38,7 @@ describe('TypeOrmModule', () => {
 
   describe('forRoot()', () => {
     it('creates dynamic module config', () => {
-      const module = TypeOrmModule.forRoot({ driver: mockDb })
+      const module = TypeOrmModule.forRoot({ driver: mockDb, dialect: mockDialect })
       expect(module.module).toBe(TypeOrmModule)
       expect(module.providers).toBeDefined()
       expect(module.providers?.length).toBeGreaterThan(0)
@@ -44,6 +59,7 @@ describe('TypeOrmModule', () => {
 
       await app.bootstrap(TypeOrmModule.forRoot({
         driver: mockDb,
+        dialect: mockDialect,
         entities: [User]
       }))
 
@@ -72,6 +88,7 @@ describe('TypeOrmModule', () => {
 
       await app.bootstrap(TypeOrmModule.forRoot({
         driver: mockDb,
+        dialect: mockDialect,
         entities: [User, Post]
       }))
 
@@ -94,10 +111,10 @@ describe('TypeOrmModule', () => {
         profile!: Record<string, unknown>
       }
 
-      const exec = vi.fn().mockResolvedValue(undefined)
+      const synchronizeSchema = vi.fn().mockResolvedValue(undefined)
       mockDb = {
         ...mockDb,
-        exec
+        synchronizeSchema
       } as any
 
       const platform = createPlatform()
@@ -105,12 +122,12 @@ describe('TypeOrmModule', () => {
 
       await app.bootstrap(TypeOrmModule.forRoot({
         driver: mockDb,
+        dialect: mockDialect,
         entities: [User],
         synchronize: true
       }))
 
-      expect(exec).toHaveBeenCalledTimes(1)
-      expect(exec.mock.calls[0]?.[0]).toContain('CREATE TABLE IF NOT EXISTS user')
+      expect(synchronizeSchema).toHaveBeenCalledTimes(1)
 
       await app.destroy()
       await platform.destroy()

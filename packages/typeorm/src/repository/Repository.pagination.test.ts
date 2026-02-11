@@ -1,7 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { sqliteDialect } from '../driver/dialects.js'
+import type { SqlDialect } from '../driver/types.js'
 import { Repository } from './Repository.js'
 import { TableMetadata } from '../metadata/types.js'
+
+const sqliteDialect: SqlDialect = {
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = excluded.${column}`)
+      .join(', ')
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN TRANSACTION'
+  }
+}
 
 describe('Repository pagination', () => {
   let repository: Repository<any>

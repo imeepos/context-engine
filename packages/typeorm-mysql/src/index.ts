@@ -1,14 +1,29 @@
 import {
-  mysqlDialect,
   type BoundStatement,
   type DatabaseDriver,
   type PreparedStatement,
   type QueryRows,
-  type QueryRunResult
+  type QueryRunResult,
+  type SqlDialect
 } from '@sker/typeorm'
 import { Module, DynamicModule, Type } from '@sker/core'
 import { TypeOrmModule } from '@sker/typeorm'
 import { createPool, type PoolOptions } from 'mysql2/promise'
+
+export const mysqlDialect: SqlDialect = {
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = VALUES(${column})`)
+      .join(', ')
+
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'START TRANSACTION'
+  }
+}
 
 export interface MysqlExecuteHeaderLike {
   affectedRows?: number
@@ -158,6 +173,7 @@ export class TypeOrmMysqlModule {
 
     return TypeOrmModule.forRoot({
       driver,
+      dialect: mysqlDialect,
       entities: options.entities
     })
   }

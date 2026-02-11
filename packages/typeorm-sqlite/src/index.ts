@@ -1,14 +1,32 @@
 import {
-  sqliteDialect,
   type BoundStatement,
   type DatabaseDriver,
   type PreparedStatement,
   type QueryRows,
-  type QueryRunResult
+  type QueryRunResult,
+  type SqlDialect
 } from '@sker/typeorm'
 import { Module, DynamicModule, Type } from '@sker/core'
 import { TypeOrmModule } from '@sker/typeorm'
 import BetterSqlite3 from 'better-sqlite3'
+
+export const sqliteDialect: SqlDialect = {
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = excluded.${column}`)
+      .join(', ')
+
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN TRANSACTION'
+  },
+  readUncommitted() {
+    return 'PRAGMA read_uncommitted = 1'
+  }
+}
 
 export interface SqliteStatementLike {
   all(...params: any[]): any[]
@@ -126,6 +144,7 @@ export class TypeOrmSqliteModule {
 
     return TypeOrmModule.forRoot({
       driver,
+      dialect: sqliteDialect,
       entities: options.entities
     })
   }

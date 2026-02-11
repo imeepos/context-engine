@@ -1,8 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { DatabaseDriver } from '../driver/types.js'
-import { sqliteDialect } from '../driver/dialects.js'
+import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
 import type { TableMetadata } from '../metadata/types.js'
 import { Repository } from './Repository.js'
+
+const mockDialect: SqlDialect = {
+  
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = excluded.${column}`)
+      .join(', ')
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN TRANSACTION'
+  }
+}
 
 describe('Repository transforms', () => {
   it('generates uuid for primary generated column on save', async () => {
@@ -26,7 +40,7 @@ describe('Repository transforms', () => {
       relations: []
     }
 
-    const repo = new Repository<any>(mockDb, metadata, sqliteDialect)
+    const repo = new Repository<any>(mockDb, metadata, mockDialect)
     const saved = await repo.save({ payload: { x: 1 } })
 
     expect(typeof saved.id).toBe('string')
@@ -48,7 +62,7 @@ describe('Repository transforms', () => {
       relations: []
     }
 
-    const repo = new Repository<any>(mockDb, metadata, sqliteDialect)
+    const repo = new Repository<any>(mockDb, metadata, mockDialect)
     await repo.upsert({ id: 1, profile: { role: 'admin' } })
 
     expect(bind).toHaveBeenCalledWith(1, '{"role":"admin"}')
