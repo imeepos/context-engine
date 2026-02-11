@@ -60,6 +60,11 @@ export class QueryBuilder<T> {
     return this
   }
 
+  rightJoin(table: string, alias: string, on: string): this {
+    this.query.joins!.push({ type: 'RIGHT', table, alias, on })
+    return this
+  }
+
   innerJoinAndSelect(table: string, alias: string, on: string): this {
     this.addSelect(`${alias}.*`)
     return this.innerJoin(table, alias, on)
@@ -68,6 +73,11 @@ export class QueryBuilder<T> {
   leftJoinAndSelect(table: string, alias: string, on: string): this {
     this.addSelect(`${alias}.*`)
     return this.leftJoin(table, alias, on)
+  }
+
+  rightJoinAndSelect(table: string, alias: string, on: string): this {
+    this.addSelect(`${alias}.*`)
+    return this.rightJoin(table, alias, on)
   }
 
   async execute(): Promise<T[]> {

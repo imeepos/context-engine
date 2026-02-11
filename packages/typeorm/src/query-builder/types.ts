@@ -1,5 +1,5 @@
 export interface JoinState {
-  type: 'INNER' | 'LEFT'
+  type: 'INNER' | 'LEFT' | 'RIGHT'
   table: string
   alias: string
   on: string
