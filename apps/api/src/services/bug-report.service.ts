@@ -35,25 +35,40 @@ export class BugReportService {
 
   async listBugs(query: ListBugsQuery) {
     const repo = this.dataSource.getRepository(BugReport);
-    const qb = repo.createQueryBuilder() as any;
+    const where: string[] = [];
+    const binds: Array<string | number> = [];
 
     if (query.status) {
-      qb.andWhere('bug.status = :status', { status: query.status });
+      where.push('status = ?');
+      binds.push(query.status);
     }
     if (query.severity) {
-      qb.andWhere('bug.severity = :severity', { severity: query.severity });
+      where.push('severity = ?');
+      binds.push(query.severity);
     }
     if (query.source) {
-      qb.andWhere('bug.source = :source', { source: query.source });
+      where.push('source = ?');
+      binds.push(query.source);
     }
 
+    const whereSql = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
     const offset = (query.page - 1) * query.pageSize;
-    qb.orderBy('bug.created_at', 'DESC').skip(offset).take(query.pageSize);
 
-    const [items, total] = await qb.getManyAndCount();
+    const sql = `
+      SELECT * FROM bug_reports
+      ${whereSql}
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const items = await repo.createQueryBuilder().raw<BugReport>(sql, [...binds, query.pageSize, offset]);
+
+    const countSql = `SELECT COUNT(*) as total FROM bug_reports ${whereSql}`;
+    const countResult = await repo.createQueryBuilder().raw<{ total: number }>(countSql, binds);
+    const total = countResult[0]?.total || 0;
 
     return {
-      items: items.map((bug: BugReport) => this.formatBugReport(bug)),
+      items: items.map((bug) => this.formatBugReport(bug)),
       total,
       page: query.page,
       pageSize: query.pageSize,
@@ -62,7 +77,9 @@ export class BugReportService {
 
   async getBugDetail(id: string) {
     const repo = this.dataSource.getRepository(BugReport);
-    const bug = await (repo as any).findOne({ where: { id } });
+    const sql = 'SELECT * FROM bug_reports WHERE id = ? LIMIT 1';
+    const results = await repo.createQueryBuilder().raw<BugReport>(sql, [id]);
+    const bug = results[0];
 
     if (!bug) {
       throw new NotFoundError('Bug report not found');
@@ -74,54 +91,59 @@ export class BugReportService {
   async createBug(input: CreateBugInput) {
     const repo = this.dataSource.getRepository(BugReport);
     const now = new Date().toISOString();
+    const id = crypto.randomUUID();
 
-    const bug = (repo as any).create({
-      id: crypto.randomUUID(),
-      title: input.title,
-      description: input.description,
-      severity: input.severity || 'medium',
-      status: 'open',
-      source: input.source || 'manual',
-      reporter_id: input.reporterId || null,
-      ai_context: input.aiContext ? JSON.stringify(input.aiContext) : null,
-      stack_trace: input.stackTrace || null,
-      environment: input.environment ? JSON.stringify(input.environment) : null,
-      tags: input.tags ? JSON.stringify(input.tags) : null,
-      created_at: now,
-      updated_at: now,
-    });
+    const sql = `
+      INSERT INTO bug_reports (
+        id, title, description, severity, status, source,
+        reporter_id, ai_context, stack_trace, environment, tags,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-    await repo.save(bug);
-    return this.formatBugReport(bug);
+    await repo.createQueryBuilder().raw(sql, [
+      id,
+      input.title,
+      input.description,
+      input.severity || 'medium',
+      'open',
+      input.source || 'manual',
+      input.reporterId || null,
+      input.aiContext ? JSON.stringify(input.aiContext) : null,
+      input.stackTrace || null,
+      input.environment ? JSON.stringify(input.environment) : null,
+      input.tags ? JSON.stringify(input.tags) : null,
+      now,
+      now,
+    ]);
+
+    return this.getBugDetail(id);
   }
 
   async updateBug(input: UpdateBugInput) {
     const repo = this.dataSource.getRepository(BugReport);
-    const bug = await (repo as any).findOne({ where: { id: input.id } });
+    const bug = await this.getBugDetail(input.id);
 
-    if (!bug) {
-      throw new NotFoundError('Bug report not found');
-    }
-
-    if (input.actorId && bug.reporter_id && bug.reporter_id !== input.actorId) {
+    if (input.actorId && bug.reporterId && bug.reporterId !== input.actorId) {
       throw new ForbiddenError('You can only update your own bug reports');
     }
 
-    const updates: Partial<BugReport> = {
-      updated_at: new Date().toISOString(),
-    };
+    const updates: string[] = ['updated_at = ?'];
+    const binds: Array<string> = [new Date().toISOString()];
 
     if (input.status) {
-      updates.status = input.status;
+      updates.push('status = ?');
+      binds.push(input.status);
     }
     if (input.severity) {
-      updates.severity = input.severity;
+      updates.push('severity = ?');
+      binds.push(input.severity);
     }
 
-    await (repo as any).update({ id: input.id }, updates);
+    const sql = `UPDATE bug_reports SET ${updates.join(', ')} WHERE id = ?`;
+    await repo.createQueryBuilder().raw(sql, [...binds, input.id]);
 
-    const updated = await (repo as any).findOne({ where: { id: input.id } });
-    return this.formatBugReport(updated!);
+    return this.getBugDetail(input.id);
   }
 
   private formatBugReport(bug: BugReport) {
