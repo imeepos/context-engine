@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@sker/core'
 import { Storage, STORAGE_TOKEN } from '../storage/storage.interface'
-import type { LoadedPlugin, PluginConfig } from '@sker/plugin-runtime'
+import type { LoadedPlugin, PluginConfig } from '@sker/plugin/runtime'
 import { Script, createContext } from 'vm'
 
 @Injectable({ providedIn: 'auto' })
@@ -59,11 +59,18 @@ export class PluginLoaderService {
       'react',
       '@sker/core',
       '@sker/prompt-renderer',
+      '@sker/plugin/runtime',
       '@sker/plugin-runtime'
     ])
 
     return (id: string) => {
       if (allowedModules.has(id)) {
+        if (id === '@sker/plugin-runtime') {
+          // Backward compatibility: old plugins import runtime from legacy package name.
+          // Resolve it to the unified package entry.
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          return require('@sker/plugin/runtime')
+        }
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require(id)
       }
@@ -76,3 +83,4 @@ export class PluginLoaderService {
     }
   }
 }
+

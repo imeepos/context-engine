@@ -20,7 +20,7 @@
     "@modelcontextprotocol/sdk": "^1.25.3",
     "@sker/compiler": "workspace:*",
     "@sker/core": "workspace:*",
-    "@sker/plugin-runtime": "workspace:*",
+    "@sker/plugin": "workspace:*",
     "@sker/prompt-renderer": "workspace:*",
     "@sker/typeorm": "workspace:*",
     "@sker/typeorm-sqlite": "workspace:*",
@@ -47,3 +47,4 @@
     "vitest": "^4.0.18"
   }
 }
+

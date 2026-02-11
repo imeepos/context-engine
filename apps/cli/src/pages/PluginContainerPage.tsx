@@ -2,7 +2,7 @@ import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
 import { PluginLoaderService } from '../services/plugin-loader.service'
-import { PluginContextProvider } from '@sker/plugin-runtime'
+import { PluginContextProvider } from '@sker/plugin/runtime'
 
 interface PluginContainerPageProps {
   injector: Injector
@@ -30,7 +30,7 @@ export async function PluginContainerPage({ injector, params }: PluginContainerP
     return (
       <Layout injector={injector}>
         <h1>错误</h1>
-        <p>插件不存在或未安装: {pluginId}</p>
+        <p>插件不存在或未安�? {pluginId}</p>
       </Layout>
     )
   }
@@ -41,7 +41,7 @@ export async function PluginContainerPage({ injector, params }: PluginContainerP
     return (
       <Layout injector={injector}>
         <h1>错误</h1>
-        <p>页面不存在: {subPath}</p>
+        <p>页面不存�? {subPath}</p>
         <p>可用页面:</p>
         <ul>
           {plugin.config.routes.map(r => (
@@ -61,3 +61,4 @@ export async function PluginContainerPage({ injector, params }: PluginContainerP
     </PluginContextProvider>
   )
 }
+

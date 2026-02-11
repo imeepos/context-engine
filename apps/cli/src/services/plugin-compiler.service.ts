@@ -36,14 +36,14 @@ export class PluginCompilerService {
         target: 'node20',
         outdir: absoluteOutDir,
         format: 'cjs',
-        external: ['react', '@sker/core', '@sker/prompt-renderer', '@sker/plugin-runtime'],
+        external: ['react', '@sker/core', '@sker/prompt-renderer', '@sker/plugin/runtime', '@sker/plugin-runtime'],
         logLevel: 'silent',
         plugins: [{
           name: 'fail-on-unresolved',
           setup(build) {
             build.onResolve({ filter: /.*/ }, args => {
               if (args.kind === 'import-statement' && !args.path.startsWith('.') && !args.path.startsWith('/')) {
-                const external = ['react', '@sker/core', '@sker/prompt-renderer', '@sker/plugin-runtime']
+                const external = ['react', '@sker/core', '@sker/prompt-renderer', '@sker/plugin/runtime', '@sker/plugin-runtime']
                 if (!external.includes(args.path) && !args.path.startsWith('node:')) {
                   return { errors: [{ text: `Cannot resolve module "${args.path}"` }] }
                 }
@@ -70,3 +70,4 @@ export class PluginCompilerService {
     }
   }
 }
+

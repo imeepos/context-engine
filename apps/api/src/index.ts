@@ -79,6 +79,7 @@ async function createApp(loggerLevel: LoggerLevel) {
 }
 
 let appInstance: Promise<Hono<{ Bindings: Env }>> | null = null;
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const loggerLevel = resolveApiLoggerLevel(env.APP_LOG_LEVEL);
