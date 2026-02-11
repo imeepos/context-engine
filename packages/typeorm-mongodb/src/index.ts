@@ -6,16 +6,18 @@ import {
   type NoSqlDialect,
   type NoSqlPreparedStatement,
   type NoSqlQuery,
+  type NoSqlSession,
   type QueryRunResult
 } from '@sker/typeorm'
 import { Module, DynamicModule, Type, Provider } from '@sker/core'
-import type { Collection, Db, MongoClient, Document, Filter, FindOptions } from 'mongodb'
+import type { Collection, Db, MongoClient, Document, Filter, FindOptions, ClientSession } from 'mongodb'
 
 export const mongodbDialect: NoSqlDialect = {
 }
 
 export interface MongoDbLike {
   collection(name: string): Collection<Document>
+  startSession?(): ClientSession
 }
 
 class MongodbPreparedStatement implements NoSqlPreparedStatement {
@@ -129,6 +131,37 @@ export class MongodbDriver implements NoSqlDatabaseDriver {
 
   async close(): Promise<void> {
     // MongoDB client close is handled externally
+  }
+
+  async startSession(): Promise<NoSqlSession> {
+    if (!this.db.startSession) {
+      throw new Error(
+        'MongoDB transactions require a replica set or sharded cluster. ' +
+        'The current MongoDB connection does not support sessions.'
+      )
+    }
+    const session = this.db.startSession()
+    return new MongodbSession(session)
+  }
+}
+
+class MongodbSession implements NoSqlSession {
+  constructor(private session: ClientSession) {}
+
+  async startTransaction(): Promise<void> {
+    this.session.startTransaction()
+  }
+
+  async commitTransaction(): Promise<void> {
+    await this.session.commitTransaction()
+  }
+
+  async abortTransaction(): Promise<void> {
+    await this.session.abortTransaction()
+  }
+
+  async endSession(): Promise<void> {
+    await this.session.endSession()
   }
 }
 
