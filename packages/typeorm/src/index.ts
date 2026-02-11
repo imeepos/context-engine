@@ -27,7 +27,8 @@ export type {
   NoSqlBoundStatement,
   NoSqlPreparedStatement,
   NoSqlDialect,
-  NoSqlDatabaseDriver
+  NoSqlDatabaseDriver,
+  NoSqlSession
 } from './driver/types.js'
 
 // Metadata

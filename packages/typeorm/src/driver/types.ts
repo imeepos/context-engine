@@ -60,6 +60,13 @@ export interface NoSqlDialect {
   buildUpsert?(params: { collection: string; document: Record<string, any>; primaryKey: string }): any
 }
 
+export interface NoSqlSession {
+  startTransaction(): Promise<void>
+  commitTransaction(): Promise<void>
+  abortTransaction(): Promise<void>
+  endSession(): Promise<void>
+}
+
 export interface NoSqlDatabaseDriver {
   prepare(collection: string): NoSqlPreparedStatement
   insertOne?(collection: string, document: Record<string, any>): Promise<QueryRunResult>
@@ -68,6 +75,7 @@ export interface NoSqlDatabaseDriver {
   updateMany?(collection: string, filter: Record<string, any>, update: Record<string, any>): Promise<QueryRunResult>
   deleteOne?(collection: string, filter: Record<string, any>): Promise<QueryRunResult>
   deleteMany?(collection: string, filter: Record<string, any>): Promise<QueryRunResult>
+  startSession?(): Promise<NoSqlSession>
   close?(): Promise<void>
   dialect?: NoSqlDialect
 }
