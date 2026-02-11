@@ -6,6 +6,7 @@ import { MessageBrokerService } from './services/message-broker.service'
 import { TaskManagerService } from './services/task-manager.service'
 import { TaskRecoveryService } from './services/task-recovery.service'
 import { TaskDependencyResolverService } from './services/task-dependency-resolver.service'
+import { LogCollectorService } from './services/log-collector.service'
 import { SendMessageTool } from './tools/SendMessageTool'
 import { ListAgentsTool } from './tools/ListAgentsTool'
 import { GetMessageHistoryTool } from './tools/GetMessageHistoryTool'
@@ -46,6 +47,7 @@ import { routes } from './router'
     { provide: TaskManagerService, useClass: TaskManagerService },
     { provide: TaskRecoveryService, useClass: TaskRecoveryService },
     { provide: TaskDependencyResolverService, useClass: TaskDependencyResolverService },
+    { provide: LogCollectorService, useClass: LogCollectorService },
     { provide: DynamicToolExecutorService, useClass: DynamicToolExecutorService },
     { provide: HybridToolExecutor, useClass: HybridToolExecutor },
     { provide: McpClient, useClass: McpClient },
