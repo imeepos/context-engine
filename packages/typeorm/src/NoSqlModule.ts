@@ -2,6 +2,7 @@ import { DynamicModule, Module, Provider, Type } from '@sker/core'
 import type { NoSqlDatabaseDriver, NoSqlDialect } from './driver/types.js'
 import { ENTITIES } from './tokens.js'
 import { NOSQL_DB_DRIVER, NOSQL_DIALECT } from './nosql-tokens.js'
+import { NoSqlDataSource } from './data-source/NoSqlDataSource.js'
 
 export interface NoSqlModuleOptions {
   driver: NoSqlDatabaseDriver
@@ -16,6 +17,10 @@ export class NoSqlModule {
       {
         provide: NOSQL_DB_DRIVER,
         useValue: options.driver
+      },
+      {
+        provide: NoSqlDataSource,
+        useClass: NoSqlDataSource
       }
     ]
 
