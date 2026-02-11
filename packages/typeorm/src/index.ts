@@ -50,10 +50,13 @@ export type {
 
 // Tokens
 export * from './tokens.js'
+export * from './nosql-tokens.js'
 
 // Module
 export { TypeOrmModule } from './TypeOrmModule.js'
 export type { TypeOrmModuleOptions } from './TypeOrmModule.js'
+export { NoSqlModule } from './NoSqlModule.js'
+export type { NoSqlModuleOptions } from './NoSqlModule.js'
 export { buildCreateTableSql, synchronizeSchema } from './schema/synchronize.js'
 export * from './migration/index.js'
 

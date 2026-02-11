@@ -1,6 +1,6 @@
 import {
   ENTITIES,
-  DB_DRIVER,
+  NOSQL_DB_DRIVER,
   type NoSqlBoundStatement,
   type NoSqlDatabaseDriver,
   type NoSqlDialect,
@@ -165,7 +165,7 @@ export class TypeOrmMongodbModule {
 
     const providers: Provider[] = [
       {
-        provide: DB_DRIVER,
+        provide: NOSQL_DB_DRIVER,
         useValue: driver
       }
     ]
