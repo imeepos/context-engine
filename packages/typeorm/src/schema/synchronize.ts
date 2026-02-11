@@ -79,7 +79,7 @@ function buildMysqlColumnDefinition(column: ColumnMetadata): string {
   return parts.join(' ')
 }
 
-export function buildCreateTableSql(table: TableMetadata, dialectName: 'sqlite' | 'd1' | 'mysql'): string {
+export function buildCreateTableSql(table: TableMetadata, dialectName: 'sqlite' | 'd1' | 'mysql' | 'postgres'): string {
   const columnSql = table.columns.map((column) =>
     dialectName === 'mysql'
       ? buildMysqlColumnDefinition(column)

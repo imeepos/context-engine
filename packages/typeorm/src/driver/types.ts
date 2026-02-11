@@ -16,7 +16,7 @@ export interface PreparedStatement {
   bind(...params: any[]): BoundStatement
 }
 
-export type DialectName = 'sqlite' | 'd1' | 'mysql'
+export type DialectName = 'sqlite' | 'd1' | 'mysql' | 'postgres'
 
 export interface SqlDialect {
   name?: DialectName

@@ -39,3 +39,19 @@ export const mysqlDialect: SqlDialect = {
     return 'START TRANSACTION'
   }
 }
+
+export const postgresDialect: SqlDialect = {
+  name: 'postgres',
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = EXCLUDED.${column}`)
+      .join(', ')
+
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT (${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN'
+  }
+}
