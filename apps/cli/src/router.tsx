@@ -77,20 +77,20 @@ export const menuItems: MenuItem[] = [
 ]
 
 export const routes: Route[] = [
-  { path: '/', component: DashboardComponent as any, params: {} },
-  { path: '/base-info', component: BaseInfo as any, params: {} },
-  { path: '/chat/:agentId', component: ChatPageComponent as any, params: {} },
-  { path: '/tasks', component: TaskListPageComponent as any, params: {} },
-  { path: '/tasks/:taskId', component: TaskDetailPageComponent as any, params: {} },
-  { path: '/market', component: MarketPage as any, params: {} },
-  { path: '/market/installed', component: MarketInstalledPage as any, params: {} },
-  { path: '/market/published', component: MarketPublishedPage as any, params: {} },
-  { path: '/market/:id', component: MarketDetailPage as any, params: {} },
-  { path: '/plugins', component: PluginManagerPage as any, params: {} },
-  { path: '/plugins/develop', component: PluginDevelopPage as any, params: {} },
-  { path: '/plugin/:id/*', component: PluginContainerPage as any, params: {} },
-  { path: '/skills', component: SkillsListPage as any, params: {} },
-  { path: '/skills/:skillId', component: SkillDetailPage as any, params: {} }
+  { path: '/', component: DashboardComponent, params: {} },
+  { path: '/base-info', component: BaseInfo, params: {} },
+  { path: '/chat/:agentId', component: ChatPageComponent, params: {} },
+  { path: '/tasks', component: TaskListPageComponent, params: {} },
+  { path: '/tasks/:taskId', component: TaskDetailPageComponent, params: {} },
+  { path: '/market', component: MarketPage, params: {} },
+  { path: '/market/installed', component: MarketInstalledPage, params: {} },
+  { path: '/market/published', component: MarketPublishedPage, params: {} },
+  { path: '/market/:id', component: MarketDetailPage, params: {} },
+  { path: '/plugins', component: PluginManagerPage, params: {} },
+  { path: '/plugins/develop', component: PluginDevelopPage, params: {} },
+  { path: '/plugin/:id/*', component: PluginContainerPage, params: {} },
+  { path: '/skills', component: SkillsListPage, params: {} },
+  { path: '/skills/:skillId', component: SkillDetailPage, params: {} }
 ]
 
 export function createRouter(injector: Injector) {
