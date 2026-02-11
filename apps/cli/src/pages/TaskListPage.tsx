@@ -5,6 +5,8 @@ import { CURRENT_AGENT_ID } from '../tokens'
 import { UIRenderer, Tool } from '@sker/prompt-renderer'
 import { TaskManagerService } from '../services/task-manager.service'
 import { TaskStatus } from '../types/task'
+import { LogCollectorService } from '../services/log-collector.service'
+import { LLMService, UnifiedRequestAst } from '@sker/compiler'
 import z from 'zod'
 
 interface TaskListPageProps {
@@ -28,8 +30,10 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
   const renderer = injector.get(UIRenderer)
   const taskManager = injector.get(TaskManagerService)
+  const logCollector = injector.get(LogCollectorService)
   const registry = await taskManager.getRegistry()
   const tasks = Object.values(registry.tasks)
+  const exceptionLogs = logCollector.getExceptionLogs()
 
   // 统计信息
   const myTasks = tasks.filter(t => t.assignedTo === currentAgentId)
@@ -97,6 +101,62 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
             return `任务创建成功: ${params.title}`
           }}>
             创建新任务
+          </Tool>
+        </li>
+        <li>
+          <Tool name='analyze_exception_logs' description='分析收集到的异常日志，使用 AI 分析错误原因并自动创建最高优先级的修复任务' execute={async (params, injector) => {
+            const logCollector = injector.get(LogCollectorService)
+            const llmService = injector.get(LLMService)
+            const taskManager = injector.get(TaskManagerService)
+            const agentId = injector.get(CURRENT_AGENT_ID)
+
+            const logs = logCollector.getExceptionLogs()
+            if (logs.length === 0) {
+              return '当前没有异常日志需要分析'
+            }
+
+            const logsText = logs.map((log, idx) =>
+              `[${idx + 1}] ${new Date(log.timestamp).toISOString()}\n${log.message}\n${log.stack || ''}`
+            ).join('\n\n---\n\n')
+
+            const analysisPrompt = `请分析以下异常日志，提取关键信息：
+
+${logsText}
+
+请提供：
+1. 错误类型和严重程度
+2. 可能的根本原因
+3. 建议的修复方案
+
+以简洁的中文回复。`
+
+            const request = {
+              model: 'claude-sonnet-4-5-20250929',
+              messages: [{ role: 'user' as const, content: analysisPrompt }],
+              visit: () => {}
+            } as UnifiedRequestAst
+
+            const response = await llmService.chat(request)
+
+            const analysis = response.content[0].type === 'text' ? response.content[0].text : '分析失败'
+
+            const task = await taskManager.createTask({
+              title: `[紧急] 修复异常错误 - ${logs[0].message.substring(0, 50)}`,
+              description: `## 异常日志分析\n\n${analysis}\n\n## 原始日志\n\n${logsText}`,
+              createdBy: agentId,
+              metadata: {
+                priority: 'critical',
+                type: 'exception',
+                logCount: logs.length,
+                firstOccurrence: logs[0].timestamp
+              }
+            })
+
+            logCollector.clearLogs()
+
+            return `已创建紧急任务 [${task.id}]: ${task.title}\n\n分析结果：\n${analysis}`
+          }}>
+            分析异常日志并创建任务 {exceptionLogs.length > 0 && `(${exceptionLogs.length} 条异常)`}
           </Tool>
         </li>
       </ul>
