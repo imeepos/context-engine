@@ -19,7 +19,12 @@ export type {
   PreparedStatement,
   QueryRows,
   QueryRunResult,
-  SqlDialect
+  SqlDialect,
+  NoSqlQuery,
+  NoSqlBoundStatement,
+  NoSqlPreparedStatement,
+  NoSqlDialect,
+  NoSqlDatabaseDriver
 } from './driver/types.js'
 
 // Metadata
