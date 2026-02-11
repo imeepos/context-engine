@@ -162,11 +162,31 @@ export class TypeOrmMongodbModule {
     const db = await resolveMongoDb(options.connection)
     const driver = new MongodbDriver(db as MongoDbLike)
 
-    return TypeOrmModule.forRoot({
-      driver,
-      dialect: mongodbDialect,
-      entities: options.entities
-    })
+    const providers: any[] = [
+      {
+        provide: 'DB_DRIVER',
+        useValue: driver
+      },
+      {
+        provide: 'NOSQL_DIALECT',
+        useValue: mongodbDialect
+      }
+    ]
+
+    if (options.entities && options.entities.length > 0) {
+      for (const entity of options.entities) {
+        providers.push({
+          provide: 'ENTITIES',
+          useValue: entity,
+          multi: true
+        })
+      }
+    }
+
+    return {
+      module: TypeOrmMongodbModule,
+      providers
+    }
   }
 
   static forFeature(entities: Type<any>[]): DynamicModule {

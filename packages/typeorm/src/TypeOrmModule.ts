@@ -5,8 +5,8 @@ import { synchronizeSchema } from './schema/synchronize.js'
 import { DB_DRIVER, ENTITIES, SQL_DIALECT } from './tokens.js'
 
 export interface TypeOrmModuleOptions {
-  driver: any
-  dialect: any
+  driver: DatabaseDriver
+  dialect: SqlDialect
   entities?: Type<any>[]
   synchronize?: boolean
 }
