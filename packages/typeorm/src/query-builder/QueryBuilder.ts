@@ -28,6 +28,12 @@ export class QueryBuilder<T> {
     return this
   }
 
+  addSelectRaw(expression: string, alias?: string): this {
+    const selectExpr = alias ? `${expression} AS ${alias}` : expression
+    this.query.select = [...(this.query.select || []), selectExpr]
+    return this
+  }
+
   where(conditions: Partial<T> | Operator<T>): this {
     this.query.where = conditions as Record<string, any>
     return this
