@@ -258,7 +258,8 @@ describe('ToolCallLoop', () => {
       toolUseId: 'tool_1',
       toolName: 'get_weather',
       content: 'Weather in Tokyo: Sunny',
-      isError: false
+      isError: false,
+      duration: expect.any(Number)
     });
   });
 

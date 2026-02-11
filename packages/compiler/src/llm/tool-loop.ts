@@ -12,6 +12,10 @@ export interface ToolLoopOptions {
   onToolBefore?: (toolUse: UnifiedToolUseContent) => Promise<void>;
   onToolAfter?: (params: UnifiedToolUseContent, result: UnifiedToolResult) => Promise<void>;
   refreshPrompt?: () => Promise<RenderResult>;
+  onIterationStart?: (iteration: number) => Promise<void>;
+  onIterationEnd?: () => Promise<void>;
+  onLLMRequest?: (request: UnifiedRequestAst) => Promise<void>;
+  onLLMResponse?: (response: UnifiedResponseAst, duration: number) => Promise<void>;
 }
 
 @Injectable()
@@ -31,20 +35,45 @@ export class ToolCallLoop {
       throw new Error(`Tool loop exceeded max iterations (${maxIterations})`);
     }
 
+    if (options.onIterationStart) {
+      await options.onIterationStart(iteration);
+    }
+
     let currentRequest = Object.assign(Object.create(Object.getPrototypeOf(request)), request);
+
+    if (options.onLLMRequest) {
+      await options.onLLMRequest(currentRequest);
+    }
+
+    const startTime = Date.now();
     const response = await adapter.chat(currentRequest);
+    const duration = Date.now() - startTime;
+
+    if (options.onLLMResponse) {
+      await options.onLLMResponse(response, duration);
+    }
 
     if (response.stopReason !== 'tool_use') {
+      if (options.onIterationEnd) {
+        await options.onIterationEnd();
+      }
       return response;
     }
 
     const toolUses = this.extractToolUses(response);
     if (toolUses.length === 0) {
+      if (options.onIterationEnd) {
+        await options.onIterationEnd();
+      }
       return response;
     }
 
     // 调用工具
     const results = await this.toolExecutor.executeAll(toolUses, tools, options);
+
+    if (options.onIterationEnd) {
+      await options.onIterationEnd();
+    }
 
     const updatedMessages = this.appendToolResults(currentRequest, response, results);
 

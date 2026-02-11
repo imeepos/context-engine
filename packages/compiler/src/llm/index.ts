@@ -2,6 +2,7 @@
 export * from './config';
 export * from './adapter';
 export type { UnifiedToolResult } from './tool-executor';
+export type { ToolLoopOptions } from './tool-loop';
 
 // Services
 export { UnifiedToolExecutor } from './tool-executor';

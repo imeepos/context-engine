@@ -2,11 +2,13 @@
 import React, { useRef } from 'react'
 import { Line, Circle, Group, Text } from 'react-konva'
 import { useShapeStore } from '../../store/shape-store'
+import { useCanvasStore } from '../../store/canvas-store'
 import { calculateTriangleProperties } from '../../engine/triangle-properties'
 import { Point } from '../../types/geometry'
 
 export function TriangleLayer() {
   const triangles = useShapeStore((state) => state.triangles)
+  const selectedTriangleId = useShapeStore((state) => state.selectedTriangleId)
   const selectTriangle = useShapeStore((state) => state.selectTriangle)
   const updateVertex = useShapeStore((state) => state.updateVertex)
   const measurements = useShapeStore((state) => state.measurements)
@@ -17,7 +19,7 @@ export function TriangleLayer() {
         <TriangleShape
           key={triangle.id}
           triangle={triangle}
-          isSelected={false}
+          isSelected={triangle.id === selectedTriangleId}
           onSelect={() => selectTriangle(triangle.id)}
           onVertexDrag={(index, pos) => updateVertex(triangle.id, index, pos)}
           measurements={measurements}
@@ -43,6 +45,7 @@ function TriangleShape({
   measurements,
 }: TriangleShapeProps) {
   const groupRef = useRef<any>(null)
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null)
   const { vertices, labels, color } = triangle
   const properties = calculateTriangleProperties(vertices)
 
@@ -52,19 +55,36 @@ function TriangleShape({
       triangleId={triangle.id}
       onClick={onSelect}
       draggable={isSelected}
+      onDragStart={() => {
+        dragStartPos.current = { x: 0, y: 0 }
+      }}
       onDragMove={(e) => {
+        if (!dragStartPos.current) return
         const node = e.target
-        const dx = node.x()
-        const dy = node.y()
+        const dx = node.x() - dragStartPos.current.x
+        const dy = node.y() - dragStartPos.current.y
+        dragStartPos.current = { x: node.x(), y: node.y() }
         node.position({ x: 0, y: 0 })
         if (dx !== 0 || dy !== 0) {
+          const gridConfig = useCanvasStore.getState().gridConfig
           vertices.forEach((_: any, index: number) => {
-            onVertexDrag(index, {
+            let newPos = {
               x: vertices[index].x + dx,
               y: vertices[index].y + dy,
-            })
+            }
+            if (gridConfig.snapEnabled) {
+              const gridSize = gridConfig.gridSize
+              newPos = {
+                x: Math.round(newPos.x / gridSize) * gridSize,
+                y: Math.round(newPos.y / gridSize) * gridSize,
+              }
+            }
+            onVertexDrag(index, newPos)
           })
         }
+      }}
+      onDragEnd={() => {
+        dragStartPos.current = null
       }}
     >
       {/* 三角形填充 */}

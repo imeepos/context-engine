@@ -1,6 +1,7 @@
 // 自定义 Hooks：坐标转换和画布交互
 import { useCallback, useEffect, useRef } from 'react'
 import { useCanvasStore } from '../store/canvas-store'
+import { useShapeStore } from '../store/shape-store'
 import { screenToCanvas, canvasToScreen } from '../lib/coordinate-transform'
 import Konva from 'konva'
 
@@ -170,7 +171,24 @@ export function useAnimationFrame(
  * 键盘快捷键 Hook
  */
 export function useKeyboardShortcuts() {
-  const { zoomIn, zoomOut, resetZoom, toggleGrid } = useCanvasStore()
+  const { zoomIn, zoomOut, resetZoom, toggleGrid, setMode } = useCanvasStore()
+  const {
+    selectedTriangleId,
+    selectedPointId,
+    selectedSegmentId,
+    selectedQuadrilateralId,
+    selectedCircleId,
+    selectedPolygonId,
+    deleteTriangle,
+    deletePoint,
+    deleteSegment,
+    deleteQuadrilateral,
+    deleteCircle,
+    deletePolygon,
+    copyShape,
+    pasteShape,
+    cutShape,
+  } = useShapeStore()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -179,33 +197,109 @@ export function useKeyboardShortcuts() {
         return
       }
 
+      // 编辑操作快捷键
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault()
+        copyShape()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault()
+        pasteShape()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+        e.preventDefault()
+        cutShape()
+        return
+      }
+
+      // 缩放快捷键
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+        e.preventDefault()
+        zoomIn()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+        e.preventDefault()
+        zoomOut()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault()
+        resetZoom()
+        return
+      }
+
+      // 工具选择快捷键
       switch (e.key) {
-        case '+':
-        case '=':
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault()
-            zoomIn()
-          }
+        case ' ':
+          e.preventDefault()
+          setMode('select')
           break
-        case '-':
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault()
-            zoomOut()
-          }
+        case 'p':
+        case 'P':
+          setMode('point')
           break
-        case '0':
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault()
-            resetZoom()
-          }
+        case 'l':
+        case 'L':
+          setMode('segment')
+          break
+        case 't':
+        case 'T':
+          setMode('triangle')
+          break
+        case 's':
+        case 'S':
+          setMode('quadrilateral')
+          break
+        case 'm':
+        case 'M':
+          setMode('polygon')
+          break
+        case 'r':
+        case 'R':
+          setMode('measure')
           break
         case 'g':
+        case 'G':
           toggleGrid()
+          break
+        case 'Delete':
+        case 'Backspace':
+          e.preventDefault()
+          if (selectedTriangleId) deleteTriangle(selectedTriangleId)
+          else if (selectedPointId) deletePoint(selectedPointId)
+          else if (selectedSegmentId) deleteSegment(selectedSegmentId)
+          else if (selectedQuadrilateralId) deleteQuadrilateral(selectedQuadrilateralId)
+          else if (selectedCircleId) deleteCircle(selectedCircleId)
+          else if (selectedPolygonId) deletePolygon(selectedPolygonId)
           break
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [zoomIn, zoomOut, resetZoom, toggleGrid])
+  }, [
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    toggleGrid,
+    setMode,
+    selectedTriangleId,
+    selectedPointId,
+    selectedSegmentId,
+    selectedQuadrilateralId,
+    selectedCircleId,
+    selectedPolygonId,
+    deleteTriangle,
+    deletePoint,
+    deleteSegment,
+    deleteQuadrilateral,
+    deleteCircle,
+    deletePolygon,
+    copyShape,
+    pasteShape,
+    cutShape,
+  ])
 }

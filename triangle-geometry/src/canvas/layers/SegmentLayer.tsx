@@ -32,6 +32,7 @@ export function SegmentLayer() {
               dash={segment.style.dash}
               opacity={segment.opacity}
               onClick={() => selectSegment(segment.id)}
+              hitStrokeWidth={20}
             />
 
             {/* 端点（选中时显示） */}

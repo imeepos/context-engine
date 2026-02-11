@@ -3,6 +3,8 @@ import { InputHandler } from './input-handler'
 import type { UnifiedRequestAst, UnifiedResponseAst, UnifiedTool } from '@sker/compiler'
 import type { RenderResult } from '@sker/prompt-renderer'
 import { DEFAULT_MODEL } from '../config/constants'
+import { Injector } from '@sker/core'
+import { ExecutionHistoryService } from '../services/execution-history.service'
 
 function createTool(name: string, impl: (params: Record<string, any>) => Promise<any>): UnifiedTool {
   return {
@@ -11,6 +13,29 @@ function createTool(name: string, impl: (params: Record<string, any>) => Promise
     parameters: { type: 'object', properties: {} },
     execute: async (params) => impl(params)
   }
+}
+
+function createMockInjector(): Injector {
+  const mockHistoryService = {
+    startTaskExecution: vi.fn(),
+    startIteration: vi.fn(),
+    recordLLMRequest: vi.fn(),
+    recordLLMResponse: vi.fn(),
+    recordToolCall: vi.fn(),
+    recordToolResult: vi.fn(),
+    finishIteration: vi.fn(),
+    finishTaskExecution: vi.fn(),
+    getHistory: vi.fn()
+  }
+
+  return {
+    get: vi.fn((token: any) => {
+      if (token === ExecutionHistoryService) {
+        return mockHistoryService
+      }
+      return null
+    })
+  } as any
 }
 
 describe('InputHandler E2E flow', () => {
@@ -64,7 +89,8 @@ describe('InputHandler E2E flow', () => {
     })
 
     const llmService = { chatWithTools } as any
-    const handler = new InputHandler(llmService, renderer)
+    const mockInjector = createMockInjector()
+    const handler = new InputHandler(llmService, renderer, mockInjector)
 
     await handler.handleInput('run task')
 
@@ -87,7 +113,8 @@ describe('InputHandler E2E flow', () => {
       return { role: 'assistant', content: [{ type: 'text', text: 'unreachable' }] } as UnifiedResponseAst
     })
 
-    const handler = new InputHandler({ chatWithTools } as any, { refresh } as any)
+    const mockInjector = createMockInjector()
+    const handler = new InputHandler({ chatWithTools } as any, { refresh } as any, mockInjector)
 
     await handler.handleInput('cause failure')
 
@@ -122,7 +149,8 @@ describe('InputHandler E2E flow', () => {
       } as UnifiedResponseAst
     })
 
-    const handler = new InputHandler({ chatWithTools } as any, { refresh } as any)
+    const mockInjector = createMockInjector()
+    const handler = new InputHandler({ chatWithTools } as any, { refresh } as any, mockInjector)
 
     await handler.handleInput('first try')
     await handler.handleInput('second try')

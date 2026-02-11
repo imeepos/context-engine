@@ -15,11 +15,15 @@ export class ChatSession {
   private inputHandler: InputHandler
   private taskRecoveryService: TaskRecoveryService | null
   private rl: readline.Interface | null = null
+  private version: number = new Date().getTime();
+  private llmInjector: Injector
 
   constructor(config: ChatSessionConfig) {
+    this.llmInjector = config.llmInjector
     this.llmService = config.llmInjector.get(LLMService)
     this.renderer = config.llmInjector.get(UIRenderer)
-    this.inputHandler = new InputHandler(this.llmService, this.renderer)
+    console.log(`current chat session version: ${this.version}, current renderer version: ${this.renderer.version}`)
+    this.inputHandler = new InputHandler(this.llmService, this.renderer, this.llmInjector)
     try {
       this.taskRecoveryService = config.llmInjector.get(TaskRecoveryService)
     } catch {

@@ -7,6 +7,7 @@ export interface UnifiedToolResult {
   toolName: string;
   content: string;
   isError?: boolean;
+  duration?: number;
 }
 
 @Injectable()
@@ -14,6 +15,7 @@ export class UnifiedToolExecutor {
   constructor(@Inject(Injector) private injector: Injector) { }
 
   async execute(toolUse: UnifiedToolUseContent, tools: UnifiedTool[]): Promise<UnifiedToolResult> {
+    const startTime = Date.now();
     try {
       const tool = tools.find(t => t.name === toolUse.name);
       if (!tool) {
@@ -21,7 +23,8 @@ export class UnifiedToolExecutor {
           toolUseId: toolUse.id,
           toolName: toolUse.name,
           content: `Tool '${toolUse.name}' not found`,
-          isError: true
+          isError: true,
+          duration: Date.now() - startTime
         };
       }
       const result = await tool.execute(toolUse.input, this.injector);
@@ -30,14 +33,16 @@ export class UnifiedToolExecutor {
         toolUseId: toolUse.id,
         toolName: toolUse.name,
         content: typeof result === 'string' ? result : JSON.stringify(result),
-        isError: false
+        isError: false,
+        duration: Date.now() - startTime
       };
     } catch (error) {
       return {
         toolUseId: toolUse.id,
         toolName: toolUse.name,
         content: error instanceof Error ? error.message : String(error),
-        isError: true
+        isError: true,
+        duration: Date.now() - startTime
       };
     }
   }
