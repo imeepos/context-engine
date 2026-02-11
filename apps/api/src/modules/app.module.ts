@@ -2,6 +2,7 @@ import { Module } from '@sker/core';
 import { SharedModule } from './shared.module';
 import { AuthModule } from './auth.module';
 import { MarketplaceModule } from './marketplace.module';
+import { BugReportModule } from './bug-report.module';
 
 /**
  * AppModule - 根模块
@@ -12,6 +13,7 @@ import { MarketplaceModule } from './marketplace.module';
     SharedModule,
     AuthModule,
     MarketplaceModule,
+    BugReportModule,
   ]
 })
 export class AppModule { }
