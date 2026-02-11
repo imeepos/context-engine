@@ -9,7 +9,6 @@ import {
   MetadataCache,
 } from '../metadata-utils';
 import { InjectionToken } from '../injection-token';
-import { Injectable } from '../injectable';
 
 describe('metadata-utils', () => {
   beforeEach(() => {

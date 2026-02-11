@@ -10,6 +10,7 @@
     "claude": "claude --dangerously-skip-permissions"
   },
   "exports": {
+    ".": "./base.js",
     "./base": "./base.js",
     "./base.js": "./base.js",
     "./next": "./next.js",
