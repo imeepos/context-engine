@@ -6,3 +6,4 @@ dist
 nul
 .wrangler
 .wrangler-state-migration-smoke
+*.md
