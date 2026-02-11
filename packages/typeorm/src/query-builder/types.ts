@@ -12,4 +12,6 @@ export interface QueryState {
   limit?: number
   offset?: number
   joins?: JoinState[]
+  groupBy?: string[]
+  having?: Record<string, any>
 }

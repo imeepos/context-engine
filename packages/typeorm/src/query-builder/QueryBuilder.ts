@@ -80,6 +80,16 @@ export class QueryBuilder<T> {
     return this.rightJoin(table, alias, on)
   }
 
+  groupBy(...columns: Array<keyof T | string>): this {
+    this.query.groupBy = columns.map(col => String(col))
+    return this
+  }
+
+  having(conditions: Record<string, any>): this {
+    this.query.having = conditions
+    return this
+  }
+
   async execute(): Promise<T[]> {
     const { sql, bindings } = this.buildSQL()
     const result = await this.db.prepare(sql).bind(...bindings).all()
@@ -195,6 +205,15 @@ export class QueryBuilder<T> {
     if (this.query.where) {
       const whereClause = this.buildWhereClause(this.query.where, bindings)
       sql += ` WHERE ${whereClause}`
+    }
+
+    if (this.query.groupBy && this.query.groupBy.length > 0) {
+      sql += ` GROUP BY ${this.query.groupBy.join(', ')}`
+    }
+
+    if (this.query.having) {
+      const havingClause = this.buildWhereClause(this.query.having, bindings)
+      sql += ` HAVING ${havingClause}`
     }
 
     if (this.query.orderBy) {
