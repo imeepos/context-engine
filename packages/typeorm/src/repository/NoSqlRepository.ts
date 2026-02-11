@@ -56,7 +56,17 @@ export class NoSqlRepository<T> {
   }
 
   async count(filter?: Partial<T>): Promise<number> {
+    if (this.db.countDocuments) {
+      return this.db.countDocuments(this.metadata.name, filter as Record<string, any>)
+    }
     const results = await this.find(filter)
     return results.length
+  }
+
+  aggregate<R = any>(pipeline: Record<string, any>[]): AsyncIterable<R> {
+    if (!this.db.aggregate) {
+      throw new Error('Aggregation not supported by the current driver')
+    }
+    return this.db.aggregate<R>(this.metadata.name, pipeline)
   }
 }

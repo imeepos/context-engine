@@ -58,5 +58,42 @@ export class NoSqlDataSource {
       await session.endSession()
     }
   }
+
+  async createIndex<T>(
+    entity: Type<T>,
+    indexSpec: Record<string, any>,
+    options?: Record<string, any>
+  ): Promise<string> {
+    if (!this.db.createIndex) {
+      throw new Error('Index creation not supported by the current driver')
+    }
+    const metadata = MetadataStorage.getInstance().getTable(entity)
+    if (!metadata) {
+      throw new Error(`Entity ${entity.name} is not registered`)
+    }
+    return this.db.createIndex(metadata.name, indexSpec, options)
+  }
+
+  async getIndexes<T>(entity: Type<T>): Promise<Record<string, any>[]> {
+    if (!this.db.getIndexes) {
+      throw new Error('Index retrieval not supported by the current driver')
+    }
+    const metadata = MetadataStorage.getInstance().getTable(entity)
+    if (!metadata) {
+      throw new Error(`Entity ${entity.name} is not registered`)
+    }
+    return this.db.getIndexes(metadata.name)
+  }
+
+  async dropIndex<T>(entity: Type<T>, indexName: string): Promise<void> {
+    if (!this.db.dropIndex) {
+      throw new Error('Index deletion not supported by the current driver')
+    }
+    const metadata = MetadataStorage.getInstance().getTable(entity)
+    if (!metadata) {
+      throw new Error(`Entity ${entity.name} is not registered`)
+    }
+    return this.db.dropIndex(metadata.name, indexName)
+  }
 }
 

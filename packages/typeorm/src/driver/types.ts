@@ -75,6 +75,11 @@ export interface NoSqlDatabaseDriver {
   updateMany?(collection: string, filter: Record<string, any>, update: Record<string, any>): Promise<QueryRunResult>
   deleteOne?(collection: string, filter: Record<string, any>): Promise<QueryRunResult>
   deleteMany?(collection: string, filter: Record<string, any>): Promise<QueryRunResult>
+  countDocuments?(collection: string, filter?: Record<string, any>): Promise<number>
+  aggregate?<T = any>(collection: string, pipeline: Record<string, any>[]): AsyncIterable<T>
+  createIndex?(collection: string, indexSpec: Record<string, any>, options?: Record<string, any>): Promise<string>
+  getIndexes?(collection: string): Promise<Record<string, any>[]>
+  dropIndex?(collection: string, indexName: string): Promise<void>
   startSession?(): Promise<NoSqlSession>
   close?(): Promise<void>
   dialect?: NoSqlDialect
