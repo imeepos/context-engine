@@ -20,6 +20,10 @@ export class JsonFileStorage implements Storage {
     await fs.mkdir(path.join(this.baseDir, 'sessions'), { recursive: true })
   }
 
+  getBaseDir(): string {
+    return this.baseDir
+  }
+
   async read<T>(key: string): Promise<T | null> {
     const filePath = this.getFilePath(key)
     try {

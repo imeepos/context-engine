@@ -4,6 +4,9 @@ import {
   InternalInjectFlags,
   convertInjectOptionsToFlags,
 } from './internal-inject-flags';
+import {
+  validateTokenTypes,
+} from './metadata-utils';
 
 /**
  * 统一的注入元数据结构
@@ -150,6 +153,20 @@ export function getInjectMetadata(target: Function): InjectionTokenType<unknown>
       // 无法确定令牌时，使用 undefined 而不是 Object
       // 这样注入器可以正确处理缺失的依赖
       result[i] = undefined as any;
+    }
+  }
+
+  // 🚀 开发模式：验证类型兼容性
+  // eslint-disable-next-line turbo/no-undeclared-env-vars
+  if (process.env.NODE_ENV !== 'production') {
+    const warnings = validateTokenTypes(target, result, paramTypes);
+    if (warnings.length > 0) {
+      console.warn(
+        `[DI] Type compatibility warnings for ${target.name || 'class'}:`,
+      );
+      warnings.forEach((w) => {
+        console.warn(`  - ${w.warning}`);
+      });
     }
   }
 

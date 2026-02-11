@@ -2,14 +2,15 @@ import 'reflect-metadata'
 import { describe, expect, it } from 'vitest'
 import { createBrowser, ROUTES, UIRenderer } from '@sker/prompt-renderer'
 import { routes } from './router'
-import { MARKETPLACE_API_CLIENT, MARKETPLACE_API_CONFIG, MarketplaceApiClient } from './tokens'
+import { MARKETPLACE_API_CLIENT, MARKETPLACE_API_CONFIG, MarketplaceApiClient, CURRENT_AGENT_ID } from './tokens'
 
 function createMarketBrowser(mockApi: Partial<MarketplaceApiClient>) {
   return createBrowser([
     { provide: ROUTES, useValue: routes },
     { provide: MARKETPLACE_API_CONFIG, useValue: { baseUrl: 'https://mcp.sker.us', timeout: 5000 } },
     { provide: UIRenderer, useValue: { navigate: async () => 'ok' } },
-    { provide: MARKETPLACE_API_CLIENT, useValue: mockApi }
+    { provide: MARKETPLACE_API_CLIENT, useValue: mockApi },
+    { provide: CURRENT_AGENT_ID, useValue: 'test-agent' }
   ])
 }
 

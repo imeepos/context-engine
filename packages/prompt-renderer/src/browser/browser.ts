@@ -85,13 +85,27 @@ function matchPath(pathname: string, pattern: string): Record<string, string> | 
   const patternParts = pattern.split('/').filter(Boolean);
   const pathParts = pathname.split('/').filter(Boolean);
 
-  if (patternParts.length !== pathParts.length) {
-    return null;
+  // 检查是否有通配符
+  const hasWildcard = patternParts[patternParts.length - 1] === '*';
+
+  if (hasWildcard) {
+    // 通配符模式：路径部分数量必须 >= 模式部分数量 - 1
+    if (pathParts.length < patternParts.length - 1) {
+      return null;
+    }
+  } else {
+    // 精确模式：路径部分数量必须完全相等
+    if (patternParts.length !== pathParts.length) {
+      return null;
+    }
   }
 
   const params: Record<string, string> = {};
 
-  for (let i = 0; i < patternParts.length; i++) {
+  // 匹配非通配符部分
+  const compareLength = hasWildcard ? patternParts.length - 1 : patternParts.length;
+
+  for (let i = 0; i < compareLength; i++) {
     const patternPart = patternParts[i];
     const pathPart = pathParts[i];
 
@@ -100,6 +114,13 @@ function matchPath(pathname: string, pattern: string): Record<string, string> | 
     } else if (patternPart !== pathPart) {
       return null;
     }
+  }
+
+  // 如果有通配符，将剩余路径部分作为 '*' 参数
+  if (hasWildcard && pathParts.length > compareLength) {
+    params['*'] = pathParts.slice(compareLength).join('/');
+  } else if (hasWildcard) {
+    params['*'] = '';
   }
 
   return params;

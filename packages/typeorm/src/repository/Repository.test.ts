@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { sqliteDialect } from '../driver/dialects.js'
+import type { DatabaseDriver } from '../driver/types.js'
 import { Repository } from './Repository.js'
 import { TableMetadata } from '../metadata/types.js'
 
 describe('Repository', () => {
-  let mockDb: D1Database
+  let mockDb: DatabaseDriver
   let metadata: TableMetadata
   let repository: Repository<any>
 
@@ -25,10 +27,11 @@ describe('Repository', () => {
         { name: 'id', type: 'INTEGER', primary: true },
         { name: 'name', type: 'TEXT', primary: false },
         { name: 'email', type: 'TEXT', primary: false }
-      ]
+      ],
+      relations: []
     }
 
-    repository = new Repository(mockDb, metadata)
+    repository = new Repository(mockDb, metadata, sqliteDialect)
   })
 
   describe('createQueryBuilder()', () => {
@@ -101,8 +104,9 @@ describe('Repository', () => {
     it('findOne 应该在没有主键时抛出错误', async () => {
       const repoWithoutPrimary = new Repository(mockDb, {
         name: 'test',
-        columns: []
-      })
+        columns: [],
+        relations: []
+      }, sqliteDialect)
 
       await expect(repoWithoutPrimary.findOne(1)).rejects.toThrow(
         'No primary column found'
@@ -112,8 +116,9 @@ describe('Repository', () => {
     it('update 应该在没有主键时抛出错误', async () => {
       const repoWithoutPrimary = new Repository(mockDb, {
         name: 'test',
-        columns: []
-      })
+        columns: [],
+        relations: []
+      }, sqliteDialect)
 
       await expect(repoWithoutPrimary.update(1, { name: 'test' })).rejects.toThrow(
         'No primary column found'
@@ -123,8 +128,9 @@ describe('Repository', () => {
     it('remove 应该在没有主键时抛出错误', async () => {
       const repoWithoutPrimary = new Repository(mockDb, {
         name: 'test',
-        columns: []
-      })
+        columns: [],
+        relations: []
+      }, sqliteDialect)
 
       await expect(repoWithoutPrimary.remove(1)).rejects.toThrow(
         'No primary column found'

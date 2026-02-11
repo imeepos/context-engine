@@ -4,6 +4,7 @@ import { JsonFileStorage } from './storage/json-file-storage'
 import { AgentRegistryService } from './services/agent-registry.service'
 import { MessageBrokerService } from './services/message-broker.service'
 import { TaskManagerService } from './services/task-manager.service'
+import { TaskRecoveryService } from './services/task-recovery.service'
 import { TaskDependencyResolverService } from './services/task-dependency-resolver.service'
 import { SendMessageTool } from './tools/SendMessageTool'
 import { ListAgentsTool } from './tools/ListAgentsTool'
@@ -43,6 +44,7 @@ import { routes } from './router'
     { provide: AgentRegistryService, useClass: AgentRegistryService },
     { provide: MessageBrokerService, useClass: MessageBrokerService },
     { provide: TaskManagerService, useClass: TaskManagerService },
+    { provide: TaskRecoveryService, useClass: TaskRecoveryService },
     { provide: TaskDependencyResolverService, useClass: TaskDependencyResolverService },
     { provide: DynamicToolExecutorService, useClass: DynamicToolExecutorService },
     { provide: HybridToolExecutor, useClass: HybridToolExecutor },

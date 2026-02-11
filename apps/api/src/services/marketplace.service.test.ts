@@ -1,62 +1,87 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { DataSource } from '@sker/typeorm';
 import { MarketplaceService } from './marketplace.service';
+import { Plugin } from '../entities/plugin.entity';
+import { PluginInstall } from '../entities/plugin-install.entity';
+import { PluginReview } from '../entities/plugin-review.entity';
+import { PluginVersion } from '../entities/plugin-version.entity';
 
-type QueryResult = { results?: Record<string, unknown>[] };
+type RepositoryMock<T extends object = any> = {
+  find: ReturnType<typeof vi.fn>;
+  findOne: ReturnType<typeof vi.fn>;
+  save: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  remove: ReturnType<typeof vi.fn>;
+  exists: ReturnType<typeof vi.fn>;
+  createQueryBuilder: ReturnType<typeof vi.fn>;
+};
 
-class FakeStatement {
-  private boundArgs: unknown[] = [];
+function createRepositoryMock(): RepositoryMock {
+  const raw = vi.fn().mockResolvedValue([]);
+  return {
+    find: vi.fn().mockResolvedValue([]),
+    findOne: vi.fn().mockResolvedValue(null),
+    save: vi.fn().mockImplementation(async (entity: unknown) => entity),
+    update: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockResolvedValue(undefined),
+    exists: vi.fn().mockResolvedValue(false),
+    createQueryBuilder: vi.fn().mockReturnValue({ raw }),
+  };
+}
 
-  constructor(
-    private readonly allHandler: (args: unknown[]) => Promise<QueryResult>,
-    private readonly firstHandler: (args: unknown[]) => Promise<Record<string, unknown> | null>,
-    private readonly runHandler: (args: unknown[]) => Promise<{ meta?: { changes?: number } }> = async () => ({ meta: { changes: 1 } })
-  ) {}
+function createServiceHarness() {
+  const pluginRepo = createRepositoryMock();
+  const versionRepo = createRepositoryMock();
+  const installRepo = createRepositoryMock();
+  const reviewRepo = createRepositoryMock();
 
-  bind(...args: unknown[]) {
-    this.boundArgs = args;
-    return this;
-  }
+  const repositoryMap = new Map<any, RepositoryMock>([
+    [Plugin, pluginRepo],
+    [PluginVersion, versionRepo],
+    [PluginInstall, installRepo],
+    [PluginReview, reviewRepo],
+  ]);
 
-  all<T>() {
-    return this.allHandler(this.boundArgs) as Promise<{ results?: T[] }>;
-  }
+  const manager = {
+    getRepository: vi.fn((entity: any) => repositoryMap.get(entity)),
+  };
 
-  first<T>() {
-    return this.firstHandler(this.boundArgs) as Promise<T | null>;
-  }
+  const dataSource = {
+    getRepository: vi.fn((entity: any) => repositoryMap.get(entity)),
+    transaction: vi.fn(async (callback: (tx: typeof manager) => Promise<unknown>) => callback(manager)),
+  };
 
-  run() {
-    return this.runHandler(this.boundArgs);
-  }
+  const service = new MarketplaceService(dataSource as unknown as DataSource);
+
+  return {
+    service,
+    repos: { pluginRepo, versionRepo, installRepo, reviewRepo },
+    dataSource,
+    manager,
+  };
 }
 
 describe('MarketplaceService', () => {
   it('should map plugin list result and parse tags', async () => {
-    const db = {
-      prepare: () =>
-        new FakeStatement(
-          async () => ({
-            results: [
-              {
-                id: 'p1',
-                slug: 'hello',
-                name: 'Hello',
-                description: 'desc',
-                category: 'utility',
-                downloads: 12,
-                tags: '["tag-a","tag-b"]',
-                createdAt: '2026-02-06',
-                updatedAt: '2026-02-06',
-                ratingAvg: 4.5,
-                ratingCount: 2,
-              },
-            ],
-          }),
-          async () => null
-        ),
-    };
+    const { service, repos } = createServiceHarness();
 
-    const service = new MarketplaceService(db as unknown as D1Database);
+    const raw = repos.pluginRepo.createQueryBuilder().raw as ReturnType<typeof vi.fn>;
+    raw.mockResolvedValue([
+      {
+        id: 'p1',
+        slug: 'hello',
+        name: 'Hello',
+        description: 'desc',
+        category: 'utility',
+        downloads: 12,
+        tags: '["tag-a","tag-b"]',
+        createdAt: '2026-02-06',
+        updatedAt: '2026-02-06',
+        ratingAvg: 4.5,
+        ratingCount: 2,
+      },
+    ]);
+
     const result = await service.listPlugins({
       sort: 'newest',
       page: 1,
@@ -69,15 +94,10 @@ describe('MarketplaceService', () => {
   });
 
   it('should throw 404 when plugin detail is missing', async () => {
-    const db = {
-      prepare: (sql: string) =>
-        new FakeStatement(
-          async () => ({ results: [] }),
-          async () => (sql.includes('FROM plugins') ? null : {})
-        ),
-    };
+    const { service, repos } = createServiceHarness();
 
-    const service = new MarketplaceService(db as unknown as D1Database);
+    const raw = repos.pluginRepo.createQueryBuilder().raw as ReturnType<typeof vi.fn>;
+    raw.mockResolvedValue([]);
 
     await expect(service.getPluginDetail('missing-id')).rejects.toMatchObject({
       statusCode: 404,
@@ -86,15 +106,7 @@ describe('MarketplaceService', () => {
   });
 
   it('should throw 422 for invalid semver on plugin creation', async () => {
-    const db = {
-      prepare: () =>
-        new FakeStatement(
-          async () => ({ results: [] }),
-          async () => null
-        ),
-    };
-
-    const service = new MarketplaceService(db as unknown as D1Database);
+    const { service } = createServiceHarness();
 
     await expect(
       service.createPlugin({
@@ -111,15 +123,9 @@ describe('MarketplaceService', () => {
   });
 
   it('should throw 409 when plugin slug already exists', async () => {
-    const db = {
-      prepare: (sql: string) =>
-        new FakeStatement(
-          async () => ({ results: [] }),
-          async () => (sql.includes('WHERE slug') ? { id: 'p1' } : null)
-        ),
-    };
+    const { service, repos } = createServiceHarness();
 
-    const service = new MarketplaceService(db as unknown as D1Database);
+    repos.pluginRepo.find.mockResolvedValue([{ id: 'p1' }]);
 
     await expect(
       service.createPlugin({
@@ -136,22 +142,12 @@ describe('MarketplaceService', () => {
   });
 
   it('should install plugin idempotently when same version already installed', async () => {
-    const db = {
-      prepare: (sql: string) => {
-        if (sql.includes('FROM plugins WHERE id')) {
-          return new FakeStatement(async () => ({ results: [] }), async () => ({ id: 'p1' }));
-        }
-        if (sql.includes('FROM plugin_versions') && sql.includes('ORDER BY created_at DESC')) {
-          return new FakeStatement(async () => ({ results: [] }), async () => ({ version: '1.0.0' }));
-        }
-        if (sql.includes('FROM plugin_installs')) {
-          return new FakeStatement(async () => ({ results: [] }), async () => ({ id: 'i1', installedVersion: '1.0.0' }));
-        }
-        return new FakeStatement(async () => ({ results: [] }), async () => null);
-      },
-    };
+    const { service, repos } = createServiceHarness();
 
-    const service = new MarketplaceService(db as unknown as D1Database);
+    repos.pluginRepo.exists.mockResolvedValue(true);
+    repos.versionRepo.find.mockResolvedValue([{ id: 'v1', plugin_id: 'p1', version: '1.0.0' }]);
+    repos.installRepo.find.mockResolvedValue([{ id: 'i1', installed_version: '1.0.0' }]);
+
     const result = await service.installPlugin({ pluginId: 'p1', userId: 'u1' });
 
     expect(result.changed).toBe(false);
@@ -159,19 +155,11 @@ describe('MarketplaceService', () => {
   });
 
   it('should report available updates when latest semver is higher', async () => {
-    const db = {
-      prepare: (sql: string) => {
-        if (sql.includes('FROM plugin_installs')) {
-          return new FakeStatement(async () => ({ results: [{ pluginId: 'p1', installedVersion: '1.0.0' }] }), async () => null);
-        }
-        if (sql.includes('FROM plugin_versions') && sql.includes('ORDER BY created_at DESC')) {
-          return new FakeStatement(async () => ({ results: [] }), async () => ({ version: '1.2.0' }));
-        }
-        return new FakeStatement(async () => ({ results: [] }), async () => null);
-      },
-    };
+    const { service, repos } = createServiceHarness();
 
-    const service = new MarketplaceService(db as unknown as D1Database);
+    repos.installRepo.find.mockResolvedValue([{ plugin_id: 'p1', installed_version: '1.0.0' }]);
+    repos.versionRepo.find.mockResolvedValue([{ id: 'v2', plugin_id: 'p1', version: '1.2.0' }]);
+
     const updates = await service.checkPluginUpdates('u1');
 
     expect(updates).toEqual([
@@ -180,16 +168,10 @@ describe('MarketplaceService', () => {
   });
 
   it('should throw 422 when review rating is outside allowed range', async () => {
-    const db = {
-      prepare: (sql: string) => {
-        if (sql.includes('FROM plugins WHERE id')) {
-          return new FakeStatement(async () => ({ results: [] }), async () => ({ id: 'p1' }));
-        }
-        return new FakeStatement(async () => ({ results: [] }), async () => null);
-      },
-    };
+    const { service, repos } = createServiceHarness();
 
-    const service = new MarketplaceService(db as unknown as D1Database);
+    repos.pluginRepo.exists.mockResolvedValue(true);
+
     await expect(
       service.submitReview({ pluginId: 'p1', userId: 'u1', rating: 0, feedback: 'bad' })
     ).rejects.toMatchObject({

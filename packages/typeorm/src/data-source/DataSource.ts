@@ -1,14 +1,39 @@
-import { MetadataStorage } from '../metadata/MetadataStorage.js'
-import { Repository } from '../repository/Repository.js'
 import { Inject, Injectable, Type } from '@sker/core'
-import { D1_DATABASE } from '../tokens.js'
+import { sqliteDialect } from '../driver/dialects.js'
+import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
+import { MetadataStorage } from '../metadata/MetadataStorage.js'
+import { TransactionIsolationLevel } from '../metadata/types.js'
+import { Repository } from '../repository/Repository.js'
+import { DB_DRIVER } from '../tokens.js'
+import { TransactionManager } from '../transaction/TransactionManager.js'
+
 @Injectable({ providedIn: 'auto' })
 export class DataSource {
+  private static defaultDataSource?: DataSource
   private repositories = new Map<Function, Repository<any>>()
+  private txStack: TransactionManager[] = []
+  private dialect: SqlDialect
 
   constructor(
-    @Inject(D1_DATABASE) private db: D1Database
-  ) { }
+    @Inject(DB_DRIVER) private db: DatabaseDriver
+  ) {
+    this.dialect = this.db.dialect ?? sqliteDialect
+    if (!DataSource.defaultDataSource) {
+      DataSource.defaultDataSource = this
+    }
+  }
+
+  static getDefault(): DataSource | undefined {
+    return DataSource.defaultDataSource
+  }
+
+  getDriver(): DatabaseDriver {
+    return this.db
+  }
+
+  getDialect(): SqlDialect {
+    return this.dialect
+  }
 
   getRepository<T>(entity: Type<T>): Repository<T> {
     if (this.repositories.has(entity)) {
@@ -20,8 +45,37 @@ export class DataSource {
       throw new Error(`Entity ${entity.name} is not registered. Did you use @Entity() decorator?`)
     }
 
-    const repository = new Repository<T>(this.db, metadata)
+    const repository = new Repository<T>(this.db, metadata, this.dialect)
     this.repositories.set(entity, repository)
     return repository
+  }
+
+  async beginTransaction(isolationLevel?: TransactionIsolationLevel): Promise<TransactionManager> {
+    const activeTx = this.txStack[this.txStack.length - 1]
+    const manager = activeTx
+      ? activeTx.createNestedManager()
+      : new TransactionManager(this.db, this.dialect, isolationLevel)
+
+    await manager.begin()
+    this.txStack.push(manager)
+    return manager
+  }
+
+  async transaction<T>(
+    callback: (manager: TransactionManager) => Promise<T>,
+    isolationLevel?: TransactionIsolationLevel
+  ): Promise<T> {
+    const manager = await this.beginTransaction(isolationLevel)
+
+    try {
+      const result = await callback(manager)
+      await manager.commit()
+      return result
+    } catch (error) {
+      await manager.rollback()
+      throw error
+    } finally {
+      this.txStack.pop()
+    }
   }
 }

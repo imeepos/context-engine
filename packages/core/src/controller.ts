@@ -2,8 +2,11 @@ import { root } from './environment-injector';
 import { InjectionToken } from './injection-token';
 import { Type } from './injector';
 import { Provider } from './provider';
+import { getReturnType } from './metadata-utils';
+
 export const PATH_METADATA = 'path';
 export const METHOD_METADATA = 'method';
+export const RETURN_TYPE_METADATA = 'return-type';
 export enum RequestMethod {
   GET = 0,
   POST = 1,
@@ -132,6 +135,12 @@ function createHttpMethodDecorator(method: RequestMethod) {
       Reflect.defineMetadata(PATH_METADATA, routePath, methodTarget);
       Reflect.defineMetadata(METHOD_METADATA, method, methodTarget);
       Reflect.defineMetadata(CONTENT_TYPE_METADATA, finalContentType, methodTarget);
+
+      // 🚀 存储返回类型元数据（用于 OpenAPI 文档生成）
+      const returnType = getReturnType(target, propertyKey);
+      if (returnType) {
+        Reflect.defineMetadata(RETURN_TYPE_METADATA, returnType, methodTarget);
+      }
 
       if (responseSchema) {
         Reflect.defineMetadata(RESPONSE_SCHEMA_METADATA, responseSchema, methodTarget);

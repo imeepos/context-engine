@@ -1,6 +1,7 @@
 import { Injectable, Tool, ToolArg } from '@sker/core'
 import { z } from 'zod'
 import { TaskManagerService } from '../services/task-manager.service'
+import { TaskMutationErrorCode } from '../types/task'
 
 @Injectable()
 export class UpdateTaskTool {
@@ -18,7 +19,9 @@ export class UpdateTaskTool {
     @ToolArg({ zod: z.string().optional().describe('New description'), paramName: 'description' })
     description?: string,
     @ToolArg({ zod: z.record(z.string(), z.any()).optional().describe('Metadata to merge'), paramName: 'metadata' })
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
+    @ToolArg({ zod: z.number().int().nonnegative().optional().describe('Expected task version for optimistic locking'), paramName: 'expectedVersion' })
+    expectedVersion?: number
   ) {
     const task = await this.taskManager.getTask(taskId)
     if (!task) {
@@ -30,9 +33,14 @@ export class UpdateTaskTool {
     if (description) updates.description = description
     if (metadata) updates.metadata = { ...task.metadata, ...metadata }
 
-    await this.taskManager['updateTaskStatus'](taskId, task.status, updates)
+    const result = await this.taskManager.updateTask(taskId, updates, expectedVersion)
+    if (!result.success) {
+      const error = result.code === TaskMutationErrorCode.VERSION_CONFLICT
+        ? 'Task changed by another agent, please refresh and retry'
+        : (result.message || 'Task update failed')
+      return { success: false, error, code: result.code, details: result }
+    }
 
-    const updated = await this.taskManager.getTask(taskId)
-    return { success: true, task: updated }
+    return { success: true, task: result.task }
   }
 }

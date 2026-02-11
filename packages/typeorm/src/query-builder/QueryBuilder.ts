@@ -1,12 +1,16 @@
-import { TableMetadata } from '../metadata/types.js'
+import type { DatabaseDriver } from '../driver/types.js'
+import { extractRows } from '../driver/utils.js'
+import { ColumnMetadata, TableMetadata } from '../metadata/types.js'
+import { fromDatabaseValue, toDatabaseValue } from '../metadata/transformer.js'
+import { createUuidV4 } from '../metadata/uuid.js'
 import { QueryState } from './types.js'
 import { Operator } from '../operators/types.js'
 
 export class QueryBuilder<T> {
-  private query: QueryState = {}
+  private query: QueryState = { joins: [] }
 
   constructor(
-    private db: D1Database,
+    private db: DatabaseDriver,
     private metadata: TableMetadata
   ) {}
 
@@ -15,12 +19,17 @@ export class QueryBuilder<T> {
     return this
   }
 
+  addSelect(...columns: string[]): this {
+    this.query.select = [...(this.query.select || []), ...columns]
+    return this
+  }
+
   where(conditions: Partial<T> | Operator<T>): this {
     this.query.where = conditions as Record<string, any>
     return this
   }
 
-  orderBy(column: keyof T, direction: 'ASC' | 'DESC'): this {
+  orderBy(column: keyof T | string, direction: 'ASC' | 'DESC'): this {
     this.query.orderBy = { column: column as string, direction }
     return this
   }
@@ -35,60 +44,183 @@ export class QueryBuilder<T> {
     return this
   }
 
+  innerJoin(table: string, alias: string, on: string): this {
+    this.query.joins!.push({ type: 'INNER', table, alias, on })
+    return this
+  }
+
+  leftJoin(table: string, alias: string, on: string): this {
+    this.query.joins!.push({ type: 'LEFT', table, alias, on })
+    return this
+  }
+
+  innerJoinAndSelect(table: string, alias: string, on: string): this {
+    this.addSelect(`${alias}.*`)
+    return this.innerJoin(table, alias, on)
+  }
+
+  leftJoinAndSelect(table: string, alias: string, on: string): this {
+    this.addSelect(`${alias}.*`)
+    return this.leftJoin(table, alias, on)
+  }
+
   async execute(): Promise<T[]> {
     const { sql, bindings } = this.buildSQL()
     const result = await this.db.prepare(sql).bind(...bindings).all()
-    return result.results as T[]
+    const rows = extractRows(result) as Record<string, unknown>[]
+    return rows.map((row) => this.applyFromDatabaseTransform(row)) as T[]
+  }
+
+  async raw<R = T>(sql: string, bindings: any[] = []): Promise<R[]> {
+    const result = await this.db.prepare(sql).bind(...bindings).all()
+    const rows = extractRows(result) as Record<string, unknown>[]
+    return rows.map((row) => this.applyFromDatabaseTransform(row)) as R[]
+  }
+
+  async count(column: keyof T | string = '*'): Promise<number> {
+    const sql = this.buildAggregateSQL(`COUNT(${String(column)})`, 'count')
+    const result = await this.db.prepare(sql.sql).bind(...sql.bindings).first<{ count: number }>()
+    return result?.count ?? 0
+  }
+
+  async sum(column: keyof T | string): Promise<number> {
+    const sql = this.buildAggregateSQL(`SUM(${String(column)})`, 'value')
+    const result = await this.db.prepare(sql.sql).bind(...sql.bindings).first<{ value: number | null }>()
+    return result?.value ?? 0
+  }
+
+  async avg(column: keyof T | string): Promise<number> {
+    const sql = this.buildAggregateSQL(`AVG(${String(column)})`, 'value')
+    const result = await this.db.prepare(sql.sql).bind(...sql.bindings).first<{ value: number | null }>()
+    return result?.value ?? 0
+  }
+
+  async max(column: keyof T | string): Promise<number> {
+    const sql = this.buildAggregateSQL(`MAX(${String(column)})`, 'value')
+    const result = await this.db.prepare(sql.sql).bind(...sql.bindings).first<{ value: number | null }>()
+    return result?.value ?? 0
+  }
+
+  async min(column: keyof T | string): Promise<number> {
+    const sql = this.buildAggregateSQL(`MIN(${String(column)})`, 'value')
+    const result = await this.db.prepare(sql.sql).bind(...sql.bindings).first<{ value: number | null }>()
+    return result?.value ?? 0
+  }
+
+  async batchInsert(rows: Partial<T>[]): Promise<void> {
+    if (rows.length === 0) {
+      return
+    }
+
+    const normalizedRows = rows.map((row) => this.prepareInsertRow(row))
+    const columns = Object.keys(normalizedRows[0]!)
+    const placeholders = columns.map(() => '?').join(', ')
+    const sql = `INSERT INTO ${this.metadata.name} (${columns.join(', ')}) VALUES (${placeholders})`
+
+    if (this.db.batch) {
+      const statements = normalizedRows.map((row) => this.db.prepare(sql).bind(
+        ...columns.map((column) => this.transformToDatabase(column, (row as any)[column]))
+      ))
+      await this.db.batch(statements)
+      return
+    }
+
+    for (const row of normalizedRows) {
+      await this.db.prepare(sql).bind(
+        ...columns.map((column) => this.transformToDatabase(column, (row as any)[column]))
+      ).run()
+    }
+  }
+
+  async batchUpdate(rows: Array<{ where: Partial<T>; values: Partial<T> }>): Promise<void> {
+    if (rows.length === 0) {
+      return
+    }
+
+    const statements = rows.map(item => {
+      const valueColumns = Object.keys(item.values)
+      const whereColumns = Object.keys(item.where)
+      const updates = valueColumns.map(column => `${column} = ?`).join(', ')
+      const filters = whereColumns.map(column => `${column} = ?`).join(' AND ')
+      const sql = `UPDATE ${this.metadata.name} SET ${updates} WHERE ${filters}`
+      const bindings = [
+        ...valueColumns.map((column) => this.transformToDatabase(column, (item.values as any)[column])),
+        ...whereColumns.map((column) => this.transformToDatabase(column, (item.where as any)[column]))
+      ]
+      return this.db.prepare(sql).bind(...bindings)
+    })
+
+    if (this.db.batch) {
+      await this.db.batch(statements)
+      return
+    }
+
+    for (const statement of statements) {
+      await statement.run()
+    }
   }
 
   private buildSQL(): { sql: string; bindings: any[] } {
     const bindings: any[] = []
-    let sql = ''
+    const selectClause = this.query.select && this.query.select.length > 0
+      ? this.query.select.join(', ')
+      : '*'
 
-    // SELECT clause
-    if (this.query.select && this.query.select.length > 0) {
-      sql = `SELECT ${this.query.select.join(', ')} FROM ${this.metadata.name}`
-    } else {
-      sql = `SELECT * FROM ${this.metadata.name}`
+    let sql = `SELECT ${selectClause} FROM ${this.metadata.name}`
+
+    if (this.query.joins && this.query.joins.length > 0) {
+      const joinSql = this.query.joins
+        .map(join => `${join.type} JOIN ${join.table} ${join.alias} ON ${join.on}`)
+        .join(' ')
+      sql += ` ${joinSql}`
     }
 
-    // WHERE clause
     if (this.query.where) {
       const whereClause = this.buildWhereClause(this.query.where, bindings)
       sql += ` WHERE ${whereClause}`
     }
 
-    // ORDER BY clause
     if (this.query.orderBy) {
       sql += ` ORDER BY ${this.query.orderBy.column} ${this.query.orderBy.direction}`
     }
 
-    // LIMIT clause
     if (this.query.limit !== undefined) {
-      sql += ` LIMIT ?`
+      sql += ' LIMIT ?'
       bindings.push(this.query.limit)
     }
 
-    // OFFSET clause
     if (this.query.offset !== undefined) {
-      sql += ` OFFSET ?`
+      sql += ' OFFSET ?'
       bindings.push(this.query.offset)
     }
 
     return { sql, bindings }
   }
 
+  private buildAggregateSQL(aggregateExpr: string, alias: string): { sql: string; bindings: any[] } {
+    const bindings: any[] = []
+    let sql = `SELECT ${aggregateExpr} AS ${alias} FROM ${this.metadata.name}`
+
+    if (this.query.where) {
+      const whereClause = this.buildWhereClause(this.query.where, bindings)
+      sql += ` WHERE ${whereClause}`
+    }
+
+    return { sql, bindings }
+  }
+
   private buildWhereClause(where: Record<string, any> | Operator<T>, bindings: any[]): string {
-    // 检查是否是操作符对象
     if (this.isOperator(where)) {
       return this.buildOperatorClause(where as Operator<T>, bindings)
     }
 
-    // 简单对象条件
-    const conditions = Object.entries(where)
+    const entries = Object.entries(where)
+    const conditions = entries
       .map(([key]) => `${key} = ?`)
       .join(' AND ')
-    bindings.push(...Object.values(where))
+    for (const [key, value] of entries) {
+      bindings.push(this.transformToDatabase(key, value))
+    }
     return conditions
   }
 
@@ -99,47 +231,52 @@ export class QueryBuilder<T> {
   private buildOperatorClause(op: Operator<T>, bindings: any[]): string {
     switch (op.type) {
       case 'eq':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} = ?`
       case 'gt':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} > ?`
       case 'lt':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} < ?`
       case 'gte':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} >= ?`
       case 'lte':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} <= ?`
       case 'ne':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} != ?`
       case 'like':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} LIKE ?`
       case 'ilike':
-        bindings.push(op.value)
+        bindings.push(this.transformToDatabase(String(op.column), op.value))
         return `${String(op.column)} LIKE ?`
       case 'in': {
         const placeholders = op.values!.map(() => '?').join(', ')
-        bindings.push(...op.values!)
+        bindings.push(
+          ...op.values!.map((value) => this.transformToDatabase(String(op.column), value))
+        )
         return `${String(op.column)} IN (${placeholders})`
       }
       case 'between':
-        bindings.push(op.min, op.max)
+        bindings.push(
+          this.transformToDatabase(String(op.column), op.min),
+          this.transformToDatabase(String(op.column), op.max)
+        )
         return `${String(op.column)} BETWEEN ? AND ?`
       case 'isNull':
         return `${String(op.column)} IS NULL`
       case 'isNotNull':
         return `${String(op.column)} IS NOT NULL`
       case 'and': {
-        const andClauses = op.conditions!.map(c => this.buildOperatorClause(c, bindings))
+        const andClauses = op.conditions!.map(condition => this.buildOperatorClause(condition, bindings))
         return `(${andClauses.join(' AND ')})`
       }
       case 'or': {
-        const orClauses = op.conditions!.map(c => this.buildOperatorClause(c, bindings))
+        const orClauses = op.conditions!.map(condition => this.buildOperatorClause(condition, bindings))
         return `(${orClauses.join(' OR ')})`
       }
       case 'not':
@@ -147,5 +284,36 @@ export class QueryBuilder<T> {
       default:
         throw new Error(`Unknown operator type: ${(op as any).type}`)
     }
+  }
+
+  private getColumnMetadata(name: string): ColumnMetadata | undefined {
+    return this.metadata.columns.find((column) => column.name === name)
+  }
+
+  private transformToDatabase(columnName: string, value: unknown): unknown {
+    return toDatabaseValue(this.getColumnMetadata(columnName), value)
+  }
+
+  private applyFromDatabaseTransform(row: Record<string, unknown>): Record<string, unknown> {
+    const result: Record<string, unknown> = { ...row }
+    for (const [key, value] of Object.entries(row)) {
+      const column = this.getColumnMetadata(key)
+      if (!column) {
+        continue
+      }
+      result[key] = fromDatabaseValue(column, value)
+    }
+    return result
+  }
+
+  private prepareInsertRow(row: Partial<T>): Partial<T> {
+    const output: Record<string, unknown> = { ...(row as Record<string, unknown>) }
+    for (const column of this.metadata.columns) {
+      if (column.generated === 'uuid' && output[column.name] === undefined) {
+        output[column.name] = createUuidV4()
+      }
+    }
+
+    return output as Partial<T>
   }
 }

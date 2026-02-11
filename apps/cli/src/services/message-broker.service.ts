@@ -4,6 +4,9 @@ import { InterAgentMessage, MessageQueue } from '../types/message'
 import { AgentRegistryService } from './agent-registry.service'
 import { v4 as uuidv4 } from 'uuid'
 
+export const ERR_AGENT_NOT_REGISTERED = 'ERR_AGENT_NOT_REGISTERED'
+export const ERR_TARGET_AGENT_OFFLINE = 'ERR_TARGET_AGENT_OFFLINE'
+
 @Injectable({ providedIn: 'auto' })
 export class MessageBrokerService {
   private messageReceivedCallbacks: Array<(message: InterAgentMessage) => void> = []
@@ -12,15 +15,13 @@ export class MessageBrokerService {
   constructor(
     @Inject(STORAGE_TOKEN) private storage: Storage,
     @Inject(AgentRegistryService) private agentRegistry: AgentRegistryService
-  ) { }
+  ) {}
 
   async init(): Promise<void> {
     const currentAgent = this.agentRegistry.getCurrentAgent()
     if (!currentAgent) return
 
     const queueKey = `messages/${currentAgent.id}`
-
-    // Ensure queue file exists
     const existingQueue = await this.storage.read<MessageQueue>(queueKey)
     if (!existingQueue) {
       await this.storage.write(queueKey, { messages: [] })
@@ -36,8 +37,7 @@ export class MessageBrokerService {
         this.messageReceivedCallbacks.forEach(callback => callback(message))
       }
 
-      // Mark messages as read
-      const updatedQueue = {
+      const updatedQueue: MessageQueue = {
         messages: queue.messages.map(m => ({ ...m, read: true }))
       }
       await this.storage.write(queueKey, updatedQueue)
@@ -54,13 +54,13 @@ export class MessageBrokerService {
   async sendMessage(to: string, content: string): Promise<void> {
     const currentAgent = this.agentRegistry.getCurrentAgent()
     if (!currentAgent) {
-      throw new Error('当前agent未注册')
+      throw new Error(`${ERR_AGENT_NOT_REGISTERED}: Current agent is not registered`)
     }
 
     const onlineAgents = await this.agentRegistry.getOnlineAgents()
     const targetAgent = onlineAgents.find(a => a.id === to)
     if (!targetAgent) {
-      throw new Error(`Agent ${to} 不在线`)
+      throw new Error(`${ERR_TARGET_AGENT_OFFLINE}: Agent ${to} is not online`)
     }
 
     const message: InterAgentMessage = {
@@ -72,16 +72,14 @@ export class MessageBrokerService {
       read: false
     }
 
-    // Write to recipient's queue
     const recipientQueueKey = `messages/${to}`
     const recipientQueue = await this.storage.read<MessageQueue>(recipientQueueKey) || { messages: [] }
     recipientQueue.messages.push(message)
     await this.storage.write(recipientQueueKey, recipientQueue)
 
-    // Write to sender's queue (so sender can see their own sent messages)
     const senderQueueKey = `messages/${currentAgent.id}`
     const senderQueue = await this.storage.read<MessageQueue>(senderQueueKey) || { messages: [] }
-    senderQueue.messages.push({ ...message, read: true }) // Mark as read for sender
+    senderQueue.messages.push({ ...message, read: true })
     await this.storage.write(senderQueueKey, senderQueue)
   }
 
@@ -99,24 +97,20 @@ export class MessageBrokerService {
     const currentAgent = this.agentRegistry.getCurrentAgent()
     if (!currentAgent) return []
 
-    // Get messages from current agent's queue
     const currentQueueKey = `messages/${currentAgent.id}`
     const currentQueue = await this.storage.read<MessageQueue>(currentQueueKey)
     const currentMessages = currentQueue?.messages || []
 
-    // Get messages from the other agent's queue
     const otherQueueKey = `messages/${withAgent}`
     const otherQueue = await this.storage.read<MessageQueue>(otherQueueKey)
     const otherMessages = otherQueue?.messages || []
 
-    // Combine and filter messages between the two agents
     const allMessages = [...currentMessages, ...otherMessages]
     const filteredMessages = allMessages.filter(m =>
       (m.from === currentAgent.id && m.to === withAgent) ||
       (m.from === withAgent && m.to === currentAgent.id)
     )
 
-    // Deduplicate by message ID
     const uniqueMessages = new Map<string, InterAgentMessage>()
     filteredMessages.forEach(m => {
       if (!uniqueMessages.has(m.id)) {

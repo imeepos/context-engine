@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { TaskManagerService } from './task-manager.service'
 import { JsonFileStorage } from '../storage/json-file-storage'
-import { TaskStatus } from '../types/task'
+import { TaskMutationErrorCode, TaskStatus } from '../types/task'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import * as os from 'os'
@@ -59,7 +59,7 @@ describe('TaskManagerService', () => {
       })
 
       const claimed = await service.claimTask(task.id, 'agent1')
-      expect(claimed).toBe(true)
+      expect(claimed.success).toBe(true)
 
       const updated = await service.getTask(task.id)
       expect(updated?.status).toBe(TaskStatus.IN_PROGRESS)
@@ -76,7 +76,7 @@ describe('TaskManagerService', () => {
       })
 
       const claimed = await service.claimTask(task.id, 'agent1')
-      expect(claimed).toBe(false)
+      expect(claimed.success).toBe(false)
     })
 
     it('should handle concurrent claims correctly', async () => {
@@ -92,7 +92,7 @@ describe('TaskManagerService', () => {
         service.claimTask(task.id, 'agent3')
       ])
 
-      const successCount = [claim1, claim2, claim3].filter(Boolean).length
+      const successCount = [claim1, claim2, claim3].filter(result => result.success).length
       expect(successCount).toBe(1)
 
       const updated = await service.getTask(task.id)
@@ -109,7 +109,8 @@ describe('TaskManagerService', () => {
         createdBy: 'test-agent'
       })
 
-      await service.completeTask(task.id)
+      const completed = await service.completeTask(task.id)
+      expect(completed.success).toBe(true)
 
       const updated = await service.getTask(task.id)
       expect(updated?.status).toBe(TaskStatus.COMPLETED)
@@ -149,20 +150,20 @@ describe('TaskManagerService', () => {
     it('should update task fields', async () => {
       const task = await service.createTask({ title: 'Old Title', description: 'Old Desc', createdBy: 'test-agent' })
 
-      const success = await service.updateTask(task.id, {
+      const result = await service.updateTask(task.id, {
         title: 'New Title',
         description: 'New Desc'
       })
 
-      expect(success).toBe(true)
+      expect(result.success).toBe(true)
       const updated = await service.getTask(task.id)
       expect(updated?.title).toBe('New Title')
       expect(updated?.description).toBe('New Desc')
     })
 
     it('should return false for non-existent task', async () => {
-      const success = await service.updateTask('non-existent-id', { title: 'New Title' })
-      expect(success).toBe(false)
+      const result = await service.updateTask('non-existent-id', { title: 'New Title' })
+      expect(result.success).toBe(false)
     })
   })
 
@@ -170,16 +171,33 @@ describe('TaskManagerService', () => {
     it('should delete task', async () => {
       const task = await service.createTask({ title: 'Task to Delete', description: 'Desc', createdBy: 'test-agent' })
 
-      const success = await service.deleteTask(task.id)
-      expect(success).toBe(true)
+      const result = await service.deleteTask(task.id)
+      expect(result.success).toBe(true)
 
       const deleted = await service.getTask(task.id)
       expect(deleted).toBeNull()
     })
 
     it('should return false for non-existent task', async () => {
-      const success = await service.deleteTask('non-existent-id')
-      expect(success).toBe(false)
+      const result = await service.deleteTask('non-existent-id')
+      expect(result.success).toBe(false)
+    })
+  })
+
+  describe('optimistic locking', () => {
+    it('should reject stale expectedVersion updates', async () => {
+      const task = await service.createTask({
+        title: 'Versioned Task',
+        description: 'Desc',
+        createdBy: 'test-agent'
+      })
+
+      const firstClaim = await service.claimTask(task.id, 'agent1', task.version)
+      expect(firstClaim.success).toBe(true)
+
+      const staleComplete = await service.completeTask(task.id, task.version)
+      expect(staleComplete.success).toBe(false)
+      expect(staleComplete.code).toBe(TaskMutationErrorCode.VERSION_CONFLICT)
     })
   })
 })

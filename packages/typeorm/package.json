@@ -1,7 +1,7 @@
 {
   "name": "@sker/typeorm",
   "version": "0.1.0",
-  "description": "Minimal TypeORM-style API for Cloudflare D1",
+  "description": "Minimal TypeORM-style API with pluggable database drivers",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -25,7 +25,6 @@
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241127.0",
     "@sker/typescript-config": "workspace:*",
     "@sker/core": "workspace:*",
     "@sker/eslint-config": "workspace:*",

@@ -17,6 +17,11 @@ import {
 import { hasOnInitMetadata, isOnInit } from './on-init';
 import { APP_INITIALIZER, type Initializer } from './app-initializer';
 import { InitializerGraph } from './initializer-graph';
+import {
+  extractParameterNames,
+  getParameterTypes,
+  getTypeName,
+} from './metadata-utils';
 
 import { EnvironmentInjectorUtils } from './environment-injector-utils';
 
@@ -432,11 +437,22 @@ export class EnvironmentInjector extends Injector {
       return instance;
     }
 
+    // 🚀 获取参数名称和类型信息（用于增强错误信息）
+    const paramNames = extractParameterNames(Constructor);
+    const paramTypes = getParameterTypes(Constructor);
+
     // 解析所有依赖
     const dependencies = injectMetadata.map((token, index) => {
       if (token === undefined) {
+        // 🚀 增强错误信息：包含参数名称和期望类型
+        const paramName = paramNames[index] || `parameter ${index}`;
+        const expectedType = paramTypes?.[index];
+        const typeInfo = expectedType
+          ? ` Expected type: ${getTypeName(expectedType)}`
+          : '';
+
         throw new Error(
-          `Cannot resolve dependency at index ${index} for ${Constructor.name}. Make sure to use @Inject() decorator.`,
+          `Cannot resolve dependency "${paramName}" (parameter ${index}) for ${Constructor.name}.${typeInfo} Make sure to use @Inject() decorator or register the provider.`,
         );
       }
 

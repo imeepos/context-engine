@@ -6,7 +6,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['@cloudflare/workers-types',
-    "@sker/core"
-  ],
+  external: ['@sker/core'],
 })

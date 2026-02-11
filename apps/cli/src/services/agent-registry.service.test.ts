@@ -166,4 +166,17 @@ describe('AgentRegistryService', () => {
       await service2.unregister()
     })
   })
+
+  describe('offline detection helpers', () => {
+    it('returns true for unknown agent', async () => {
+      const isOffline = await service.isAgentOffline('missing-agent')
+      expect(isOffline).toBe(true)
+    })
+
+    it('returns false for active online agent', async () => {
+      await service.register('agent-0')
+      const isOffline = await service.isAgentOffline('agent-0')
+      expect(isOffline).toBe(false)
+    })
+  })
 })

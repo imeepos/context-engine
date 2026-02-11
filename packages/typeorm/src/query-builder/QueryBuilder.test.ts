@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { QueryBuilder } from './QueryBuilder.js'
+import type { DatabaseDriver } from '../driver/types.js'
 import { TableMetadata } from '../metadata/types.js'
 
 describe('QueryBuilder', () => {
-  let mockDb: D1Database
+  let mockDb: DatabaseDriver
   let metadata: TableMetadata
 
   beforeEach(() => {
-    // Mock D1Database
+    // Mock driver
     mockDb = {
       prepare: vi.fn().mockReturnValue({
         bind: vi.fn().mockReturnValue({
@@ -27,7 +28,8 @@ describe('QueryBuilder', () => {
         { name: 'email', type: 'TEXT', primary: false },
         { name: 'age', type: 'INTEGER', primary: false },
         { name: 'status', type: 'TEXT', primary: false }
-      ]
+      ],
+      relations: []
     }
   })
 

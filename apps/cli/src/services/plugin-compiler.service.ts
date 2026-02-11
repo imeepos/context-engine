@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@sker/core'
 import { Storage, STORAGE_TOKEN } from '../storage/storage.interface'
 import { build } from 'esbuild'
-import { JsonFileStorage } from '../storage/json-file-storage'
 import * as path from 'path'
+import * as os from 'os'
 
 export interface BuildResult {
   success: boolean
@@ -24,7 +24,7 @@ export class PluginCompilerService {
       }
     }
 
-    const baseDir = (this.storage as JsonFileStorage)['baseDir']
+    const baseDir = this.storage.getBaseDir?.() || path.join(os.homedir(), '.sker')
     const absoluteEntryPath = path.join(baseDir, entryPath)
     const absoluteOutDir = path.join(baseDir, `plugins/${pluginId}/build`)
 

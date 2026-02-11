@@ -1,5 +1,6 @@
 import { root } from "./environment-injector";
 import { InjectionTokenType } from "./injector";
+import { getParameterTypes } from "./metadata-utils";
 
 /**
  * 注入器作用域类型
@@ -57,12 +58,33 @@ const INJECTABLE_METADATA_KEY = Symbol('injectable');
  */
 export function Injectable(options: InjectableOptions = {}): ClassDecorator {
   return function <T extends Function>(target: T): T {
+    // 🚀 自动推断工厂函数依赖（如果未显式指定）
+    let finalOptions = options;
+    if (options.useFactory && !options.deps) {
+      const inferredDeps = getParameterTypes(options.useFactory);
+      if (inferredDeps && inferredDeps.length > 0) {
+        finalOptions = {
+          ...options,
+          deps: inferredDeps as InjectionTokenType<any>[],
+        };
+
+        // 开发模式：输出自动推断信息
+        // eslint-disable-next-line turbo/no-undeclared-env-vars
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(
+            `[DI] Auto-inferred factory dependencies for ${target.name || 'class'}:`,
+            inferredDeps.map((dep) => dep.name || String(dep)),
+          );
+        }
+      }
+    }
+
     // 存储 Injectable 元数据
-    Reflect.defineMetadata(INJECTABLE_METADATA_KEY, options, target);
-    const providedIn = options.providedIn ?? 'auto'
+    Reflect.defineMetadata(INJECTABLE_METADATA_KEY, finalOptions, target);
+    const providedIn = finalOptions.providedIn ?? 'auto'
     if (providedIn === 'root') {
-      if (options.useFactory) {
-        root.set([{ provide: target, useFactory: options.useFactory, deps: options.deps || [] }])
+      if (finalOptions.useFactory) {
+        root.set([{ provide: target, useFactory: finalOptions.useFactory, deps: finalOptions.deps || [] }])
       } else {
         root.set([target])
       }
