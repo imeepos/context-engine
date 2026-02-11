@@ -11,6 +11,7 @@ import { TypeOrmModule } from '@sker/typeorm'
 import type { PoolConfig, QueryResult } from 'pg'
 
 export const postgresDialect: SqlDialect = {
+  name: 'postgres',
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns

@@ -15,6 +15,13 @@ type RepositoryMock = {
 
 function createRepositoryMock(): RepositoryMock {
   const qb = {
+    where: vi.fn().mockReturnThis(),
+    andWhere: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    offset: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockResolvedValue([]),
+    count: vi.fn().mockResolvedValue(0),
     raw: vi.fn().mockResolvedValue([]),
   };
 
