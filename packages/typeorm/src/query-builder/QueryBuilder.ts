@@ -8,11 +8,15 @@ import { Operator } from '../operators/types.js'
 
 export class QueryBuilder<T> {
   private query: QueryState = { joins: [] }
+  private alias?: string
 
   constructor(
     private db: DatabaseDriver,
-    private metadata: TableMetadata
-  ) {}
+    private metadata: TableMetadata,
+    alias?: string
+  ) {
+    this.alias = alias
+  }
 
   select<K extends keyof T>(...columns: K[]): this {
     this.query.select = columns as string[]
@@ -30,7 +34,9 @@ export class QueryBuilder<T> {
   }
 
   orderBy(column: keyof T | string, direction: 'ASC' | 'DESC'): this {
-    this.query.orderBy = { column: column as string, direction }
+    const columnStr = column as string
+    const normalizedColumn = this.normalizeColumnName(columnStr)
+    this.query.orderBy = { column: normalizedColumn, direction }
     return this
   }
 
@@ -166,7 +172,8 @@ export class QueryBuilder<T> {
       ? this.query.select.join(', ')
       : '*'
 
-    let sql = `SELECT ${selectClause} FROM ${this.metadata.name}`
+    const tableRef = this.alias ? `${this.metadata.name} ${this.alias}` : this.metadata.name
+    let sql = `SELECT ${selectClause} FROM ${tableRef}`
 
     if (this.query.joins && this.query.joins.length > 0) {
       const joinSql = this.query.joins
@@ -199,7 +206,8 @@ export class QueryBuilder<T> {
 
   private buildAggregateSQL(aggregateExpr: string, alias: string): { sql: string; bindings: any[] } {
     const bindings: any[] = []
-    let sql = `SELECT ${aggregateExpr} AS ${alias} FROM ${this.metadata.name}`
+    const tableRef = this.alias ? `${this.metadata.name} ${this.alias}` : this.metadata.name
+    let sql = `SELECT ${aggregateExpr} AS ${alias} FROM ${tableRef}`
 
     if (this.query.where) {
       const whereClause = this.buildWhereClause(this.query.where, bindings)
@@ -216,12 +224,30 @@ export class QueryBuilder<T> {
 
     const entries = Object.entries(where)
     const conditions = entries
-      .map(([key]) => `${key} = ?`)
+      .map(([key]) => {
+        const columnName = this.normalizeColumnName(key)
+        return `${columnName} = ?`
+      })
       .join(' AND ')
     for (const [key, value] of entries) {
-      bindings.push(this.transformToDatabase(key, value))
+      const plainKey = this.extractPlainColumnName(key)
+      bindings.push(this.transformToDatabase(plainKey, value))
     }
     return conditions
+  }
+
+  private normalizeColumnName(column: string): string {
+    if (column.includes('.')) {
+      return column
+    }
+    return this.alias ? `${this.alias}.${column}` : column
+  }
+
+  private extractPlainColumnName(column: string): string {
+    if (column.includes('.')) {
+      return column.split('.')[1] || column
+    }
+    return column
   }
 
   private isOperator(obj: any): boolean {
@@ -229,48 +255,80 @@ export class QueryBuilder<T> {
   }
 
   private buildOperatorClause(op: Operator<T>, bindings: any[]): string {
+    const getColumnRef = (column: string | number | symbol | undefined) => {
+      if (column === undefined) {
+        throw new Error('Column is undefined in operator')
+      }
+      const col = String(column)
+      const plainCol = this.extractPlainColumnName(col)
+      return { ref: this.normalizeColumnName(col), plain: plainCol }
+    }
+
     switch (op.type) {
-      case 'eq':
-        bindings.push(this.transformToDatabase(String(op.column), op.value))
-        return `${String(op.column)} = ?`
-      case 'gt':
-        bindings.push(this.transformToDatabase(String(op.column), op.value))
-        return `${String(op.column)} > ?`
-      case 'lt':
-        bindings.push(this.transformToDatabase(String(op.column), op.value))
-        return `${String(op.column)} < ?`
-      case 'gte':
-        bindings.push(this.transformToDatabase(String(op.column), op.value))
-        return `${String(op.column)} >= ?`
-      case 'lte':
-        bindings.push(this.transformToDatabase(String(op.column), op.value))
-        return `${String(op.column)} <= ?`
-      case 'ne':
-        bindings.push(this.transformToDatabase(String(op.column), op.value))
-        return `${String(op.column)} != ?`
-      case 'like':
-        bindings.push(this.transformToDatabase(String(op.column), op.value))
-        return `${String(op.column)} LIKE ?`
-      case 'ilike':
-        bindings.push(this.transformToDatabase(String(op.column), op.value))
-        return `${String(op.column)} LIKE ?`
+      case 'eq': {
+        const { ref, plain } = getColumnRef(op.column)
+        bindings.push(this.transformToDatabase(plain, op.value))
+        return `${ref} = ?`
+      }
+      case 'gt': {
+        const { ref, plain } = getColumnRef(op.column)
+        bindings.push(this.transformToDatabase(plain, op.value))
+        return `${ref} > ?`
+      }
+      case 'lt': {
+        const { ref, plain } = getColumnRef(op.column)
+        bindings.push(this.transformToDatabase(plain, op.value))
+        return `${ref} < ?`
+      }
+      case 'gte': {
+        const { ref, plain } = getColumnRef(op.column)
+        bindings.push(this.transformToDatabase(plain, op.value))
+        return `${ref} >= ?`
+      }
+      case 'lte': {
+        const { ref, plain } = getColumnRef(op.column)
+        bindings.push(this.transformToDatabase(plain, op.value))
+        return `${ref} <= ?`
+      }
+      case 'ne': {
+        const { ref, plain } = getColumnRef(op.column)
+        bindings.push(this.transformToDatabase(plain, op.value))
+        return `${ref} != ?`
+      }
+      case 'like': {
+        const { ref, plain } = getColumnRef(op.column)
+        bindings.push(this.transformToDatabase(plain, op.value))
+        return `${ref} LIKE ?`
+      }
+      case 'ilike': {
+        const { ref, plain } = getColumnRef(op.column)
+        bindings.push(this.transformToDatabase(plain, op.value))
+        return `${ref} LIKE ?`
+      }
       case 'in': {
+        const { ref, plain } = getColumnRef(op.column)
         const placeholders = op.values!.map(() => '?').join(', ')
         bindings.push(
-          ...op.values!.map((value) => this.transformToDatabase(String(op.column), value))
+          ...op.values!.map((value) => this.transformToDatabase(plain, value))
         )
-        return `${String(op.column)} IN (${placeholders})`
+        return `${ref} IN (${placeholders})`
       }
-      case 'between':
+      case 'between': {
+        const { ref, plain } = getColumnRef(op.column)
         bindings.push(
-          this.transformToDatabase(String(op.column), op.min),
-          this.transformToDatabase(String(op.column), op.max)
+          this.transformToDatabase(plain, op.min),
+          this.transformToDatabase(plain, op.max)
         )
-        return `${String(op.column)} BETWEEN ? AND ?`
-      case 'isNull':
-        return `${String(op.column)} IS NULL`
-      case 'isNotNull':
-        return `${String(op.column)} IS NOT NULL`
+        return `${ref} BETWEEN ? AND ?`
+      }
+      case 'isNull': {
+        const { ref } = getColumnRef(op.column)
+        return `${ref} IS NULL`
+      }
+      case 'isNotNull': {
+        const { ref } = getColumnRef(op.column)
+        return `${ref} IS NOT NULL`
+      }
       case 'and': {
         const andClauses = op.conditions!.map(condition => this.buildOperatorClause(condition, bindings))
         return `(${andClauses.join(' AND ')})`

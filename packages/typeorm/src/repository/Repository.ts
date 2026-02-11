@@ -13,8 +13,8 @@ export class Repository<T> {
     private dialect: SqlDialect
   ) {}
 
-  createQueryBuilder(): QueryBuilder<T> {
-    return new QueryBuilder<T>(this.db, this.metadata)
+  createQueryBuilder(alias?: string): QueryBuilder<T> {
+    return new QueryBuilder<T>(this.db, this.metadata, alias)
   }
 
   async find(options?: FindOptions<T>): Promise<T[]> {

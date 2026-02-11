@@ -48,6 +48,13 @@ describe('QueryBuilder', () => {
       expect(mockDb.prepare).toHaveBeenCalledWith('SELECT id, name FROM users')
     })
 
+    it('应该支持别名', async () => {
+      const qb = new QueryBuilder<any>(mockDb, metadata, 'u')
+      await qb.execute()
+
+      expect(mockDb.prepare).toHaveBeenCalledWith('SELECT * FROM users u')
+    })
+
     it('应该支持链式调用', () => {
       const qb = new QueryBuilder<any>(mockDb, metadata)
       const result = qb.select('id', 'name')
@@ -76,6 +83,15 @@ describe('QueryBuilder', () => {
       )
       expect(prepare().bind).toHaveBeenCalledWith('active', 18)
     })
+
+    it('应该在使用别名时自动添加别名前缀', async () => {
+      const qb = new QueryBuilder(mockDb, metadata, 'u')
+      await qb.where({ status: 'active' }).execute()
+
+      const prepare = mockDb.prepare as any
+      expect(prepare).toHaveBeenCalledWith('SELECT * FROM users u WHERE u.status = ?')
+      expect(prepare().bind).toHaveBeenCalledWith('active')
+    })
   })
 
   describe('orderBy()', () => {
@@ -94,6 +110,15 @@ describe('QueryBuilder', () => {
 
       expect(mockDb.prepare).toHaveBeenCalledWith(
         'SELECT * FROM users ORDER BY age DESC'
+      )
+    })
+
+    it('应该在使用别名时自动添加别名前缀', async () => {
+      const qb = new QueryBuilder<any>(mockDb, metadata, 'u')
+      await qb.orderBy('name', 'ASC').execute()
+
+      expect(mockDb.prepare).toHaveBeenCalledWith(
+        'SELECT * FROM users u ORDER BY u.name ASC'
       )
     })
   })
