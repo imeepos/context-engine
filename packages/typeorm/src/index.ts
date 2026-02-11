@@ -48,7 +48,7 @@ export type {
   PrimaryGeneratedColumnOptions
 } from './metadata/types.js'
 
-// DI Tokens
+// Tokens
 export * from './tokens.js'
 
 // Module

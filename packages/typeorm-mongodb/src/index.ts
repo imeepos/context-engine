@@ -1,4 +1,6 @@
 import {
+  ENTITIES,
+  DB_DRIVER,
   type NoSqlBoundStatement,
   type NoSqlDatabaseDriver,
   type NoSqlDialect,
@@ -6,8 +8,7 @@ import {
   type NoSqlQuery,
   type QueryRunResult
 } from '@sker/typeorm'
-import { Module, DynamicModule, Type } from '@sker/core'
-import { TypeOrmModule } from '@sker/typeorm'
+import { Module, DynamicModule, Type, Provider } from '@sker/core'
 import type { Collection, Db, MongoClient, Document, Filter, FindOptions } from 'mongodb'
 
 export const mongodbDialect: NoSqlDialect = {
@@ -162,21 +163,17 @@ export class TypeOrmMongodbModule {
     const db = await resolveMongoDb(options.connection)
     const driver = new MongodbDriver(db as MongoDbLike)
 
-    const providers: any[] = [
+    const providers: Provider[] = [
       {
-        provide: 'DB_DRIVER',
+        provide: DB_DRIVER,
         useValue: driver
-      },
-      {
-        provide: 'NOSQL_DIALECT',
-        useValue: mongodbDialect
       }
     ]
 
     if (options.entities && options.entities.length > 0) {
       for (const entity of options.entities) {
         providers.push({
-          provide: 'ENTITIES',
+          provide: ENTITIES,
           useValue: entity,
           multi: true
         })
@@ -190,6 +187,19 @@ export class TypeOrmMongodbModule {
   }
 
   static forFeature(entities: Type<any>[]): DynamicModule {
-    return TypeOrmModule.forFeature(entities)
+    const providers: Provider[] = []
+
+    for (const entity of entities) {
+      providers.push({
+        provide: ENTITIES,
+        useValue: entity,
+        multi: true
+      })
+    }
+
+    return {
+      module: TypeOrmMongodbModule,
+      providers
+    }
   }
 }
