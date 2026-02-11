@@ -1,8 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { DataSource } from './DataSource.js'
 import { Entity, Column, PrimaryColumn } from '../decorators/index.js'
-import type { DatabaseDriver } from '../driver/types.js'
+import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
+
+const mockDialect: SqlDialect = {
+  name: 'sqlite',
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = excluded.${column}`)
+      .join(', ')
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN TRANSACTION'
+  }
+}
 
 describe('DataSource', () => {
   let mockDb: DatabaseDriver
@@ -23,7 +38,7 @@ describe('DataSource', () => {
       })
     } as any
 
-    dataSource = new DataSource(mockDb)
+    dataSource = new DataSource(mockDb, mockDialect)
   })
 
   describe('getRepository()', () => {

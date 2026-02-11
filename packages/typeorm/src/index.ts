@@ -11,7 +11,7 @@ export { Transactional } from './transaction/Transactional.js'
 export { DataSource } from './data-source/DataSource.js'
 export { Repository } from './repository/Repository.js'
 export { TransactionManager } from './transaction/TransactionManager.js'
-export { sqliteDialect, d1Dialect, mysqlDialect, postgresDialect } from './driver/dialects.js'
+// Dialects are now exported from their respective driver packages
 export { extractRows } from './driver/utils.js'
 export type {
   BoundStatement,

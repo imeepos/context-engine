@@ -1,8 +1,22 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { sqliteDialect } from '../driver/dialects.js'
-import type { DatabaseDriver } from '../driver/types.js'
+import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
 import { Repository } from './Repository.js'
 import { TableMetadata } from '../metadata/types.js'
+
+const mockDialect: SqlDialect = {
+  name: 'sqlite',
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = excluded.${column}`)
+      .join(', ')
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT(${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN TRANSACTION'
+  }
+}
 
 describe('Repository', () => {
   let mockDb: DatabaseDriver
@@ -31,7 +45,7 @@ describe('Repository', () => {
       relations: []
     }
 
-    repository = new Repository(mockDb, metadata, sqliteDialect)
+    repository = new Repository(mockDb, metadata, mockDialect)
   })
 
   describe('createQueryBuilder()', () => {
@@ -106,7 +120,7 @@ describe('Repository', () => {
         name: 'test',
         columns: [],
         relations: []
-      }, sqliteDialect)
+      }, mockDialect)
 
       await expect(repoWithoutPrimary.findOne(1)).rejects.toThrow(
         'No primary column found'
@@ -118,7 +132,7 @@ describe('Repository', () => {
         name: 'test',
         columns: [],
         relations: []
-      }, sqliteDialect)
+      }, mockDialect)
 
       await expect(repoWithoutPrimary.update(1, { name: 'test' })).rejects.toThrow(
         'No primary column found'
@@ -130,7 +144,7 @@ describe('Repository', () => {
         name: 'test',
         columns: [],
         relations: []
-      }, sqliteDialect)
+      }, mockDialect)
 
       await expect(repoWithoutPrimary.remove(1)).rejects.toThrow(
         'No primary column found'

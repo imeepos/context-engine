@@ -1,11 +1,12 @@
 import { APP_INITIALIZER, DynamicModule, Module, Provider, Type } from '@sker/core'
-import type { DatabaseDriver } from './driver/types.js'
+import type { DatabaseDriver, SqlDialect } from './driver/types.js'
 import { DataSource } from './data-source/DataSource.js'
 import { synchronizeSchema } from './schema/synchronize.js'
-import { DB_DRIVER, ENTITIES } from './tokens.js'
+import { DB_DRIVER, ENTITIES, SQL_DIALECT } from './tokens.js'
 
 export interface TypeOrmModuleOptions {
   driver: DatabaseDriver
+  dialect: SqlDialect
   entities?: Type<any>[]
   synchronize?: boolean
 }
@@ -17,6 +18,10 @@ export class TypeOrmModule {
       {
         provide: DB_DRIVER,
         useValue: options.driver
+      },
+      {
+        provide: SQL_DIALECT,
+        useValue: options.dialect
       },
       {
         provide: DataSource,

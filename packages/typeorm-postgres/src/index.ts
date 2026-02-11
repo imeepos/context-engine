@@ -1,14 +1,30 @@
 import {
-  postgresDialect,
   type BoundStatement,
   type DatabaseDriver,
   type PreparedStatement,
   type QueryRows,
-  type QueryRunResult
+  type QueryRunResult,
+  type SqlDialect
 } from '@sker/typeorm'
 import { Module, DynamicModule, Type } from '@sker/core'
 import { TypeOrmModule } from '@sker/typeorm'
 import type { PoolConfig, QueryResult } from 'pg'
+
+export const postgresDialect: SqlDialect = {
+  name: 'postgres',
+  buildUpsert({ table, columns, primaryColumn }) {
+    const placeholders = columns.map(() => '?').join(', ')
+    const updateClauses = columns
+      .filter(column => column !== primaryColumn)
+      .map(column => `${column} = EXCLUDED.${column}`)
+      .join(', ')
+
+    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT (${primaryColumn}) DO UPDATE SET ${updateClauses}`
+  },
+  beginTransaction() {
+    return 'BEGIN'
+  }
+}
 
 export interface PostgresPoolLike {
   query(sql: string, params?: any[]): Promise<QueryResult>
@@ -124,6 +140,7 @@ export class TypeOrmPostgresModule {
 
     return TypeOrmModule.forRoot({
       driver,
+      dialect: postgresDialect,
       entities: options.entities
     })
   }
