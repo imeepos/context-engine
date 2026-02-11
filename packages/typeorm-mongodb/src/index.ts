@@ -163,8 +163,8 @@ export class TypeOrmMongodbModule {
     const driver = new MongodbDriver(db as MongoDbLike)
 
     return TypeOrmModule.forRoot({
-      driver: driver as any,
-      dialect: mongodbDialect as any,
+      driver,
+      dialect: mongodbDialect,
       entities: options.entities
     })
   }
