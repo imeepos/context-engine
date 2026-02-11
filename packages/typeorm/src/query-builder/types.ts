@@ -1,5 +1,5 @@
 export interface JoinState {
-  type: 'INNER' | 'LEFT'
+  type: 'INNER' | 'LEFT' | 'RIGHT'
   table: string
   alias: string
   on: string
@@ -12,4 +12,6 @@ export interface QueryState {
   limit?: number
   offset?: number
   joins?: JoinState[]
+  groupBy?: string[]
+  having?: Record<string, any>
 }
