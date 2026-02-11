@@ -11,7 +11,6 @@ import { TypeOrmModule } from '@sker/typeorm'
 import { createPool, type PoolOptions } from 'mysql2/promise'
 
 export const mysqlDialect: SqlDialect = {
-  name: 'mysql',
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns

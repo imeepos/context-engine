@@ -4,7 +4,7 @@ import type { TableMetadata } from '../metadata/types.js'
 import { Repository } from './Repository.js'
 
 const mockDialect: SqlDialect = {
-  name: 'sqlite',
+  
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns

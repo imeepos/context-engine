@@ -11,7 +11,6 @@ import { TypeOrmModule } from '@sker/typeorm'
 import BetterSqlite3 from 'better-sqlite3'
 
 export const sqliteDialect: SqlDialect = {
-  name: 'sqlite',
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns

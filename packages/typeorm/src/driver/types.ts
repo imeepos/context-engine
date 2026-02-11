@@ -19,7 +19,6 @@ export interface PreparedStatement {
 export type DialectName = 'sqlite' | 'd1' | 'mysql' | 'postgres' | 'mongodb'
 
 export interface SqlDialect {
-  name?: DialectName
   buildUpsert(params: {
     table: string
     columns: string[]
@@ -35,6 +34,7 @@ export interface DatabaseDriver {
   exec?(sql: string): Promise<unknown>
   close?(): Promise<void>
   dialect?: SqlDialect
+  synchronizeSchema?(): Promise<void>
 }
 
 // NoSQL support
@@ -57,7 +57,6 @@ export interface NoSqlPreparedStatement {
 }
 
 export interface NoSqlDialect {
-  name: DialectName
   buildUpsert?(params: { collection: string; document: Record<string, any>; primaryKey: string }): any
 }
 

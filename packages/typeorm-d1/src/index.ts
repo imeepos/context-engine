@@ -6,7 +6,6 @@ import {
 } from '@sker/typeorm'
 
 export const sqliteDialect: SqlDialect = {
-  name: 'sqlite',
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns
@@ -25,8 +24,7 @@ export const sqliteDialect: SqlDialect = {
 }
 
 export const d1Dialect: SqlDialect = {
-  ...sqliteDialect,
-  name: 'd1'
+  ...sqliteDialect
 }
 
 export interface D1BoundStatementLike extends BoundStatement {}

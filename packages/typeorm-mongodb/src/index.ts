@@ -11,7 +11,6 @@ import { TypeOrmModule } from '@sker/typeorm'
 import type { Collection, Db, MongoClient, Document, Filter, FindOptions } from 'mongodb'
 
 export const mongodbDialect: NoSqlDialect = {
-  name: 'mongodb'
 }
 
 export interface MongoDbLike {

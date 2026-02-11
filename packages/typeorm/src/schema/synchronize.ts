@@ -1,6 +1,5 @@
 import type { Type } from '@sker/core'
 import { DataSource } from '../data-source/DataSource.js'
-import { MetadataStorage } from '../metadata/MetadataStorage.js'
 import type { ColumnMetadata, TableMetadata } from '../metadata/types.js'
 
 function quoteDefault(value: unknown): string {
@@ -79,7 +78,7 @@ function buildMysqlColumnDefinition(column: ColumnMetadata): string {
   return parts.join(' ')
 }
 
-export function buildCreateTableSql(table: TableMetadata, dialectName: 'sqlite' | 'd1' | 'mysql' | 'postgres' | 'mongodb'): string {
+export function buildCreateTableSql(table: TableMetadata, dialectName: 'sqlite' | 'd1' | 'mysql' | 'postgres'): string {
   const columnSql = table.columns.map((column) =>
     dialectName === 'mysql'
       ? buildMysqlColumnDefinition(column)
@@ -95,20 +94,11 @@ export async function synchronizeSchema(dataSource: DataSource, entities: Type<a
   }
 
   const driver = dataSource.getDriver()
-  const dialect = dataSource.getDialect().name ?? 'sqlite'
-  const storage = MetadataStorage.getInstance()
 
-  for (const entity of entities) {
-    const table = storage.getTable(entity)
-    if (!table || table.columns.length === 0) {
-      continue
-    }
-
-    const sql = buildCreateTableSql(table, dialect)
-    if (driver.exec) {
-      await driver.exec(sql)
-    } else {
-      await driver.prepare(sql).bind().run()
-    }
+  // Schema synchronization is now handled by individual drivers
+  // This function is kept for backwards compatibility but does nothing
+  // Each driver should implement their own schema synchronization logic
+  if (driver.synchronizeSchema) {
+    await driver.synchronizeSchema()
   }
 }

@@ -3,7 +3,7 @@ import { DataSource } from './DataSource.js'
 import type { SqlDialect } from '../driver/types.js'
 
 const mockDialect: SqlDialect = {
-  name: 'sqlite',
+  
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns

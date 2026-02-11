@@ -7,7 +7,7 @@ import { MigrationModule } from './MigrationModule.js'
 import type { MigrationRecord } from './types.js'
 
 const mockDialect: SqlDialect = {
-  name: 'sqlite',
+  
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns

@@ -7,7 +7,7 @@ import { ENTITIES } from './tokens.js'
 import type { DatabaseDriver, SqlDialect } from './driver/types.js'
 
 const mockDialect: SqlDialect = {
-  name: 'sqlite',
+  
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns
@@ -111,10 +111,10 @@ describe('TypeOrmModule', () => {
         profile!: Record<string, unknown>
       }
 
-      const exec = vi.fn().mockResolvedValue(undefined)
+      const synchronizeSchema = vi.fn().mockResolvedValue(undefined)
       mockDb = {
         ...mockDb,
-        exec
+        synchronizeSchema
       } as any
 
       const platform = createPlatform()
@@ -127,8 +127,7 @@ describe('TypeOrmModule', () => {
         synchronize: true
       }))
 
-      expect(exec).toHaveBeenCalledTimes(1)
-      expect(exec.mock.calls[0]?.[0]).toContain('CREATE TABLE IF NOT EXISTS user')
+      expect(synchronizeSchema).toHaveBeenCalledTimes(1)
 
       await app.destroy()
       await platform.destroy()

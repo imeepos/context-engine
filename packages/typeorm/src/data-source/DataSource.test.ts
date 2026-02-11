@@ -5,7 +5,7 @@ import type { DatabaseDriver, SqlDialect } from '../driver/types.js'
 import { MetadataStorage } from '../metadata/MetadataStorage.js'
 
 const mockDialect: SqlDialect = {
-  name: 'sqlite',
+  
   buildUpsert({ table, columns, primaryColumn }) {
     const placeholders = columns.map(() => '?').join(', ')
     const updateClauses = columns
