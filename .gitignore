@@ -7,3 +7,4 @@ nul
 .wrangler
 .wrangler-state-migration-smoke
 *.md
+!AGENTS.md
