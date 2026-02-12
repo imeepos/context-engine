@@ -1,18 +1,11 @@
 import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
-import { UIRenderer, Tool } from '@sker/prompt-renderer'
+import { UIRenderer, Tool, CURRENT_URL } from '@sker/prompt-renderer'
 import { FileManagerService } from '../services/file-manager.service'
 import { loadPageData } from './market-page-state'
 import z from 'zod'
 import path from 'path'
-
-interface FileManagerPageProps {
-  injector: Injector
-  params: {
-    '*'?: string
-  }
-}
 
 // 格式化文件大小
 function formatFileSize(bytes: number): string {
@@ -35,13 +28,14 @@ function formatDateTime(date: Date): string {
   })
 }
 
-export async function FileManagerPage({ injector, params }: FileManagerPageProps) {
+export async function FileManagerPage({ injector }: { injector: Injector }) {
   const renderer = injector.get(UIRenderer)
-  const currentPath = params?.['*'] || '.'
-  
+  const url = injector.get(CURRENT_URL)
+  const currentPath = url.searchParams.get('path') || '.'
+
   const fileManager = new FileManagerService(process.cwd())
   const baseDir = fileManager.getBaseDir()
-  
+
   const result = await loadPageData(async () => {
     return await fileManager.listDirectory(currentPath)
   })
@@ -56,7 +50,10 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
           description="返回上级目录"
           execute={async () => {
             const parentPath = path.dirname(currentPath)
-            return await renderer.navigate(`prompt:///files/${parentPath === '.' ? '' : parentPath}`)
+            const navUrl = parentPath === '.' || parentPath === ''
+              ? 'prompt:///files'
+              : `prompt:///files?path=${encodeURIComponent(parentPath)}`
+            return await renderer.navigate(navUrl)
           }}
         >
           返回上级
@@ -68,22 +65,24 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
   const files = result.data
   const fullPath = path.join(baseDir, currentPath)
   const isRoot = currentPath === '.' || currentPath === ''
+  const parentPath = isRoot ? null : path.dirname(currentPath)
 
   return (
     <Layout injector={injector}>
       <h1>文件管理器</h1>
-      
+
       <h2>当前目录</h2>
       <p>{fullPath}</p>
 
-      {!isRoot && (
+      {parentPath && (
         <Tool
           name="go_parent"
           description="返回上级目录"
           execute={async () => {
-            const parentPath = path.dirname(currentPath)
-            const navPath = parentPath === '.' ? '' : parentPath
-            return await renderer.navigate(`prompt:///files/${navPath}`)
+            const navUrl = parentPath === '.' || parentPath === ''
+              ? 'prompt:///files'
+              : `prompt:///files?path=${encodeURIComponent(parentPath)}`
+            return await renderer.navigate(navUrl)
           }}
         >
           .. 返回上级目录
@@ -91,14 +90,15 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
       )}
 
       <h2>文件列表 ({files.length} 项)</h2>
-      
+
       {files.length === 0 ? (
         <p>目录为空</p>
       ) : (
         files.map((file, index) => {
           const icon = file.isDirectory ? '📁' : '📄'
           const relativePath = path.join(currentPath, file.name)
-          
+          const encodedPath = encodeURIComponent(relativePath)
+
           return (
             <div key={index} style={{ marginBottom: '1em', borderBottom: '1px solid #ccc', paddingBottom: '0.5em' }}>
               <p>
@@ -107,14 +107,14 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
                 <br />
                 <small>修改时间: {formatDateTime(file.modifiedAt)}</small>
               </p>
-              
+
               <div style={{ display: 'flex', gap: '0.5em', flexWrap: 'wrap' }}>
                 {file.isDirectory ? (
                   <Tool
                     name={`enter_${index}`}
                     description={`进入目录 ${file.name}`}
                     execute={async () => {
-                      return await renderer.navigate(`prompt:///files/${relativePath}`)
+                      return await renderer.navigate(`prompt:///files?path=${encodeURIComponent(relativePath)}`)
                     }}
                   >
                     打开
@@ -124,13 +124,13 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
                     name={`view_${index}`}
                     description={`查看文件 ${file.name}`}
                     execute={async () => {
-                      return await renderer.navigate(`prompt:///files/${relativePath}`)
+                      return await renderer.navigate(`prompt:///files/detail?path=${encodeURIComponent(relativePath)}`)
                     }}
                   >
                     查看
                   </Tool>
                 )}
-                
+
                 <Tool
                   name={`rename_${index}`}
                   description={`重命名 ${file.name}`}
@@ -141,12 +141,12 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
                     const oldPath = relativePath
                     const newPath = path.join(path.dirname(relativePath), params.newName)
                     await fileManager.renameFile(oldPath, newPath)
-                    return await renderer.navigate(`prompt:///files/${currentPath}`)
+                    return await renderer.navigate(`prompt:///files?path=${encodeURIComponent(currentPath)}`)
                   }}
                 >
                   重命名
                 </Tool>
-                
+
                 <Tool
                   name={`delete_${index}`}
                   description={`删除 ${file.name}`}
@@ -156,7 +156,7 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
                     } else {
                       await fileManager.deleteFile(relativePath)
                     }
-                    return await renderer.navigate(`prompt:///files/${currentPath}`)
+                    return await renderer.navigate(`prompt:///files?path=${encodeURIComponent(currentPath)}`)
                   }}
                 >
                   删除
@@ -168,7 +168,7 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
       )}
 
       <h2>操作</h2>
-      
+
       <Tool
         name="create_file"
         description="在当前目录创建新文件"
@@ -179,12 +179,12 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
         execute={async (params: any) => {
           const filePath = path.join(currentPath, params.fileName)
           await fileManager.createFile(filePath, params.content)
-          return await renderer.navigate(`prompt:///files/${currentPath}`)
+          return await renderer.navigate(`prompt:///files?path=${encodeURIComponent(currentPath)}`)
         }}
       >
         创建文件
       </Tool>
-      
+
       <Tool
         name="create_directory"
         description="在当前目录创建新文件夹"
@@ -194,7 +194,7 @@ export async function FileManagerPage({ injector, params }: FileManagerPageProps
         execute={async (params: any) => {
           const dirPath = path.join(currentPath, params.dirName)
           await fileManager.createDirectory(dirPath)
-          return await renderer.navigate(`prompt:///files/${currentPath}`)
+          return await renderer.navigate(`prompt:///files?path=${encodeURIComponent(currentPath)}`)
         }}
       >
         创建文件夹

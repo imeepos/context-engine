@@ -101,7 +101,7 @@ export const routes: Route[] = [
   { path: '/skills', component: SkillsListPage, params: {} },
   { path: '/skills/:skillId', component: SkillDetailPage, params: {} },
   { path: '/files', component: FileManagerPage, params: {} },
-  { path: '/files/*', component: FileDetailPage, params: {} }
+  { path: '/files/detail', component: FileDetailPage, params: {} }
 ]
 
 export function createRouter(injector: Injector) {

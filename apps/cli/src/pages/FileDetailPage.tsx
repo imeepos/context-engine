@@ -1,7 +1,7 @@
 import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
-import { UIRenderer, Tool } from '@sker/prompt-renderer'
+import { UIRenderer, Tool, CURRENT_URL } from '@sker/prompt-renderer'
 import { FileManagerService } from '../services/file-manager.service'
 import { loadPageData } from './market-page-state'
 import z from 'zod'
@@ -15,19 +15,17 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / Math.pow(k, i)).toFixed(2)} ${units[i]}`
 }
 
-interface FileDetailPageProps {
-  injector: Injector
-  params: { '*'?: string }
-}
-
-export async function FileDetailPage({ injector, params }: FileDetailPageProps) {
+export async function FileDetailPage({ injector }: { injector: Injector }) {
   const renderer = injector.get(UIRenderer)
-  const fileManager = new FileManagerService(process.cwd())
-  const filePath = params['*'] || ''
-  const parentPath = filePath ? path.dirname(filePath) : ''
-  const parentNav = parentPath === '.' || !parentPath ? '' : parentPath
+  const url = injector.get(CURRENT_URL)
+  const filePath = url.searchParams.get('path') || ''
+  const parentPath = filePath ? path.dirname(filePath) : '.'
+  const parentNav = parentPath === '.' ? 'prompt:///files' : `prompt:///files?path=${encodeURIComponent(parentPath)}`
 
   const data = await loadPageData(async () => {
+    if (!filePath) {
+      throw new Error('未指定文件路径')
+    }
     const fileInfo = await fileManager.getFileInfo(filePath)
     if (fileInfo.isDirectory) {
       const contents = await fileManager.listDirectory(filePath)
@@ -74,7 +72,10 @@ export async function FileDetailPage({ injector, params }: FileDetailPageProps) 
                   name={`nav_${index}`}
                   description={`${item.isDirectory ? '进入目录' : '查看文件'} ${item.name}`}
                   execute={async () => {
-                    return await renderer.navigate(`prompt:///files/${item.path}`)
+                    if (item.isDirectory) {
+                      return await renderer.navigate(`prompt:///files?path=${encodeURIComponent(item.path)}`)
+                    }
+                    return await renderer.navigate(`prompt:///files/detail?path=${encodeURIComponent(item.path)}`)
                   }}
                 >
                   {item.isDirectory ? '打开' : '查看'}
@@ -97,7 +98,7 @@ export async function FileDetailPage({ injector, params }: FileDetailPageProps) 
             params={{ content: z.string().describe('新的文件内容') }}
             execute={async (params: any) => {
               await fileManager.createFile(filePath, params.content)
-              return await renderer.navigate(`prompt:///files/${filePath}`)
+              return await renderer.navigate(`prompt:///files/detail?path=${encodeURIComponent(filePath)}`)
             }}
           >
             编辑文件
@@ -111,7 +112,7 @@ export async function FileDetailPage({ injector, params }: FileDetailPageProps) 
               const dir = path.dirname(filePath)
               const newPath = dir === '.' ? params.newName : path.join(dir, params.newName)
               await fileManager.renameFile(filePath, newPath)
-              return await renderer.navigate(`prompt:///files/${newPath}`)
+              return await renderer.navigate(`prompt:///files/detail?path=${encodeURIComponent(newPath)}`)
             }}
           >
             重命名
@@ -122,7 +123,7 @@ export async function FileDetailPage({ injector, params }: FileDetailPageProps) 
             description={`删除文件 ${fileInfo.name}`}
             execute={async () => {
               await fileManager.deleteFile(filePath)
-              return await renderer.navigate(parentNav ? `prompt:///files/${parentNav}` : 'prompt:///files')
+              return await renderer.navigate(parentNav)
             }}
           >
             删除文件
@@ -134,7 +135,7 @@ export async function FileDetailPage({ injector, params }: FileDetailPageProps) 
         name="go_back"
         description="返回上级目录"
         execute={async () => {
-          return await renderer.navigate(parentNav ? `prompt:///files/${parentNav}` : 'prompt:///files')
+          return await renderer.navigate(parentNav)
         }}
       >
         返回上级目录
