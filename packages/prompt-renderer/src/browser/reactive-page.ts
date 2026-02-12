@@ -47,13 +47,14 @@ export class ReactivePage extends Page {
     }
 
     const component = currentRoute.route.component;
+    const { params } = currentRoute;
     const injector = createInjector([
       { provide: COMPONENT, useValue: component },
       ...providers,
     ], (this as any).parent);
 
-    this.fiber = { component, props: { injector } };
-    getOrCreateFiberState(this.fiber, component, { injector });
+    this.fiber = { component, props: { injector, params } };
+    getOrCreateFiberState(this.fiber, component, { injector, params });
 
     scheduler.subscribe(this.fiber, () => {
       void this.refresh();
