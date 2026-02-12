@@ -85,7 +85,7 @@ export class ReactivePage extends Page {
     const prompt = renderToMarkdown(vnode);
     const tools = extractTools(vnode);
 
-    this.currentResult = { prompt, tools };
+    this.currentResult = { prompt, tools, vnode };
 
     for (const callback of this.renderListeners) {
       callback(this.currentResult);

@@ -16,4 +16,4 @@ use test-driven-development skills finish user task
 - 写入文件时 时如果上下文过长会导致失败 请分片更新
 - 读取和写入时 指定编码 utf-8 -Encoding UTF8
 - 碰到问题解决问题 千万不要在用户没有授权的情况下 做类似：简化的版本/假数据等欺骗性行为
-
+- 使用tsup打包packages中的公共库，要求：['esm', 'cjs'] 支持多种格式输出

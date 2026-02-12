@@ -1,3 +1,3 @@
-export * from './types/index'
-export * as runtime from './runtime/index'
-export * as system from './system/index'
+export * from './types/index.js'
+export * as runtime from './runtime/index.js'
+export * as system from './system/index.js'

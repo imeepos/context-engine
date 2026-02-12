@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { PluginContext } from './context'
+import { PluginContext } from './context.js'
 
 /**
  * 获取插件数据

@@ -14,6 +14,8 @@ import { MarketInstalledPage } from './pages/MarketInstalledPage'
 import { MarketPublishedPage } from './pages/MarketPublishedPage'
 import { SkillsListPage } from './pages/SkillsListPage'
 import { SkillDetailPage } from './pages/SkillDetailPage'
+import { FileManagerPage } from './pages/FileManagerPage'
+import { FileDetailPage } from './pages/FileDetailPage'
 
 /**
  * 一级菜单配置
@@ -73,6 +75,13 @@ export const menuItems: MenuItem[] = [
     toolName: 'navigate_skills',
     description: '查看和管理系统中的 Skills',
     showInMenu: true
+  },
+  {
+    title: '文件管理',
+    path: '/files',
+    toolName: 'navigate_files',
+    description: '管理当前目录下的文件和文件夹',
+    showInMenu: true
   }
 ]
 
@@ -90,7 +99,9 @@ export const routes: Route[] = [
   { path: '/plugins/develop', component: PluginDevelopPage, params: {} },
   { path: '/plugin/:id/*', component: PluginContainerPage, params: {} },
   { path: '/skills', component: SkillsListPage, params: {} },
-  { path: '/skills/:skillId', component: SkillDetailPage, params: {} }
+  { path: '/skills/:skillId', component: SkillDetailPage, params: {} },
+  { path: '/files', component: FileManagerPage, params: {} },
+  { path: '/files/*', component: FileDetailPage, params: {} }
 ]
 
 export function createRouter(injector: Injector) {

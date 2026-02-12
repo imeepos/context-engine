@@ -1,6 +1,6 @@
 import React from 'react'
-import { PluginContext } from './context'
-import type { LoadedPlugin } from './types'
+import { PluginContext } from './context.js'
+import type { LoadedPlugin } from './types.js'
 import type { Injector } from '@sker/core'
 
 export interface PluginContextProviderProps {

@@ -10,6 +10,7 @@ export type { Match } from './router/matcher';
 // Reconciler
 export { createTextNode, createElement } from './reconciler/dom';
 export { renderToMarkdown } from './reconciler/renderer';
+export { renderToHtml } from './reconciler/html-renderer';
 export { extractTools } from './reconciler/extractor';
 export { directRender } from './reconciler/direct-render';
 export { directRenderAsync } from './reconciler/direct-render-async';

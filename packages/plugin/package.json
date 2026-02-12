@@ -4,31 +4,31 @@
   "description": "Unified plugin runtime/system package for Sker",
   "type": "module",
   "main": "dist/index.cjs",
-  "types": "src/index.ts",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
       "require": "./dist/index.cjs",
-      "default": "./src/index.ts"
+      "default": "./dist/index.js"
     },
     "./runtime": {
-      "types": "./src/runtime/index.ts",
-      "import": "./src/runtime/index.ts",
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.js",
       "require": "./dist/runtime/index.cjs",
-      "default": "./src/runtime/index.ts"
+      "default": "./dist/runtime/index.js"
     },
     "./system": {
-      "types": "./src/system/index.ts",
-      "import": "./src/system/index.ts",
+      "types": "./dist/system/index.d.ts",
+      "import": "./dist/system/index.js",
       "require": "./dist/system/index.cjs",
-      "default": "./src/system/index.ts"
+      "default": "./dist/system/index.js"
     },
     "./types": {
-      "types": "./src/types/index.ts",
-      "import": "./src/types/index.ts",
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js",
       "require": "./dist/types/index.cjs",
-      "default": "./src/types/index.ts"
+      "default": "./dist/types/index.js"
     }
   },
   "scripts": {

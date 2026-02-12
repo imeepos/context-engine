@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { LoadedPlugin } from './types'
+import type { LoadedPlugin } from './types.js'
 import type { Injector } from '@sker/core'
 
 /**

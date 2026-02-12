@@ -144,6 +144,7 @@ export interface PromptURL {
 export interface RenderResult {
   prompt: string;
   tools: UnifiedTool[];
+  vnode?: import('../reconciler/types').VNode;
 }
 
 export interface ToolCall {
@@ -179,7 +180,7 @@ export class Page {
 
     const prompt = renderToMarkdown(vnode);
     const tools = extractTools(vnode);
-    return { prompt, tools };
+    return { prompt, tools, vnode };
   }
   navigate(url: string): Page {
     const browser = this.parent.get(Browser);
