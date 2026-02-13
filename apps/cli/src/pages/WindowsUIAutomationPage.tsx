@@ -21,7 +21,7 @@ export async function WindowsUIAutomationPage({ injector }: WindowsUIAutomationP
     return (
       <Layout injector={injector}>
         <h1>Windows UI 自动化</h1>
-        <p style={{ color: 'red' }}>加载失败: {result.error}</p>
+        <p>加载失败: {result.error}</p>
         <Tool
           name="retry"
           description="重试加载窗口列表"
@@ -64,7 +64,7 @@ export async function WindowsUIAutomationPage({ injector }: WindowsUIAutomationP
         <p>当前没有检测到窗口。请打开一些应用程序后刷新。</p>
       ) : (
         windows.map((window, index) => (
-          <div key={index} style={{ marginBottom: '1.5em', borderBottom: '1px solid #ccc', paddingBottom: '1em' }}>
+          <div key={index}>
             <h3>窗口 {index + 1}: {window.name || '(无标题)'}</h3>
 
             <ul>
@@ -75,7 +75,23 @@ export async function WindowsUIAutomationPage({ injector }: WindowsUIAutomationP
               <li><strong>大小:</strong> {window.bounds.width} × {window.bounds.height}</li>
             </ul>
 
-            <div style={{ display: 'flex', gap: '0.5em', flexWrap: 'wrap' }}>
+            <div>
+              <Tool
+                name={`activate_${index}`}
+                description={`激活窗口 "${window.name}" 并将其置于前台`}
+                execute={async () => {
+                  try {
+                    const windowElement = await automationService.getWindowElement(index)
+                    await automationService.activateWindow(windowElement)
+                    return `窗口 "${window.name}" 已激活`
+                  } catch (error) {
+                    return `激活失败: ${error instanceof Error ? error.message : String(error)}`
+                  }
+                }}
+              >
+                激活窗口
+              </Tool>
+
               <Tool
                 name={`view_tree_${index}`}
                 description={`查看窗口 "${window.name}" 的 UI 元素树`}
