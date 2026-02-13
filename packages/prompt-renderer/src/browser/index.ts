@@ -1,4 +1,5 @@
 export { createBrowser, Browser, Page, CURRENT_ROUTE, CURRENT_URL, COMPONENT, ROUTES } from './browser'
 export type { Route, RouteMatch, RenderResult } from './browser'
 export { UIRenderer } from './renderer'
-export { BROWSER } from './tokens'
+export { BROWSER, RENDER_SNAPSHOT_HANDLER } from './tokens'
+export type { RenderSnapshotHandler } from './tokens'

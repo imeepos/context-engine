@@ -28,10 +28,9 @@ export class RenderSnapshotService implements RenderSnapshotHandler {
     const mm = (date.getMonth() + 1).toString().padStart(2, '0')
     const dd = date.getDate().toString().padStart(2, '0')
     const hh = date.getHours().toString().padStart(2, '0')
-    const min = date.getMinutes().toString().padStart(2, '0')
 
     const filePath = this.urlToFilePath(url)
-    return path.join(this.baseDir, yyyy, mm, dd, hh, min, filePath)
+    return path.join(this.baseDir, yyyy, mm, dd, hh, filePath)
   }
 
   async saveSnapshot(url: string, prompt: string): Promise<void> {

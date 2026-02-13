@@ -15,6 +15,8 @@ import { ChatSession } from './core/chat-session'
 import { MCP_CLIENT_CONFIG, CURRENT_AGENT_ID, MARKETPLACE_API_CONFIG } from './tokens'
 import { SqliteStorage } from './storage/sqlite-storage'
 import { DualStorage } from './storage/dual-storage'
+import { RENDER_SNAPSHOT_HANDLER } from '@sker/prompt-renderer'
+import { RenderSnapshotService } from './services/render-snapshot.service'
 
 type StorageBackend = 'json' | 'sqlite' | 'dual'
 
@@ -172,6 +174,11 @@ async function main() {
           baseUrl: options.mcpUrl || 'https://mcp.sker.us',
           timeout: parseInt(process.env.MCP_API_TIMEOUT || '30000')
         }
+      })
+
+      providers.push({
+        provide: RENDER_SNAPSHOT_HANDLER,
+        useValue: new RenderSnapshotService()
       })
 
       const app = platform.bootstrapApplication(providers)
