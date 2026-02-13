@@ -1,6 +1,6 @@
 import { Inject, Injectable, Injector } from '@sker/core';
 import { UnifiedToolUseContent, UnifiedTool } from '../ast';
-import { ToolLoopOptions } from './tool-loop';
+import { isRenderResult, RenderResult, ToolLoopOptions } from './tool-loop';
 
 export interface UnifiedToolResult {
   toolUseId: string;
@@ -28,7 +28,15 @@ export class UnifiedToolExecutor {
         };
       }
       const result = await tool.execute(toolUse.input, this.injector);
-
+      if (isRenderResult(result)) {
+        return {
+          toolUseId: toolUse.id,
+          toolName: toolUse.name,
+          content: result.prompt,
+          isError: false,
+          duration: Date.now() - startTime
+        };
+      }
       return {
         toolUseId: toolUse.id,
         toolName: toolUse.name,

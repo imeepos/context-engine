@@ -7,6 +7,9 @@ export interface RenderResult {
   prompt: string;
   tools: UnifiedTool[];
 }
+export function isRenderResult(val: any): val is RenderResult{
+  return val && val.prompt && val.tools
+}
 export interface ToolLoopOptions {
   maxIterations?: number;
   onToolBefore?: (toolUse: UnifiedToolUseContent) => Promise<void>;
