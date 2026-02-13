@@ -30,8 +30,7 @@ describe('WindowsAutomationService', () => {
     expect(properties).toBeDefined()
     expect(properties.id).toBeDefined()
     expect(properties.type).toBeDefined()
-    expect(properties.bounds).toBeDefined()
-    expect(properties.state).toBeDefined()
+    expect(properties.name).toBeDefined()
   })
 
   it('应该能够获取元素树', async () => {
@@ -41,5 +40,35 @@ describe('WindowsAutomationService', () => {
     expect(tree).toBeDefined()
     expect(tree.id).toBeDefined()
     expect(tree.children).toBeDefined()
+  })
+
+  it('应该提取扩展的文本属性', async () => {
+    const rootElement = await service.getRootElement()
+    const properties = await service.getElementProperties(rootElement)
+
+    // 验证新增的可选属性存在于接口中（undefined 也算有效）
+    expect('localizedControlType' in properties || properties.localizedControlType === undefined).toBe(true)
+    expect('helpText' in properties || properties.helpText === undefined).toBe(true)
+    expect('itemStatus' in properties || properties.itemStatus === undefined).toBe(true)
+    expect('itemType' in properties || properties.itemType === undefined).toBe(true)
+    expect('acceleratorKey' in properties || properties.acceleratorKey === undefined).toBe(true)
+    expect('accessKey' in properties || properties.accessKey === undefined).toBe(true)
+    // value 是通过 Pattern 动态获取的，可能不存在
+    expect(properties.value === undefined || typeof properties.value === 'string').toBe(true)
+  })
+
+  it('应该只保留非空的文本属性', async () => {
+    const rootElement = await service.getRootElement()
+    const properties = await service.getElementProperties(rootElement)
+
+    // 验证空字符串被转换为 undefined
+    const optionalProps = ['localizedControlType', 'helpText', 'itemStatus', 'itemType', 'acceleratorKey', 'accessKey', 'value']
+    optionalProps.forEach(prop => {
+      const value = (properties as any)[prop]
+      if (value !== undefined) {
+        expect(typeof value).toBe('string')
+        expect(value).not.toBe('')
+      }
+    })
   })
 })

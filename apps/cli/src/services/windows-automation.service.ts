@@ -1,4 +1,4 @@
-import { Injectable } from '@sker/core'
+﻿import { Injectable } from '@sker/core'
 
 /**
  * UI 元素信息接口
@@ -9,6 +9,20 @@ export interface UIElement {
   name: string
   className: string
   automationId?: string
+  /** 控件的本地化类型名称，如"按钮"、"编辑框" */
+  localizedControlType?: string
+  /** 元素的值（来自 ValuePattern 或 LegacyIAccessible） */
+  value?: string
+  /** 帮助文本 */
+  helpText?: string
+  /** 项目状态文本 */
+  itemStatus?: string
+  /** 项目类型文本 */
+  itemType?: string
+  /** 快捷键 */
+  acceleratorKey?: string
+  /** 访问键 */
+  accessKey?: string
   bounds: {
     x: number
     y: number
@@ -23,6 +37,9 @@ export interface UIElement {
   processId: number
   children?: UIElement[]
 }
+
+/** 兼容别名 */
+export type UIElementInfo = UIElement
 
 /**
  * 窗口信息接口
@@ -61,7 +78,7 @@ export class WindowsAutomationService {
     this.initPromise = (async () => {
       try {
         const module = await import('node-winautomation')
-        this.UIAutomation = module.UIAutomation
+        this.UIAutomation = (module as any).UIAutomation
         this.automation = new this.UIAutomation.Automation()
       } catch (error) {
         console.error('Failed to initialize Windows Automation:', error)
@@ -94,7 +111,7 @@ export class WindowsAutomationService {
    */
   async findElement(parent: any, condition: any): Promise<any> {
     await this.ensureInitialized()
-    return parent.findFirst(this.automation.TreeScope_Descendants, condition)
+    return parent.findFirst(this.UIAutomation.TreeScopes.Descendants, condition)
   }
 
   /**
@@ -102,7 +119,7 @@ export class WindowsAutomationService {
    */
   async findAllElements(parent: any, condition: any): Promise<any[]> {
     await this.ensureInitialized()
-    return parent.findAll(this.automation.TreeScope_Descendants, condition)
+    return parent.findAll(this.UIAutomation.TreeScopes.Descendants, condition)
   }
 
   /**
@@ -112,7 +129,7 @@ export class WindowsAutomationService {
     await this.ensureInitialized()
     const root = await this.getRootElement()
     const condition = this.automation.createTrueCondition()
-    const windows = root.findAll(this.automation.TreeScope_Children, condition)
+    const windows = root.findAll(this.UIAutomation.TreeScopes.Children, condition)
 
     return windows.map((window: any) => {
       const bounds = window.currentBoundingRectangle
@@ -143,6 +160,12 @@ export class WindowsAutomationService {
       name: element.currentName || '',
       className: element.currentClassName || '',
       automationId: element.currentAutomationId || undefined,
+      localizedControlType: element.currentLocalizedControlType || undefined,
+      helpText: element.currentHelpText || undefined,
+      itemStatus: element.currentItemStatus || undefined,
+      itemType: element.currentItemType || undefined,
+      acceleratorKey: element.currentAcceleratorKey || undefined,
+      accessKey: element.currentAccessKey || undefined,
       bounds: {
         x: bounds.left,
         y: bounds.top,
@@ -155,6 +178,32 @@ export class WindowsAutomationService {
         focused: element.currentHasKeyboardFocus || false
       },
       processId: element.currentProcessId || 0
+    }
+
+    // 安全尝试获取 ValuePattern 的值
+    try {
+      const vp = element.getCurrentPattern(
+        this.UIAutomation.PatternIds.UIA_ValuePatternId
+      )
+      if (vp && vp.currentValue) {
+        uiElement.value = vp.currentValue
+      }
+    } catch {
+      // ValuePattern 不支持，忽略
+    }
+
+    // 如果没有 value，尝试 LegacyIAccessiblePattern
+    if (!uiElement.value) {
+      try {
+        const lap = element.getCurrentPattern(
+          this.UIAutomation.PatternIds.UIA_LegacyIAccessiblePatternId
+        )
+        if (lap && lap.currentValue) {
+          uiElement.value = lap.currentValue
+        }
+      } catch {
+        // LegacyIAccessiblePattern 不支持，忽略
+      }
     }
 
     if (includeChildren) {
@@ -231,7 +280,7 @@ export class WindowsAutomationService {
     if (currentDepth < maxDepth) {
       try {
         const condition = this.automation.createTrueCondition()
-        const children = element.findAll(this.automation.TreeScope_Children, condition)
+        const children = element.findAll(this.UIAutomation.TreeScopes.Children, condition)
 
         if (children && children.length > 0) {
           uiElement.children = await Promise.all(
@@ -258,7 +307,7 @@ export class WindowsAutomationService {
         invokePattern.invoke()
         return
       }
-    } catch (error) {
+    } catch {
       // Invoke pattern not supported, try other methods
     }
 
@@ -282,7 +331,7 @@ export class WindowsAutomationService {
         valuePattern.setValue(text)
         return
       }
-    } catch (error) {
+    } catch {
       throw new Error('元素不支持文本输入')
     }
   }
@@ -298,7 +347,7 @@ export class WindowsAutomationService {
       if (valuePattern) {
         return valuePattern.currentValue || ''
       }
-    } catch (error) {
+    } catch {
       // Value pattern not supported
     }
 
@@ -336,5 +385,67 @@ export class WindowsAutomationService {
       this.UIAutomation.PropertyIds.UIA_ClassNamePropertyId,
       className
     )
+  }
+
+  /**
+   * 获取窗口元素(通过索引)
+   */
+  async getWindowElement(index: number): Promise<any> {
+    await this.ensureInitialized()
+    const root = await this.getRootElement()
+    const condition = this.automation.createTrueCondition()
+    const windows = root.findAll(this.UIAutomation.TreeScopes.Children, condition)
+
+    if (index >= windows.length) {
+      throw new Error(`窗口索引 ${index} 超出范围(共 ${windows.length} 个窗口)`)
+    }
+
+    return windows[index]
+  }
+
+  /**
+   * 按名称查找元素
+   */
+  async findElementByName(parent: any, name: string): Promise<any> {
+    await this.ensureInitialized()
+    const condition = await this.createNameCondition(name)
+    return parent.findFirst(this.UIAutomation.TreeScopes.Descendants, condition)
+  }
+
+  /**
+   * 设置元素焦点
+   */
+  async setFocus(element: any): Promise<void> {
+    await this.ensureInitialized()
+    try {
+      element.setFocus()
+    } catch (error) {
+      throw new Error(`无法设置焦点: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
+  /**
+   * 激活窗口(将窗口置于前台)
+   */
+  async activateWindow(element: any): Promise<void> {
+    await this.ensureInitialized()
+
+    try {
+      const windowPattern = element.getCurrentPattern(
+        this.UIAutomation.PatternIds.UIA_WindowPatternId
+      )
+      if (windowPattern) {
+        windowPattern.setWindowVisualState(0) // 0 = Normal state
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    } catch {
+      // WindowPattern 不支持,继续尝试其他方法
+    }
+
+    try {
+      element.setFocus()
+    } catch (error) {
+      throw new Error(`无法激活窗口: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 }
