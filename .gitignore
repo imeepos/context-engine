@@ -8,3 +8,5 @@ nul
 .wrangler-state-migration-smoke
 *.md
 !AGENTS.md
+target
+dep-checker
