@@ -9,5 +9,9 @@ export default defineConfig({
   target: 'node18',
   banner: {
     js: '#!/usr/bin/env node'
+  },
+  external: ['node-winautomation'],
+  esbuildOptions(options) {
+    options.platform = 'node'
   }
 })
