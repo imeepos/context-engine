@@ -44,7 +44,7 @@ export async function FileManagerPage({ injector }: { injector: Injector }) {
     return (
       <Layout injector={injector}>
         <h1>文件管理器</h1>
-        <p style={{ color: 'red' }}>加载失败: {result.error}</p>
+        <p>加载失败: {result.error}</p>
         <Tool
           name="go_back"
           description="返回上级目录"
@@ -100,7 +100,7 @@ export async function FileManagerPage({ injector }: { injector: Injector }) {
           const encodedPath = encodeURIComponent(relativePath)
 
           return (
-            <div key={index} style={{ marginBottom: '1em', borderBottom: '1px solid #ccc', paddingBottom: '0.5em' }}>
+            <div key={index}>
               <p>
                 <strong>{icon} {file.name}</strong>
                 {!file.isDirectory && ` (${formatFileSize(file.size)})`}
@@ -108,7 +108,7 @@ export async function FileManagerPage({ injector }: { injector: Injector }) {
                 <small>修改时间: {formatDateTime(file.modifiedAt)}</small>
               </p>
 
-              <div style={{ display: 'flex', gap: '0.5em', flexWrap: 'wrap' }}>
+              <div>
                 {file.isDirectory ? (
                   <Tool
                     name={`enter_${index}`}

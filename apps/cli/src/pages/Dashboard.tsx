@@ -36,7 +36,7 @@ export async function DashboardComponent({ injector }: DashboardProps) {
       <h1>我负责的任务</h1>
       {taskDetail}
       <h1>快捷入口</h1>
-      <div style={{ display: 'flex', gap: '0.5em', flexWrap: 'wrap' }}>
+      <div>
         <Tool
           name="navigate_windows_automation"
           description="打开 Windows UI 自动化工具"

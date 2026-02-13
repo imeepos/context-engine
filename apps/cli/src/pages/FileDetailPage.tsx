@@ -2,7 +2,7 @@ import React from 'react'
 import { Injector } from '@sker/core'
 import { Layout } from '../components/Layout'
 import { UIRenderer, Tool, CURRENT_URL } from '@sker/prompt-renderer'
-import { FileManagerService } from '../services/file-manager.service'
+import { FileManagerService, FileInfo } from '../services/file-manager.service'
 import { loadPageData } from './market-page-state'
 import z from 'zod'
 import path from 'path'
@@ -21,6 +21,8 @@ export async function FileDetailPage({ injector }: { injector: Injector }) {
   const filePath = url.searchParams.get('path') || ''
   const parentPath = filePath ? path.dirname(filePath) : '.'
   const parentNav = parentPath === '.' ? 'prompt:///files' : `prompt:///files?path=${encodeURIComponent(parentPath)}`
+
+  const fileManager = injector.get(FileManagerService)
 
   const data = await loadPageData(async () => {
     if (!filePath) {
@@ -65,7 +67,7 @@ export async function FileDetailPage({ injector }: { injector: Injector }) {
           {contents.length === 0 ? (
             <p>目录为空</p>
           ) : (
-            contents.map((item, index) => (
+            contents.map((item: FileInfo, index: number) => (
               <div key={item.path}>
                 <strong>{item.isDirectory ? '📁' : '📄'} {item.name}</strong>
                 <Tool

@@ -63,7 +63,7 @@ export async function SkillDetailPage({ injector, skillId }: SkillDetailPageProp
       </ul>
 
       <h2>完整内容</h2>
-      <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>{skill.content}</pre>
+      <pre>{skill.content}</pre>
 
       <Tool
         name="back_to_skills"
