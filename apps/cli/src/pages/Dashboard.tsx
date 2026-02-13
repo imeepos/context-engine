@@ -5,6 +5,7 @@ import { AgentListComponent } from '../components/AgentList'
 import { TaskManagerService } from '../services/task-manager.service'
 import { TaskDetailComponent } from '../components/TaskDetail'
 import { CURRENT_AGENT_ID } from '../tokens'
+import { UIRenderer, Tool } from '@sker/prompt-renderer'
 
 interface DashboardProps {
   injector: Injector
@@ -14,6 +15,7 @@ export async function DashboardComponent({ injector }: DashboardProps) {
   const agentList = await AgentListComponent({ injector })
   const taskManager = injector.get(TaskManagerService)
   const currentAgentId = injector.get(CURRENT_AGENT_ID)
+  const renderer = injector.get(UIRenderer)
 
   const myTasks = await taskManager.getTasksByAgent(currentAgentId)
   const taskList = myTasks.filter(t => t.assignedTo === currentAgentId)
@@ -33,6 +35,18 @@ export async function DashboardComponent({ injector }: DashboardProps) {
       {agentList}
       <h1>我负责的任务</h1>
       {taskDetail}
+      <h1>快捷入口</h1>
+      <div style={{ display: 'flex', gap: '0.5em', flexWrap: 'wrap' }}>
+        <Tool
+          name="navigate_windows_automation"
+          description="打开 Windows UI 自动化工具"
+          execute={async () => {
+            return await renderer.navigate('prompt:///windows-automation')
+          }}
+        >
+          Windows UI 自动化
+        </Tool>
+      </div>
     </Layout>
   )
 }

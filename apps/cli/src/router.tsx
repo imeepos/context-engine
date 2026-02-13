@@ -16,6 +16,9 @@ import { SkillsListPage } from './pages/SkillsListPage'
 import { SkillDetailPage } from './pages/SkillDetailPage'
 import { FileManagerPage } from './pages/FileManagerPage'
 import { FileDetailPage } from './pages/FileDetailPage'
+import { WindowsUIAutomationPage } from './pages/WindowsUIAutomationPage'
+import { WindowsUITreePage } from './pages/WindowsUITreePage'
+import { WindowsUIInspectPage } from './pages/WindowsUIInspectPage'
 
 /**
  * 一级菜单配置
@@ -82,6 +85,13 @@ export const menuItems: MenuItem[] = [
     toolName: 'navigate_files',
     description: '管理当前目录下的文件和文件夹',
     showInMenu: true
+  },
+  {
+    title: 'Windows UI 自动化',
+    path: '/windows-automation',
+    toolName: 'navigate_windows_automation',
+    description: 'Windows UI 自动化工具，查看和操作窗口元素',
+    showInMenu: true
   }
 ]
 
@@ -101,7 +111,10 @@ export const routes: Route[] = [
   { path: '/skills', component: SkillsListPage, params: {} },
   { path: '/skills/:skillId', component: SkillDetailPage, params: {} },
   { path: '/files', component: FileManagerPage, params: {} },
-  { path: '/files/detail', component: FileDetailPage, params: {} }
+  { path: '/files/detail', component: FileDetailPage, params: {} },
+  { path: '/windows-automation', component: WindowsUIAutomationPage, params: {} },
+  { path: '/windows-automation/tree', component: WindowsUITreePage, params: {} },
+  { path: '/windows-automation/inspect', component: WindowsUIInspectPage, params: {} }
 ]
 
 export function createRouter(injector: Injector) {
