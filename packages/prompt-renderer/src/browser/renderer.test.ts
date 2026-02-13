@@ -67,4 +67,101 @@ describe('UIRenderer', () => {
       expect(result.prompt).toContain('Chat with agent-4')
     })
   })
+
+  describe('history navigation', () => {
+    it('should track navigation history', async () => {
+      expect(renderer.canGoBack()).toBe(false)
+      expect(renderer.canGoForward()).toBe(false)
+
+      await renderer.navigate('/chat/agent-1')
+      expect(renderer.canGoBack()).toBe(true)
+      expect(renderer.canGoForward()).toBe(false)
+
+      await renderer.navigate('/chat/agent-2')
+      expect(renderer.canGoBack()).toBe(true)
+      expect(renderer.canGoForward()).toBe(false)
+    })
+
+    it('should go back to previous page', async () => {
+      await renderer.navigate('/chat/agent-1')
+      await renderer.navigate('/chat/agent-2')
+
+      expect(renderer.currentUrl).toBe('prompt:///chat/agent-2')
+      expect(renderer.canGoBack()).toBe(true)
+
+      const result = await renderer.goBack()
+      expect(result.prompt).toContain('Chat with agent-1')
+      expect(renderer.currentUrl).toBe('prompt:///chat/agent-1')
+    })
+
+    it('should go forward to next page', async () => {
+      await renderer.navigate('/chat/agent-1')
+      await renderer.navigate('/chat/agent-2')
+      await renderer.goBack()
+
+      expect(renderer.currentUrl).toBe('prompt:///chat/agent-1')
+      expect(renderer.canGoForward()).toBe(true)
+
+      const result = await renderer.goForward()
+      expect(result.prompt).toContain('Chat with agent-2')
+      expect(renderer.currentUrl).toBe('prompt:///chat/agent-2')
+    })
+
+    it('should throw when going back at first page', async () => {
+      expect(renderer.canGoBack()).toBe(false)
+      await expect(renderer.goBack()).rejects.toThrow('Cannot go back')
+    })
+
+    it('should throw when going forward at latest page', async () => {
+      await renderer.navigate('/chat/agent-1')
+      expect(renderer.canGoForward()).toBe(false)
+      await expect(renderer.goForward()).rejects.toThrow('Cannot go forward')
+    })
+
+    it('should clear forward history when navigating to new page', async () => {
+      await renderer.navigate('/chat/agent-1')
+      await renderer.navigate('/chat/agent-2')
+      await renderer.goBack()
+
+      expect(renderer.canGoForward()).toBe(true)
+
+      // 导航到新页面应该清除前进历史
+      await renderer.navigate('/chat/agent-3')
+
+      expect(renderer.canGoForward()).toBe(false)
+      expect(renderer.canGoBack()).toBe(true)
+
+      // 验证历史栈被正确清理
+      await renderer.goBack()
+      expect(renderer.currentUrl).toBe('prompt:///chat/agent-1')
+    })
+
+    it('should return history length', async () => {
+      expect(renderer.getHistoryLength()).toBe(1)
+
+      await renderer.navigate('/chat/agent-1')
+      expect(renderer.getHistoryLength()).toBe(2)
+
+      await renderer.navigate('/chat/agent-2')
+      expect(renderer.getHistoryLength()).toBe(3)
+    })
+
+    it('should support multiple goBack calls', async () => {
+      await renderer.navigate('/chat/agent-1')
+      await renderer.navigate('/chat/agent-2')
+      await renderer.navigate('/chat/agent-3')
+
+      expect(renderer.currentUrl).toBe('prompt:///chat/agent-3')
+
+      await renderer.goBack()
+      expect(renderer.currentUrl).toBe('prompt:///chat/agent-2')
+
+      await renderer.goBack()
+      expect(renderer.currentUrl).toBe('prompt:///chat/agent-1')
+
+      await renderer.goBack()
+      expect(renderer.currentUrl).toBe('prompt:///')
+      expect(renderer.canGoBack()).toBe(false)
+    })
+  })
 })

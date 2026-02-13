@@ -13,6 +13,7 @@ export function NotFoundPage({ injector }: NotFoundPageProps) {
 
   // 获取当前路径
   const currentPath = currentUrl?.pathname || '/'
+  const canGoBack = renderer.canGoBack()
 
   return (
     <Layout injector={injector}>
@@ -29,10 +30,23 @@ export function NotFoundPage({ injector }: NotFoundPageProps) {
       </ul>
 
       <h2>您可以：</h2>
+      {canGoBack && (
+        <Tool
+          name="go_back"
+          description={`返回上一页。
+- 功能：返回到上一个访问的页面
+- 后置状态：页面跳转到上一页`}
+          execute={async () => {
+            return await renderer.goBack()
+          }}
+        >
+          返回上一页
+        </Tool>
+      )}
       <Tool
-        name="go_back"
-        description={`返回上一页。
-- 功能：返回到首页
+        name="go_home"
+        description={`返回首页。
+- 功能：跳转到系统首页
 - 后置状态：页面跳转到首页`}
         execute={async () => {
           return await renderer.navigate('/')
