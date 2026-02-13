@@ -21,9 +21,13 @@ export class UIRenderer {
     }
 
     async render(url?: string, providers: Provider[] = []): Promise<RenderResult> {
-        console.log(`navigate: from ${this.currentUrl} to ${url}`)
         url = url || this.currentUrl;
-        this.currentUrl = url;
+        // 支持相对路径：如果 URL 以 / 开头但不是 prompt://，则自动添加 prompt:// 前缀
+        const normalizedUrl = url.startsWith('/') && !url.startsWith('prompt://')
+            ? `prompt://${url}`
+            : url;
+        console.log(`navigate: from ${this.currentUrl} to ${normalizedUrl}`)
+        this.currentUrl = normalizedUrl;
         this.providers = providers;
         this.currentPage = this.browser.open(this.currentUrl, this.providers);
         this.renderResult = await this.currentPage?.render(providers) || null;
@@ -32,8 +36,12 @@ export class UIRenderer {
 
 
     async navigate(url: string, providers: Provider[] = []): Promise<RenderResult> {
-        console.log(`navigate: from ${this.currentUrl} to ${url}`)
-        this.currentUrl = url;
+        // 支持相对路径：如果 URL 以 / 开头但不是 prompt://，则自动添加 prompt:// 前缀
+        const normalizedUrl = url.startsWith('/') && !url.startsWith('prompt://')
+            ? `prompt://${url}`
+            : url;
+        console.log(`navigate: from ${this.currentUrl} to ${normalizedUrl}`)
+        this.currentUrl = normalizedUrl;
         this.providers = providers;
         this.currentPage = this.browser.open(this.currentUrl, this.providers);
         this.renderResult = await this.currentPage?.render(this.providers) || null;

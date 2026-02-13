@@ -16,6 +16,7 @@ import { SkillsListPage } from './pages/SkillsListPage'
 import { SkillDetailPage } from './pages/SkillDetailPage'
 import { FileManagerPage } from './pages/FileManagerPage'
 import { FileDetailPage } from './pages/FileDetailPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 
 /**
  * 一级菜单配置
@@ -101,7 +102,9 @@ export const routes: Route[] = [
   { path: '/skills', component: SkillsListPage, params: {} },
   { path: '/skills/:skillId', component: SkillDetailPage, params: {} },
   { path: '/files', component: FileManagerPage, params: {} },
-  { path: '/files/detail', component: FileDetailPage, params: {} }
+  { path: '/files/detail', component: FileDetailPage, params: {} },
+  // 404 页面 - 必须放在最后作为 fallback
+  { path: '/*', component: NotFoundPage, params: {} }
 ]
 
 export function createRouter(injector: Injector) {
