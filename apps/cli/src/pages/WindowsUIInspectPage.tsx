@@ -14,25 +14,31 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
   const renderer = injector.get(UIRenderer)
   const automationService = injector.get(WindowsAutomationService)
   const url = injector.get(CURRENT_URL)
-  const windowIndex = parseInt(url.searchParams.get('index') || '0', 10)
+  const windowPid = parseInt(url.searchParams.get('pid') || '0', 10)
 
   const result = await loadPageData(async () => {
-    const windows = await automationService.getWindowList()
-    if (windowIndex >= windows.length) {
-      throw new Error(`窗口索引 ${windowIndex} 超出范围`)
-    }
-
-    const targetWindow = await automationService.getWindowElement(windowIndex)
+    const targetWindow = await automationService.getWindowElementByPid(windowPid)
     const properties = await automationService.getElementProperties(targetWindow)
 
-    // 直接从 AutomationElement 获取状态信息
     const state = {
       enabled: targetWindow.currentIsEnabled || false,
       visible: !targetWindow.currentIsOffscreen,
       focused: targetWindow.currentHasKeyboardFocus || false
     }
 
-    return { window: windows[windowIndex], element: targetWindow, properties, state }
+    const bounds = targetWindow.currentBoundingRectangle
+    const windowInfo = {
+      name: targetWindow.currentName || '',
+      className: targetWindow.currentClassName || '',
+      processId: targetWindow.currentProcessId || 0,
+      bounds: {
+        x: bounds.left, y: bounds.top,
+        width: bounds.right - bounds.left,
+        height: bounds.bottom - bounds.top
+      }
+    }
+
+    return { window: windowInfo, element: targetWindow, properties, state }
   })
 
   if (!result.ok) {
@@ -73,7 +79,7 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
           name="refresh"
           description="刷新窗口信息"
           execute={async () => {
-            return await renderer.navigate(`prompt:///windows-automation/inspect?index=${windowIndex}`)
+            return await renderer.navigate(`prompt:///windows-automation/inspect?pid=${windowPid}`)
           }}
         >
           🔄 刷新
@@ -83,7 +89,7 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
           name="view_tree"
           description="查看此窗口的元素树"
           execute={async () => {
-            return await renderer.navigate(`prompt:///windows-automation/tree?index=${windowIndex}`)
+            return await renderer.navigate(`prompt:///windows-automation/tree?pid=${windowPid}`)
           }}
         >
           查看元素树
@@ -103,7 +109,7 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
               description="点击此按钮"
               execute={async (params, injector) => {
                 const automationService = injector.get(WindowsAutomationService)
-                const windowElement = await automationService.getWindowElement(windowIndex)
+                const windowElement = await automationService.getWindowElementByPid(windowPid)
                 try {
                   await automationService.clickElement(windowElement)
                   return `✓ 按钮已点击`
@@ -119,7 +125,7 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
               description="获取按钮文本"
               execute={async (params, injector) => {
                 const automationService = injector.get(WindowsAutomationService)
-                const windowElement = await automationService.getWindowElement(windowIndex)
+                const windowElement = await automationService.getWindowElementByPid(windowPid)
                 const text = await automationService.getText(windowElement)
                 return `按钮文本: ${text || '(无文本)'}`
               }}
@@ -146,7 +152,7 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
               }}
               execute={async (params: any, injector) => {
                 const automationService = injector.get(WindowsAutomationService)
-                const windowElement = await automationService.getWindowElement(windowIndex)
+                const windowElement = await automationService.getWindowElementByPid(windowPid)
                 try {
                   await automationService.typeText(windowElement, params.text)
                   return `✓ 已输入文本: ${params.text}`
@@ -162,7 +168,7 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
               description="获取输入框当前文本"
               execute={async (params, injector) => {
                 const automationService = injector.get(WindowsAutomationService)
-                const windowElement = await automationService.getWindowElement(windowIndex)
+                const windowElement = await automationService.getWindowElementByPid(windowPid)
                 const text = await automationService.getText(windowElement)
                 return `当前文本: ${text || '(空)'}`
               }}
@@ -186,7 +192,7 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
               description="切换复选框选中状态"
               execute={async (params, injector) => {
                 const automationService = injector.get(WindowsAutomationService)
-                const windowElement = await automationService.getWindowElement(windowIndex)
+                const windowElement = await automationService.getWindowElementByPid(windowPid)
                 try {
                   await automationService.clickElement(windowElement)
                   return `✓ 复选框状态已切换`
@@ -213,7 +219,7 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
             description="获取元素文本内容"
             execute={async (params, injector) => {
               const automationService = injector.get(WindowsAutomationService)
-              const windowElement = await automationService.getWindowElement(windowIndex)
+              const windowElement = await automationService.getWindowElementByPid(windowPid)
               const text = await automationService.getText(windowElement)
               return `文本: ${text || '(无文本)'}`
             }}
@@ -225,7 +231,7 @@ export async function WindowsUIInspectPage({ injector }: WindowsUIInspectPagePro
             description="尝试点击此元素"
             execute={async (params, injector) => {
               const automationService = injector.get(WindowsAutomationService)
-              const windowElement = await automationService.getWindowElement(windowIndex)
+              const windowElement = await automationService.getWindowElementByPid(windowPid)
               try {
                 await automationService.clickElement(windowElement)
                 return `✓ 点击成功`

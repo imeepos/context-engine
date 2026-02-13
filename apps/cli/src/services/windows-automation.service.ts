@@ -388,7 +388,26 @@ export class WindowsAutomationService {
   }
 
   /**
+   * 获取窗口元素(通过 processId)
+   */
+  async getWindowElementByPid(pid: number): Promise<any> {
+    await this.ensureInitialized()
+    const root = await this.getRootElement()
+    const condition = this.automation.createTrueCondition()
+    const windows = root.findAll(this.UIAutomation.TreeScopes.Children, condition)
+
+    for (const win of windows) {
+      if (win.currentProcessId === pid) {
+        return win
+      }
+    }
+
+    throw new Error(`未找到 processId 为 ${pid} 的窗口`)
+  }
+
+  /**
    * 获取窗口元素(通过索引)
+   * @deprecated 使用 getWindowElementByPid 代替
    */
   async getWindowElement(index: number): Promise<any> {
     await this.ensureInitialized()

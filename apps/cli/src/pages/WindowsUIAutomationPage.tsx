@@ -81,7 +81,7 @@ export async function WindowsUIAutomationPage({ injector }: WindowsUIAutomationP
                 description={`激活窗口 "${window.name}" 并将其置于前台`}
                 execute={async () => {
                   try {
-                    const windowElement = await automationService.getWindowElement(index)
+                    const windowElement = await automationService.getWindowElementByPid(window.processId)
                     await automationService.activateWindow(windowElement)
                     return `窗口 "${window.name}" 已激活`
                   } catch (error) {
@@ -96,7 +96,7 @@ export async function WindowsUIAutomationPage({ injector }: WindowsUIAutomationP
                 name={`view_tree_${index}`}
                 description={`查看窗口 "${window.name}" 的 UI 元素树`}
                 execute={async () => {
-                  return await renderer.navigate(`prompt:///windows-automation/tree?index=${index}`)
+                  return await renderer.navigate(`prompt:///windows-automation/tree?pid=${window.processId}`)
                 }}
               >
                 查看元素树
@@ -106,7 +106,7 @@ export async function WindowsUIAutomationPage({ injector }: WindowsUIAutomationP
                 name={`inspect_${index}`}
                 description={`检查窗口 "${window.name}" 的详细信息`}
                 execute={async () => {
-                  return await renderer.navigate(`prompt:///windows-automation/inspect?index=${index}`)
+                  return await renderer.navigate(`prompt:///windows-automation/inspect?pid=${window.processId}`)
                 }}
               >
                 检查窗口

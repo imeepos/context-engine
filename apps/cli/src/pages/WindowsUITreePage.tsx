@@ -104,18 +104,24 @@ export async function WindowsUITreePage({ injector }: WindowsUITreePageProps) {
   const renderer = injector.get(UIRenderer)
   const automationService = injector.get(WindowsAutomationService)
   const url = injector.get(CURRENT_URL)
-  const windowIndex = parseInt(url.searchParams.get('index') || '0', 10)
+  const windowPid = parseInt(url.searchParams.get('pid') || '0', 10)
 
   const result = await loadPageData(async () => {
-    const windows = await automationService.getWindowList()
-    if (windowIndex >= windows.length) {
-      throw new Error(`窗口索引 ${windowIndex} 超出范围`)
+    const targetWindow = await automationService.getWindowElementByPid(windowPid)
+    const tree = await automationService.getElementTree(targetWindow, 3)
+    const bounds = targetWindow.currentBoundingRectangle
+    const windowInfo: import('../services/windows-automation.service').WindowInfo = {
+      name: targetWindow.currentName || '',
+      className: targetWindow.currentClassName || '',
+      processId: targetWindow.currentProcessId || 0,
+      bounds: {
+        x: bounds.left, y: bounds.top,
+        width: bounds.right - bounds.left,
+        height: bounds.bottom - bounds.top
+      }
     }
 
-    const targetWindow = await automationService.getWindowElement(windowIndex)
-    const tree = await automationService.getElementTree(targetWindow, 3)
-
-    return { window: windows[windowIndex], tree }
+    return { window: windowInfo, tree }
   })
 
   if (!result.ok) {
@@ -166,7 +172,7 @@ export async function WindowsUITreePage({ injector }: WindowsUITreePageProps) {
           name="refresh"
           description="刷新元素树"
           execute={async () => {
-            const result = await renderer.navigate(`prompt:///windows-automation/tree?index=${windowIndex}`)
+            const result = await renderer.navigate(`prompt:///windows-automation/tree?pid=${windowPid}`)
             return result.prompt
           }}
         >
@@ -182,7 +188,7 @@ export async function WindowsUITreePage({ injector }: WindowsUITreePageProps) {
           }}
           execute={async ({ name, action }) => {
             try {
-              const windowElement = await automationService.getWindowElement(windowIndex)
+              const windowElement = await automationService.getWindowElementByPid(windowPid)
               const element = await automationService.findElementByName(windowElement, name)
 
               if (!element) {
@@ -219,7 +225,7 @@ export async function WindowsUITreePage({ injector }: WindowsUITreePageProps) {
           }}
           execute={async ({ name, text }) => {
             try {
-              const windowElement = await automationService.getWindowElement(windowIndex)
+              const windowElement = await automationService.getWindowElementByPid(windowPid)
               const element = await automationService.findElementByName(windowElement, name)
 
               if (!element) {
