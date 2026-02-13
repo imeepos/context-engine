@@ -17,6 +17,10 @@ import { SkillDetailPage } from './pages/SkillDetailPage'
 import { FileManagerPage } from './pages/FileManagerPage'
 import { FileDetailPage } from './pages/FileDetailPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { LoginPageComponent } from './pages/LoginPage'
+import { RegisterPageComponent } from './pages/RegisterPage'
+import { MessagePageComponent } from './pages/MessagePage'
+import { ApiKeySettingsPageComponent } from './pages/ApiKeySettingsPage'
 
 /**
  * 一级菜单配置
@@ -47,6 +51,13 @@ export const menuItems: MenuItem[] = [
     path: '/tasks',
     toolName: 'navigate_tasks',
     description: '查看或创建待办任务',
+    showInMenu: true
+  },
+  {
+    title: '消息中心',
+    path: '/messages',
+    toolName: 'navigate_messages',
+    description: '查看和管理消息通知',
     showInMenu: true
   },
   {
@@ -83,11 +94,36 @@ export const menuItems: MenuItem[] = [
     toolName: 'navigate_files',
     description: '管理当前目录下的文件和文件夹',
     showInMenu: true
+  },
+  {
+    title: 'API Key 设置',
+    path: '/api-keys',
+    toolName: 'navigate_api_keys',
+    description: '管理 API Key',
+    showInMenu: false
+  },
+  {
+    title: '登录',
+    path: '/login',
+    toolName: 'navigate_login',
+    description: '用户登录',
+    showInMenu: false
+  },
+  {
+    title: '注册',
+    path: '/register',
+    toolName: 'navigate_register',
+    description: '用户注册',
+    showInMenu: false
   }
 ]
 
 export const routes: Route[] = [
   { path: '/', component: DashboardComponent, params: {} },
+  { path: '/login', component: LoginPageComponent, params: {} },
+  { path: '/register', component: RegisterPageComponent, params: {} },
+  { path: '/messages', component: MessagePageComponent, params: {} },
+  { path: '/api-keys', component: ApiKeySettingsPageComponent, params: {} },
   { path: '/base-info', component: BaseInfo, params: {} },
   { path: '/chat/:agentId', component: ChatPageComponent, params: {} },
   { path: '/tasks', component: TaskListPageComponent, params: {} },

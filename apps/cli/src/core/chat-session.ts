@@ -10,6 +10,7 @@ import { WebServer } from '../web/server'
 
 export interface ChatSessionConfig {
   llmInjector: Injector
+  enableWebServer?: boolean
 }
 
 export class ChatSession {
@@ -23,8 +24,11 @@ export class ChatSession {
   private webServer: WebServer | null = null
   private sseManager: SseManager | null = null
 
+  private enableWebServer: boolean
+
   constructor(config: ChatSessionConfig) {
     this.llmInjector = config.llmInjector
+    this.enableWebServer = config.enableWebServer ?? false
     this.llmService = config.llmInjector.get(LLMService)
     this.renderer = config.llmInjector.get(UIRenderer)
     console.log(`current chat session version: ${this.version}, current renderer version: ${this.renderer.version}`)
@@ -40,20 +44,22 @@ export class ChatSession {
     this.taskRecoveryService?.start()
 
     // 启动 Web 服务器（人类界面）
-    this.sseManager = new SseManager()
-    const webRenderer = new WebRenderer(
-      this.renderer as any
-    )
-    const port = Number(
-      process.env.WEB_PORT || 3000
-    )
-    this.webServer = new WebServer(
-      webRenderer, this.sseManager, port
-    )
-    await this.webServer.start()
-    console.log(
-      `Web UI: http://localhost:${port}`
-    )
+    if (this.enableWebServer) {
+      this.sseManager = new SseManager()
+      const webRenderer = new WebRenderer(
+        this.renderer as any
+      )
+      const port = Number(
+        process.env.WEB_PORT || 3000
+      )
+      this.webServer = new WebServer(
+        webRenderer, this.sseManager, port
+      )
+      await this.webServer.start()
+      console.log(
+        `Web UI: http://localhost:${port}`
+      )
+    }
 
     const result = await this.renderer.render()
     console.log(result.prompt + '\n\n')

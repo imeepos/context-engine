@@ -71,6 +71,7 @@ async function main() {
     .option('--base-url <url>', 'Custom base URL for the provider API')
     .option('--mcp-url <url>', 'Remote MCP server URL', process.env.MCP_API_URL || 'https://mcp.sker.us')
     .option('--no-mcp', 'Disable remote MCP connection')
+    .option('--web', 'Enable web server UI')
     // eslint-disable-next-line turbo/no-undeclared-env-vars
     .option('--storage-backend <backend>', 'Storage backend: json | sqlite | dual', process.env.STORAGE_BACKEND || 'json')
     // eslint-disable-next-line turbo/no-undeclared-env-vars
@@ -178,7 +179,8 @@ async function main() {
       await app.bootstrap(CliModule)
 
       const chatSession = new ChatSession({
-        llmInjector: app.injector
+        llmInjector: app.injector,
+        enableWebServer: options.web
       })
 
       await chatSession.start()
