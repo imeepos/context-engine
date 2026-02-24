@@ -1,0 +1,36 @@
+[package]
+name = "cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "sker"
+path = "src/main.rs"
+
+[dependencies]
+# 内部依赖
+command-executor = { path = "../command-executor" }
+config = { path = "../config" }
+task-scheduler = { path = "../task-scheduler" }
+power-management = { path = "../power-management" }
+voice-assistant = { path = "../voice-assistant" }
+system-scheduler = { path = "../system-scheduler" }
+
+# 外部依赖
+clap = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+dirs = { workspace = true }
+serde_json = { workspace = true }
+cron = "0.12"
+
+[features]
+default = []
+

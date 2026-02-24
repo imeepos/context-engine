@@ -13,5 +13,8 @@
     "claude": "claude --dangerously-skip-permissions",
     "codex": "codex --dangerously-bypass-approvals-and-sandbox"
   },
-  "packageManager": "pnpm@10.28.2"
+  "packageManager": "pnpm@10.28.2",
+  "devDependencies": {
+    "@swc/core": "^1.15.11"
+  }
 }

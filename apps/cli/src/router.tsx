@@ -16,9 +16,9 @@ import { SkillsListPage } from './pages/SkillsListPage'
 import { SkillDetailPage } from './pages/SkillDetailPage'
 import { FileManagerPage } from './pages/FileManagerPage'
 import { FileDetailPage } from './pages/FileDetailPage'
-import { WindowsUIAutomationPage } from './pages/WindowsUIAutomationPage'
-import { WindowsUITreePage } from './pages/WindowsUITreePage'
-import { WindowsUIInspectPage } from './pages/WindowsUIInspectPage'
+import { ComputerControlPage } from './pages/ComputerControlPage'
+import { ShellPage } from './pages/ShellPage'
+import { BrowserPage } from './pages/BrowserPage'
 
 /**
  * 一级菜单配置
@@ -87,10 +87,24 @@ export const menuItems: MenuItem[] = [
     showInMenu: true
   },
   {
-    title: 'Windows UI 自动化',
-    path: '/windows-automation',
-    toolName: 'navigate_windows_automation',
-    description: 'Windows UI 自动化工具，查看和操作窗口元素',
+    title: '电脑控制',
+    path: '/computer',
+    toolName: 'navigate_computer',
+    description: '电脑控制中心，包括 Shell、浏览器和文件系统',
+    showInMenu: true
+  },
+  {
+    title: 'Shell 命令',
+    path: '/computer/shell',
+    toolName: 'navigate_shell',
+    description: '执行 Shell 命令和管理进程',
+    showInMenu: true
+  },
+  {
+    title: '浏览器自动化',
+    path: '/computer/browser',
+    toolName: 'navigate_browser',
+    description: '使用 CDP 控制浏览器',
     showInMenu: true
   }
 ]
@@ -112,9 +126,9 @@ export const routes: Route[] = [
   { path: '/skills/:skillId', component: SkillDetailPage, params: {} },
   { path: '/files', component: FileManagerPage, params: {} },
   { path: '/files/detail', component: FileDetailPage, params: {} },
-  { path: '/windows-automation', component: WindowsUIAutomationPage, params: {} },
-  { path: '/windows-automation/tree', component: WindowsUITreePage, params: {} },
-  { path: '/windows-automation/inspect', component: WindowsUIInspectPage, params: {} }
+  { path: '/computer', component: ComputerControlPage, params: {} },
+  { path: '/computer/shell', component: ShellPage, params: {} },
+  { path: '/computer/browser', component: BrowserPage, params: {} }
 ]
 
 export function createRouter(injector: Injector) {

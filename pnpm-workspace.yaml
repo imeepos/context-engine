@@ -1,7 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  - triangle-geometry
 
 onlyBuiltDependencies:
   - better-sqlite3

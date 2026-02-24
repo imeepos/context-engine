@@ -1,0 +1,58 @@
+[workspace]
+resolver = "2"
+members = [
+    "cargos/cli",
+    "cargos/core",
+    "cargos/command-executor",
+    "cargos/task-scheduler",
+    "cargos/power-management",
+    "cargos/voice-assistant",
+    "cargos/config",
+    "cargos/storage",
+    "cargos/platform",
+    "cargos/events",
+    "cargos/filesystem",
+    "cargos/system-scheduler",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+repository = "https://github.com/your/rust-cli-agent"
+
+[workspace.dependencies]
+# 内部依赖
+core = { path = "cargos/core" }
+config = { path = "cargos/config" }
+storage = { path = "cargos/storage" }
+platform = { path = "cargos/platform" }
+events = { path = "cargos/events" }
+
+# 外部依赖
+tokio = { version = "1.35", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+anyhow = "1.0"
+async-trait = "0.1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.4", features = ["derive"] }
+toml = "0.8"
+cfg-if = "1.0"
+notify = "6.1"
+tokio-cron-scheduler = "0.10"
+cron = "0.12"
+sled = "0.34"
+tempfile = "3.8"
+
+# Voice dependencies
+reqwest = { version = "0.11", features = ["blocking"] }
+dirs = "5.0"
+
+# 开发依赖
+criterion = "0.5"

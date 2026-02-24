@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@sker/core'
-import { Storage, STORAGE_TOKEN } from '../storage/storage.interface'
+import { STORAGE_TOKEN } from '../storage/storage.interface'
+import type { Storage } from '../storage/storage.interface'
 import { PluginRegistryService } from './plugin-registry.service'
 import { PluginCompilerService, BuildResult } from './plugin-compiler.service'
 import type { PluginMetadata } from '@sker/plugin/runtime'

@@ -1,0 +1,1 @@
+import * as iconv from "iconv-lite";export const GARBLED_MAP={"\u03b5\u0373":"\u7cfb\u7edf"};export function fixEncoding(str){if(\!str)return str;let r=str;for(const[g,c]of Object.entries(GARBLED_MAP))r=r.replaceAll(g,c);return r}

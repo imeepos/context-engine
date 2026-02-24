@@ -1,0 +1,32 @@
+[package]
+name = "power-management"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+cfg-if = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true, optional = true }
+tracing = { workspace = true }
+
+[features]
+default = []
+serde = ["dep:serde", "chrono/serde"]
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.52", features = ["Win32_Foundation", "Win32_System_Power"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "3.14", default-features = false, features = ["tokio"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+tokio = { workspace = true }

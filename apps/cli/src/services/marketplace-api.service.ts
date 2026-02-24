@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@sker/core'
 import { AuthSessionService } from './auth-session.service'
-import { MARKETPLACE_API_CONFIG, MarketplaceApiConfig } from '../tokens'
+import { MARKETPLACE_API_CONFIG } from '../tokens'
+import type { MarketplaceApiConfig } from '../tokens'
 
 interface ApiSuccess<T> {
   success: true

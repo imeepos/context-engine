@@ -1,4 +1,5 @@
 ﻿import { Injectable } from '@sker/core'
+import { fixEncoding } from '../utils/encoding-util'
 
 /**
  * UI 元素信息接口
@@ -134,7 +135,7 @@ export class WindowsAutomationService {
     return windows.map((window: any) => {
       const bounds = window.currentBoundingRectangle
       return {
-        name: window.currentName || '',
+        name: fixEncoding(window.currentName) || '',
         className: window.currentClassName || '',
         processId: window.currentProcessId || 0,
         bounds: {
@@ -157,15 +158,15 @@ export class WindowsAutomationService {
     const uiElement: UIElement = {
       id: runtimeId ? runtimeId.join('-') : `element-${Date.now()}`,
       type: this.getControlTypeName(element.currentControlType),
-      name: element.currentName || '',
+      name: fixEncoding(element.currentName) || '',
       className: element.currentClassName || '',
       automationId: element.currentAutomationId || undefined,
-      localizedControlType: element.currentLocalizedControlType || undefined,
-      helpText: element.currentHelpText || undefined,
-      itemStatus: element.currentItemStatus || undefined,
-      itemType: element.currentItemType || undefined,
-      acceleratorKey: element.currentAcceleratorKey || undefined,
-      accessKey: element.currentAccessKey || undefined,
+      localizedControlType: fixEncoding(element.currentLocalizedControlType) || undefined,
+      helpText: fixEncoding(element.currentHelpText) || undefined,
+      itemStatus: fixEncoding(element.currentItemStatus) || undefined,
+      itemType: fixEncoding(element.currentItemType) || undefined,
+      acceleratorKey: fixEncoding(element.currentAcceleratorKey) || undefined,
+      accessKey: fixEncoding(element.currentAccessKey) || undefined,
       bounds: {
         x: bounds.left,
         y: bounds.top,
@@ -186,7 +187,7 @@ export class WindowsAutomationService {
         this.UIAutomation.PatternIds.UIA_ValuePatternId
       )
       if (vp && vp.currentValue) {
-        uiElement.value = vp.currentValue
+        uiElement.value = fixEncoding(vp.currentValue)
       }
     } catch {
       // ValuePattern 不支持，忽略
@@ -199,7 +200,7 @@ export class WindowsAutomationService {
           this.UIAutomation.PatternIds.UIA_LegacyIAccessiblePatternId
         )
         if (lap && lap.currentValue) {
-          uiElement.value = lap.currentValue
+          uiElement.value = fixEncoding(lap.currentValue)
         }
       } catch {
         // LegacyIAccessiblePattern 不支持，忽略
@@ -344,14 +345,14 @@ export class WindowsAutomationService {
 
     try {
       const valuePattern = element.getCurrentPattern(this.UIAutomation.PatternIds.UIA_ValuePatternId)
-      if (valuePattern) {
-        return valuePattern.currentValue || ''
+      if (valuePattern && valuePattern.currentValue) {
+        return fixEncoding(valuePattern.currentValue) || ''
       }
     } catch {
       // Value pattern not supported
     }
 
-    return element.currentName || ''
+    return fixEncoding(element.currentName) || ''
   }
 
   /**

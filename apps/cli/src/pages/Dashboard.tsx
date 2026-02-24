@@ -38,13 +38,13 @@ export async function DashboardComponent({ injector }: DashboardProps) {
       <h1>快捷入口</h1>
       <div>
         <Tool
-          name="navigate_windows_automation"
-          description="打开 Windows UI 自动化工具"
+          name="navigate_computer"
+          description="打开电脑控制中心"
           execute={async () => {
-            return await renderer.navigate('prompt:///windows-automation')
+            return await renderer.navigate('prompt:///computer')
           }}
         >
-          Windows UI 自动化
+          电脑控制
         </Tool>
       </div>
     </Layout>

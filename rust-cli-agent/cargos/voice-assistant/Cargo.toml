@@ -1,0 +1,25 @@
+[package]
+name = "voice-assistant"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }
+cfg-if = { workspace = true }
+
+serde_json = { workspace = true }
+
+# Voice dependencies
+reqwest = { workspace = true }
+dirs = { workspace = true }
+
+[dev-dependencies]
+tokio-test = "0.4"
