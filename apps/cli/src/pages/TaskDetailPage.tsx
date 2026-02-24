@@ -21,9 +21,15 @@ export async function TaskDetailPageComponent({ injector, taskId }: TaskDetailPa
       <Layout injector={injector}>
         <h1>任务不存在</h1>
         <p>任务 ID: {taskId} 未找到</p>
-        <Tool name="back_to_list" description="返回任务列表" execute={async () => {
-          return await renderer.navigate('prompt:///tasks')
-        }}>
+        <Tool
+          name="navigate_to_task_list"
+          description={`返回任务列表。
+- 功能：跳转回任务管理页面
+- 后置状态：页面跳转到任务列表`}
+          execute={async () => {
+            return await renderer.navigate('prompt:///tasks')
+          }}
+        >
           返回任务列表
         </Tool>
       </Layout>
@@ -37,9 +43,16 @@ export async function TaskDetailPageComponent({ injector, taskId }: TaskDetailPa
       <h1>任务详情</h1>
       {taskDetail}
       <p>
-        <Tool name="back_to_list" description="返回任务列表" execute={async () => {
-          return await renderer.navigate('prompt:///tasks')
-        }}>
+        <Tool
+          name="navigate_to_task_list"
+          description={`返回任务列表。
+- 功能：跳转回任务管理页面
+- 当前任务：${task.title}
+- 后置状态：页面跳转到任务列表`}
+          execute={async () => {
+            return await renderer.navigate('prompt:///tasks')
+          }}
+        >
           返回任务列表
         </Tool>
       </p>

@@ -3,6 +3,7 @@ import { SharedModule } from './shared.module';
 import { AuthModule } from './auth.module';
 import { MarketplaceModule } from './marketplace.module';
 import { BugReportModule } from './bug-report.module';
+import { MessageModule } from './message.module';
 
 /**
  * AppModule - 根模块
@@ -14,6 +15,7 @@ import { BugReportModule } from './bug-report.module';
     AuthModule,
     MarketplaceModule,
     BugReportModule,
+    MessageModule,
   ]
 })
 export class AppModule { }

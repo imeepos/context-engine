@@ -16,6 +16,11 @@ import { SkillsListPage } from './pages/SkillsListPage'
 import { SkillDetailPage } from './pages/SkillDetailPage'
 import { FileManagerPage } from './pages/FileManagerPage'
 import { FileDetailPage } from './pages/FileDetailPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { LoginPageComponent } from './pages/LoginPage'
+import { RegisterPageComponent } from './pages/RegisterPage'
+import { MessagePageComponent } from './pages/MessagePage'
+import { ApiKeySettingsPageComponent } from './pages/ApiKeySettingsPage'
 import { ComputerControlPage } from './pages/ComputerControlPage'
 import { ShellPage } from './pages/ShellPage'
 import { BrowserPage } from './pages/BrowserPage'
@@ -49,6 +54,13 @@ export const menuItems: MenuItem[] = [
     path: '/tasks',
     toolName: 'navigate_tasks',
     description: '查看或创建待办任务',
+    showInMenu: true
+  },
+  {
+    title: '消息中心',
+    path: '/messages',
+    toolName: 'navigate_messages',
+    description: '查看和管理消息通知',
     showInMenu: true
   },
   {
@@ -106,11 +118,36 @@ export const menuItems: MenuItem[] = [
     toolName: 'navigate_browser',
     description: '使用 CDP 控制浏览器',
     showInMenu: true
+  },
+  {
+    title: 'API Key 设置',
+    path: '/api-keys',
+    toolName: 'navigate_api_keys',
+    description: '管理 API Key',
+    showInMenu: false
+  },
+  {
+    title: '登录',
+    path: '/login',
+    toolName: 'navigate_login',
+    description: '用户登录',
+    showInMenu: false
+  },
+  {
+    title: '注册',
+    path: '/register',
+    toolName: 'navigate_register',
+    description: '用户注册',
+    showInMenu: false
   }
 ]
 
 export const routes: Route[] = [
   { path: '/', component: DashboardComponent, params: {} },
+  { path: '/login', component: LoginPageComponent, params: {} },
+  { path: '/register', component: RegisterPageComponent, params: {} },
+  { path: '/messages', component: MessagePageComponent, params: {} },
+  { path: '/api-keys', component: ApiKeySettingsPageComponent, params: {} },
   { path: '/base-info', component: BaseInfo, params: {} },
   { path: '/chat/:agentId', component: ChatPageComponent, params: {} },
   { path: '/tasks', component: TaskListPageComponent, params: {} },
@@ -128,7 +165,9 @@ export const routes: Route[] = [
   { path: '/files/detail', component: FileDetailPage, params: {} },
   { path: '/computer', component: ComputerControlPage, params: {} },
   { path: '/computer/shell', component: ShellPage, params: {} },
-  { path: '/computer/browser', component: BrowserPage, params: {} }
+  { path: '/computer/browser', component: BrowserPage, params: {} },
+  // 404 页面 - 必须放在最后作为 fallback
+  { path: '/*', component: NotFoundPage, params: {} }
 ]
 
 export function createRouter(injector: Injector) {

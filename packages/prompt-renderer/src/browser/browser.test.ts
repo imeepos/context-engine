@@ -2,6 +2,49 @@ import { describe, it, expect } from 'vitest';
 import { createBrowser, ROUTES } from './browser';
 import React from 'react';
 
+describe('Wildcard route /* for 404 handling', () => {
+  it('should match wildcard route /* as fallback for unmatched paths', async () => {
+    const NotFoundComponent = () => React.createElement('div', {}, [
+      React.createElement('h1', {}, '404 - Page Not Found'),
+      React.createElement('p', {}, 'The page you are looking for does not exist.')
+    ]);
+
+    const browser = createBrowser([{
+      provide: ROUTES,
+      useValue: [
+        { path: '/home', component: () => React.createElement('div', {}, 'Home'), params: {} },
+        { path: '/*', component: NotFoundComponent, params: {} }
+      ]
+    }]);
+
+    // 匹配存在的路由
+    const homePage = browser.open('prompt:///home');
+    const homeResult = await homePage.render();
+    expect(homeResult.prompt).toContain('Home');
+
+    // 不存在的路由应该匹配通配符
+    const notFoundPage = browser.open('prompt:///unknown/path');
+    const notFoundResult = await notFoundPage.render();
+    expect(notFoundResult.prompt).toContain('404 - Page Not Found');
+    expect(notFoundResult.prompt).toContain('The page you are looking for does not exist.');
+  });
+
+  it('should match root wildcard /* for any path', async () => {
+    const CatchAllComponent = () => React.createElement('div', {}, 'Catch All');
+
+    const browser = createBrowser([{
+      provide: ROUTES,
+      useValue: [
+        { path: '/*', component: CatchAllComponent, params: {} }
+      ]
+    }]);
+
+    const page = browser.open('prompt:///any/deep/path');
+    const result = await page.render();
+    expect(result.prompt).toContain('Catch All');
+  });
+});
+
 describe('Page.render() with async rendering', () => {
   it('should render React component to markdown', async () => {
     const TestComponent = () => {
@@ -96,6 +139,32 @@ describe('Page.render() with async rendering', () => {
 
     const page = browser.open('prompt:///missing');
     await expect(page.render()).rejects.toThrow(/No route matched.*\/exists/);
+  });
+
+  it('should match wildcard route /* as fallback for unmatched paths', async () => {
+    const NotFoundComponent = () => React.createElement('div', {}, [
+      React.createElement('h1', {}, '404 - Page Not Found'),
+      React.createElement('p', {}, 'The page you are looking for does not exist.')
+    ]);
+
+    const browser = createBrowser([{
+      provide: ROUTES,
+      useValue: [
+        { path: '/home', component: () => React.createElement('div', {}, 'Home'), params: {} },
+        { path: '/*', component: NotFoundComponent, params: {} }
+      ]
+    }]);
+
+    // 匹配存在的路由
+    const homePage = browser.open('prompt:///home');
+    const homeResult = await homePage.render();
+    expect(homeResult.prompt).toContain('Home');
+
+    // 不存在的路由应该匹配通配符
+    const notFoundPage = browser.open('prompt:///unknown/path');
+    const notFoundResult = await notFoundPage.render();
+    expect(notFoundResult.prompt).toContain('404 - Page Not Found');
+    expect(notFoundResult.prompt).toContain('The page you are looking for does not exist.');
   });
 
   it('should support nested parameter routes', async () => {

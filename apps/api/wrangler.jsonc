@@ -40,5 +40,13 @@
         "McpSessionDurableObject"
       ]
     }
-  ]
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "MESSAGE_QUEUE",
+        "queue": "message-queue"
+      }
+    ]
+  }
 }

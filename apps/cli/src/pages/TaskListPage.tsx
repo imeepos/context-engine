@@ -51,6 +51,11 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
     [TaskStatus.CANCELLED]: taskList.filter(t => t.status === TaskStatus.CANCELLED)
   })
 
+  // 构建任务ID列表用于工具描述
+  const allTaskIds = tasks.map(t => `"${t.id}"(${t.title})`).join(', ')
+  const claimableTaskIds = claimableTasks.map(t => `"${t.id}"(${t.title})`).join(', ')
+  const myTaskIds = myTasks.map(t => `"${t.id}"(${t.title})`).join(', ')
+
   return (
     <Layout injector={injector}>
       <h1>任务管理系统</h1>
@@ -73,10 +78,12 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
         <li><strong>CANCELLED</strong>: 已取消 - 任务被取消，重置为待处理状态</li>
       </ul>
 
-      <h2>可用操作</h2>
+      <h2>可用操作工具</h2>
       <ul>
         <li>
-          <Tool name='refresh_task' description='刷新任务列表，重新从任务管理器获取最新的任务数据' execute={async (params, injector) => {
+          <Tool name='refresh_task_list' description={`刷新任务列表。
+- 功能：重新从任务管理器获取最新的任务数据
+- 后置状态：页面刷新显示最新任务状态`} execute={async (params, injector) => {
             const taskManager = injector.get(TaskManagerService)
             await taskManager.getRegistry()
             return `任务列表刷新成功，请重新渲染页面查看最新数据`
@@ -85,7 +92,15 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
           </Tool>
         </li>
         <li>
-          <Tool name='create_task' description='创建新任务，可指定标题、描述、父任务、依赖任务和元数据' params={{
+          <Tool name='create_new_task' description={`创建新任务。
+- 功能：创建一个新任务并分配给自己或其他 agent
+- 参数说明：
+  - title: 任务标题（必填）
+  - description: 任务详细描述（必填）
+  - parentId: 父任务 ID，用于创建子任务（可选）
+  - dependencies: 依赖任务 ID 列表，被依赖的任务完成后才能开始（可选）
+  - metadata: 任务元数据，如优先级、类型等（可选）
+- 后置状态：新任务被创建，状态为 PENDING`} params={{
             title: z.string().min(1).describe('任务标题'),
             description: z.string().min(1).describe('任务描述'),
             parentId: z.string().optional().describe('父任务 ID（可选）'),
@@ -104,7 +119,28 @@ export async function TaskListPageComponent({ injector }: TaskListPageProps) {
           </Tool>
         </li>
         <li>
-          <Tool name='analyze_exception_logs' description='分析收集到的异常日志，使用 AI 分析错误原因并自动创建最高优先级的修复任务' execute={async (params, injector) => {
+          <Tool name='view_task_detail' description={`查看指定任务的详细信息。
+- 功能：导航到任务详情页，显示完整信息和可用操作
+- 前置条件：taskId 必须存在
+- 参数：taskId 为要查看的任务 ID
+- 后置状态：页面跳转到任务详情页
+- 所有可用任务：${allTaskIds || '无'}`} params={{
+            taskId: z.string().min(1).describe('要查看的任务 ID')
+          }} execute={async (params: any) => {
+            const task = tasks.find(t => t.id === params.taskId)
+            if (!task) {
+              return `错误：未找到 ID 为 "${params.taskId}" 的任务`
+            }
+            return await renderer.navigate(`prompt:///tasks/${params.taskId}`)
+          }}>
+            查看任务详情
+          </Tool>
+        </li>
+        <li>
+          <Tool name='analyze_exception_logs' description={`分析收集到的异常日志并创建修复任务。
+- 功能：使用 AI 分析错误原因并自动创建最高优先级的修复任务
+- 前置条件：需要有异常日志（当前 ${exceptionLogs.length} 条）
+- 后置状态：创建一个优先级为 critical 的修复任务，异常日志被清空`} execute={async (params, injector) => {
             const logCollector = injector.get(LogCollectorService)
             const llmService = injector.get(LLMService)
             const taskManager = injector.get(TaskManagerService)
@@ -183,12 +219,6 @@ ${logsText}
                       <li><strong>依赖任务:</strong> {task.dependencies.join(', ')}</li>
                     )}
                   </ul>
-
-                  <Tool name={`view_task_${task.id}`} description={`查看任务 [${task.id}]${task.title} 的详细信息，包括完整的操作选项`} execute={async () => {
-                    return await renderer.navigate(`prompt:///tasks/${task.id}`)
-                  }}>
-                    查看详情
-                  </Tool>
                 </div>
               ))}
             </div>
@@ -218,12 +248,6 @@ ${logsText}
                       <li><strong>依赖任务:</strong> {task.dependencies.join(', ')}</li>
                     )}
                   </ul>
-
-                  <Tool name={`view_task_${task.id}`} description={`查看任务 [${task.id}]${task.title} 的详细信息，包括完整的操作选项`} execute={async () => {
-                    return await renderer.navigate(`prompt:///tasks/${task.id}`)
-                  }}>
-                    查看详情
-                  </Tool>
                 </div>
               ))}
             </div>

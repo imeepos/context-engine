@@ -7,6 +7,7 @@ import { AppModule } from './modules/app.module';
 import { registerControllers } from './utils/register-controllers';
 import { resolveApiLoggerLevel } from './logging/api-log-level';
 import { createAuth } from './auth/better-auth.config';
+import { createApiKeyAuthMiddleware } from './middleware/api-key-auth';
 
 // Export Durable Object
 export { McpSessionDurableObject } from './mcp/session-durable-object';
@@ -30,10 +31,14 @@ async function createApp(loggerLevel: LoggerLevel) {
   app.use('*', cors({
     origin: '*',
     allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'mcp-session-id', 'Last-Event-ID', 'mcp-protocol-version'],
+    allowHeaders: ['Content-Type', 'mcp-session-id', 'Last-Event-ID', 'mcp-protocol-version', 'Authorization', 'X-API-Key'],
     exposeHeaders: ['mcp-session-id', 'mcp-protocol-version']
   }));
-  logger.debug('Registering injector middleware...');
+  logger.debug('Registering API Key auth middleware...');
+  app.use('/api/*', async (c, next) => {
+    const middleware = createApiKeyAuthMiddleware(c.env.DB);
+    return middleware(c, next);
+  });
 
   // Health check
   logger.debug('Registering health check endpoint...');

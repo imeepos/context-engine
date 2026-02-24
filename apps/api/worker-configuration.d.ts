@@ -12,6 +12,7 @@ declare namespace Cloudflare {
 		ENVIRONMENT: "production";
 		MCP_SESSION: DurableObjectNamespace /* McpSessionDurableObject from sker-mcp-api */;
 		SITE_URL: "https://mcp.sker.us";
+		MESSAGE_QUEUE: Queue<unknown>;
 	}
 }
 interface Env extends Cloudflare.Env {}
